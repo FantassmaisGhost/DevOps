@@ -26,7 +26,7 @@ async function loadHours() {
     })
 }
 
-// ✅ SAVE DATA
+// Save data for the table
 async function saveHours(e) {
     e.preventDefault()
 
@@ -59,11 +59,10 @@ async function saveHours(e) {
     saveBtn.disabled = false
     saveBtn.textContent = 'Save Changes'
 
-    alert("Hours saved successfully!") // ✅ simple feedback
+    alert("Hours saved successfully!")
 }
 
-// ✅ EVENT LISTENER
+// button event listener
 document.getElementById('hoursForm').addEventListener('submit', saveHours)
 
-// ✅ LOAD ON PAGE START
 loadHours()
