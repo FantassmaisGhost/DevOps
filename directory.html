@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SA Health Facility Directory</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="directory.css" />
+</head>
+<body>
+
+  <!-- ── TOPBAR ─────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">✚</span>
+      <span class="brand-name">SA HealthMap</span>
+    </div>
+    <div class="topbar-meta">
+      <span class="meta-tag">Source: NDoH Data Dictionary · dsfsi/covid19za · HOTOSM · WHO</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="index.html" class="btn-outline">← GeoExplorer</a>
+    </div>
+  </header>
+
+  <!-- ── MAIN LAYOUT ────────────────────────────────────────── -->
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+      <!-- Search -->
+      <div class="sidebar-section">
+        <label class="field-label">SEARCH FACILITY</label>
+        <div class="search-wrap">
+          <input type="text" id="dir-search" placeholder="Name, city, province…" autocomplete="off"/>
+          <button id="dir-search-clear" class="clear-btn" title="Clear">✕</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="sidebar-section">
+        <label class="field-label">PROVINCE</label>
+        <select id="filter-province">
+          <option value="">All Provinces</option>
+        </select>
+      </div>
+
+      <div class="sidebar-section filter-row">
+        <div>
+          <label class="field-label">TYPE</label>
+          <select id="filter-type">
+            <option value="">All Types</option>
+            <option value="hospital">Hospital</option>
+            <option value="clinic">Clinic / CHC</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">SECTOR</label>
+          <select id="filter-sector">
+            <option value="">All</option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="stats-strip">
+        <div class="stat">
+          <span class="stat-val" id="stat-showing">—</span>
+          <span class="stat-key">SHOWN</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val" id="stat-total">—</span>
+          <span class="stat-key">TOTAL</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val" id="stat-provinces">9</span>
+          <span class="stat-key">PROVINCES</span>
+        </div>
+      </div>
+
+      <!-- Facility list -->
+      <div class="facility-list" id="facility-list">
+        <!-- populated by JS -->
+      </div>
+
+      <!-- Data attribution -->
+      <div class="attribution">
+        <p><strong>Data Sources</strong></p>
+        <p>· <a href="https://github.com/dsfsi/covid19za" target="_blank">dsfsi/covid19za</a> — NDoH Data Dictionary (MIT)</p>
+        <p>· <a href="https://data.humdata.org/dataset/health-facilities-in-sub-saharan-africa" target="_blank">WHO / KEMRI-Wellcome</a> — SSA Master Facility List</p>
+        <p>· <a href="https://data.humdata.org/dataset/hotosm_zaf_health_facilities" target="_blank">HOTOSM</a> — ZA Health Facilities (ODbL)</p>
+      </div>
+    </aside>
+
+    <!-- Map -->
+    <div class="map-container">
+      <div id="dir-map"></div>
+
+      <!-- Detail card -->
+      <div class="detail-card hidden" id="detail-card">
+        <div class="detail-header">
+          <div>
+            <div class="detail-name" id="dc-name"></div>
+            <div class="detail-sub" id="dc-sub"></div>
+          </div>
+          <button class="detail-close" id="dc-close">✕</button>
+        </div>
+        <div class="detail-body">
+          <div class="detail-chips" id="dc-chips"></div>
+          <div class="detail-coords" id="dc-coords"></div>
+          <button class="btn-directions" id="dc-directions">Get Directions</button>
+        </div>
+      </div>
+
+      <!-- Province legend -->
+      <div class="map-legend">
+        <div class="legend-item"><span class="dot dot-hospital"></span>Hospital</div>
+        <div class="legend-item"><span class="dot dot-clinic"></span>Clinic / CHC</div>
+        <div class="legend-item"><span class="dot dot-private"></span>Private</div>
+      </div>
+
+      <!-- Counter HUD -->
+      <div class="map-hud" id="map-hud">
+        <span id="hud-count">— facilities on map</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="facilities.js"></script>
+  <script src="directory.js"></script>
+</body>
+</html>

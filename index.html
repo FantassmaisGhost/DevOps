@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GeoExplorer — Interactive Map</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">◈</span>
+      <span class="brand-name">GeoExplorer</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="directory.html" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:#6b7191;border:1px solid #2a2f3f;border-radius:8px;padding:6px 12px;text-decoration:none;transition:all 0.2s;white-space:nowrap;" onmouseover="this.style.color='#c8f060';this.style.borderColor='#c8f060'" onmouseout="this.style.color='#6b7191';this.style.borderColor='#2a2f3f'">✚ Clinic Directory</a>
+      <button class="btn-icon" id="btn-locate" title="Go to my location">⌖</button>
+      <button class="btn-icon" id="btn-reset" title="Reset view">↺</button>
+    </div>
+  </header>
+
+  <!-- Search Bar -->
+  <div class="search-container">
+    <input type="text" id="search-input" placeholder="Search a place…" autocomplete="off" />
+    <button id="search-btn">Search</button>
+    <ul id="search-results" class="search-results hidden"></ul>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+
+  <!-- Info Panel -->
+  <div class="info-panel" id="info-panel">
+    <div class="info-panel-header">
+      <span class="info-label">LOCATION INFO</span>
+      <button class="close-panel" id="close-panel">✕</button>
+    </div>
+    <div class="info-panel-body" id="info-body">
+      <p class="info-hint">Click anywhere on the map to explore.</p>
+    </div>
+  </div>
+
+  <!-- Layer Toggle -->
+  <div class="layer-toggle">
+    <button class="layer-btn active" data-layer="street">Street</button>
+    <button class="layer-btn" data-layer="satellite">Satellite</button>
+    <button class="layer-btn" data-layer="topo">Topo</button>
+  </div>
+
+  <!-- Coords HUD -->
+  <div class="coords-hud" id="coords-hud">
+    <span id="hud-lat">Lat: —</span>
+    <span class="hud-sep">|</span>
+    <span id="hud-lng">Lng: —</span>
+    <span class="hud-sep">|</span>
+    <span id="hud-zoom">Zoom: —</span>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Custom JS -->
+  <script src="map.js"></script>
+</body>
+</html>
