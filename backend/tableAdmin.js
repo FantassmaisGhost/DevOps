@@ -1,6 +1,22 @@
 import { supabase } from './supabase.js'
 
-const CLINIC_ID = 1
+let CLINIC_ID = '00001';
+
+async function getAdminClinic() {
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    const userEmail = userData.user.email;
+
+    const { data, error } = await supabase.from('admin').select('clinicid').eq('email', userEmail).single()
+
+    if (error) {
+        console.error("Error fetching clinic:", error)
+        return
+    }
+
+    CLINIC_ID = data.clinicid
+}
 
 async function loadHours() {
     const { data, error } = await supabase
@@ -61,6 +77,14 @@ async function saveHours(e) {
 
     alert("Hours saved successfully!")
 }
+async function initDashboard() {
+
+    await getAdminClinic()
+
+    await loadHours()
+}
+
+initDashboard()
 
 // button event listener
 document.getElementById('hoursForm').addEventListener('submit', saveHours)
