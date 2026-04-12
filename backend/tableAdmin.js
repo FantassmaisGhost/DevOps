@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js'
 
-let CLINIC_ID = '00001';
+let CLINIC_ID = null;
 
 async function getAdminClinic() {
 
