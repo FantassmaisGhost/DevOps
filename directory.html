@@ -12,124 +12,130 @@
 </head>
 <body>
 
-  <!-- ── TOPBAR ─────────────────────────────────────────────── -->
+  <!-- TOPBAR -->
   <header class="topbar">
     <div class="brand">
-      <span class="brand-icon">✚</span>
-      <span class="brand-name">SA HealthMap</span>
+      <span class="brand-icon" aria-hidden="true">✚</span>
+      <strong class="brand-name">SA HealthMap</strong>
     </div>
-    <div class="topbar-meta">
-      <span class="meta-tag">Source: NDoH Data Dictionary · dsfsi/covid19za · HOTOSM · WHO</span>
-    </div>
-    <div class="topbar-actions">
+    <p class="topbar-meta">
+      <small class="meta-tag">Source: NDoH Data Dictionary · dsfsi/covid19za · HOTOSM · WHO</small>
+    </p>
+    <nav class="topbar-actions" aria-label="Site navigation">
       <a href="index.html" class="btn-outline">← GeoExplorer</a>
-    </div>
+    </nav>
   </header>
+  
 
-  <!-- ── MAIN LAYOUT ────────────────────────────────────────── -->
+  <!-- MAIN LAYOUT -->
   <div class="layout">
 
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Facility filters and list">
 
       <!-- Search -->
-      <div class="sidebar-section">
-        <label class="field-label">SEARCH FACILITY</label>
+      <section class="sidebar-section" aria-label="Search">
+        <label class="field-label" for="dir-search">SEARCH FACILITY</label>
         <div class="search-wrap">
-          <input type="text" id="dir-search" placeholder="Name, city, province…" autocomplete="off"/>
-          <button id="dir-search-clear" class="clear-btn" title="Clear">✕</button>
+          <input type="search" id="dir-search" placeholder="Name, city, province…" autocomplete="off" aria-label="Search by name, city or province"/>
+          <button id="dir-search-clear" class="clear-btn" title="Clear" aria-label="Clear search">✕</button>
         </div>
-      </div>
+      </section>
 
-      <!-- Filters -->
-      <div class="sidebar-section">
-        <label class="field-label">PROVINCE</label>
-        <select id="filter-province">
+      <!-- Province filter -->
+      <section class="sidebar-section" aria-label="Province filter">
+        <label class="field-label" for="filter-province">PROVINCE</label>
+        <select id="filter-province" aria-label="Filter by province">
           <option value="">All Provinces</option>
         </select>
-      </div>
+      </section>
 
-      <div class="sidebar-section filter-row">
+      <!-- Type and sector filters -->
+      <section class="sidebar-section filter-row" aria-label="Type and sector filters">
         <div>
-          <label class="field-label">TYPE</label>
-          <select id="filter-type">
+          <label class="field-label" for="filter-type">TYPE</label>
+          <select id="filter-type" aria-label="Filter by facility type">
             <option value="">All Types</option>
             <option value="hospital">Hospital</option>
             <option value="clinic">Clinic / CHC</option>
           </select>
         </div>
         <div>
-          <label class="field-label">SECTOR</label>
-          <select id="filter-sector">
+          <label class="field-label" for="filter-sector">SECTOR</label>
+          <select id="filter-sector" aria-label="Filter by sector">
             <option value="">All</option>
             <option value="public">Public</option>
             <option value="private">Private</option>
           </select>
         </div>
-      </div>
+      </section>
 
       <!-- Stats strip -->
-      <div class="stats-strip">
+      <dl class="stats-strip" aria-label="Facility counts">
         <div class="stat">
-          <span class="stat-val" id="stat-showing">—</span>
-          <span class="stat-key">SHOWN</span>
+          <dd class="stat-val" id="stat-showing">—</dd>
+          <dt class="stat-key">SHOWN</dt>
         </div>
         <div class="stat">
-          <span class="stat-val" id="stat-total">—</span>
-          <span class="stat-key">TOTAL</span>
+          <dd class="stat-val" id="stat-total">—</dd>
+          <dt class="stat-key">TOTAL</dt>
         </div>
         <div class="stat">
-          <span class="stat-val" id="stat-provinces">9</span>
-          <span class="stat-key">PROVINCES</span>
+          <dd class="stat-val" id="stat-provinces">9</dd>
+          <dt class="stat-key">PROVINCES</dt>
         </div>
-      </div>
+      </dl>
 
-      <!-- Facility list -->
-      <div class="facility-list" id="facility-list">
-        <!-- populated by JS -->
-      </div>
+      <!-- Facility list — populated by JS as <li> elements -->
+      <ol class="facility-list" id="facility-list" aria-label="Matching facilities" aria-live="polite"></ol>
 
       <!-- Data attribution -->
-      <div class="attribution">
+      <footer class="attribution">
         <p><strong>Data Sources</strong></p>
-        <p>· <a href="https://github.com/dsfsi/covid19za" target="_blank">dsfsi/covid19za</a> — NDoH Data Dictionary (MIT)</p>
-        <p>· <a href="https://data.humdata.org/dataset/health-facilities-in-sub-saharan-africa" target="_blank">WHO / KEMRI-Wellcome</a> — SSA Master Facility List</p>
-        <p>· <a href="https://data.humdata.org/dataset/hotosm_zaf_health_facilities" target="_blank">HOTOSM</a> — ZA Health Facilities (ODbL)</p>
-      </div>
+        <ul>
+          <li>· <a href="https://github.com/dsfsi/covid19za" target="_blank" rel="noopener noreferrer">dsfsi/covid19za</a> — NDoH Data Dictionary (MIT)</li>
+          <li>· <a href="https://data.humdata.org/dataset/health-facilities-in-sub-saharan-africa" target="_blank" rel="noopener noreferrer">WHO / KEMRI-Wellcome</a> — SSA Master Facility List</li>
+          <li>· <a href="https://data.humdata.org/dataset/hotosm_zaf_health_facilities" target="_blank" rel="noopener noreferrer">HOTOSM</a> — ZA Health Facilities (ODbL)</li>
+        </ul>
+      </footer>
     </aside>
 
     <!-- Map -->
-    <div class="map-container">
-      <div id="dir-map"></div>
+    <main class="map-container" aria-label="Facility map">
+      <div id="dir-map" role="application" aria-label="Interactive map of South African health facilities"></div>
 
       <!-- Detail card -->
-      <div class="detail-card hidden" id="detail-card">
-        <div class="detail-header">
+      <article class="detail-card hidden" id="detail-card" aria-label="Facility details" aria-live="polite">
+        <header class="detail-header">
           <div>
-            <div class="detail-name" id="dc-name"></div>
-            <div class="detail-sub" id="dc-sub"></div>
+            <h2 class="detail-name" id="dc-name"></h2>
+            <p class="detail-sub" id="dc-sub"></p>
           </div>
-          <button class="detail-close" id="dc-close">✕</button>
-        </div>
+          <button class="detail-close" id="dc-close" aria-label="Close detail card">✕</button>
+        </header>
         <div class="detail-body">
-          <div class="detail-chips" id="dc-chips"></div>
-          <div class="detail-coords" id="dc-coords"></div>
+          <!-- chips injected by JS as <li> elements -->
+          <ul class="detail-chips" id="dc-chips" aria-label="Facility tags"></ul>
+          <address class="detail-coords" id="dc-coords"></address>
           <button class="btn-directions" id="dc-directions">Get Directions</button>
         </div>
-      </div>
+      </article>
 
-      <!-- Province legend -->
-      <div class="map-legend">
-        <div class="legend-item"><span class="dot dot-hospital"></span>Hospital</div>
-        <div class="legend-item"><span class="dot dot-clinic"></span>Clinic / CHC</div>
-        <div class="legend-item"><span class="dot dot-private"></span>Private</div>
-      </div>
+      <!-- Map legend -->
+      <figure class="map-legend" aria-label="Map legend">
+        <figcaption class="sr-only">Facility type colour key</figcaption>
+        <dl>
+          <div class="legend-item"><dt><span class="dot dot-hospital" aria-hidden="true"></span>Hospital</dt></div>
+          <div class="legend-item"><dt><span class="dot dot-clinic" aria-hidden="true"></span>Clinic / CHC</dt></div>
+          <div class="legend-item"><dt><span class="dot dot-private" aria-hidden="true"></span>Private</dt></div>
+        </dl>
+      </figure>
 
       <!-- Counter HUD -->
-      <div class="map-hud" id="map-hud">
+      <output class="map-hud" id="map-hud" aria-live="polite" aria-label="Visible facility count">
         <span id="hud-count">— facilities on map</span>
-      </div>
-    </div>
+      </output>
+    </main>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

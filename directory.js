@@ -218,14 +218,14 @@ function render() {
   // ── 5e: Rebuild sidebar list ─────────────────────────────
   if (filtered.length === 0) {
     facilityList.innerHTML = `
-      <div class="no-results">
+      <li class="no-results">
         No facilities match your filters.<br>
         <span style="opacity:0.5">Try widening the search.</span>
-      </div>`;
+      </li>`;
   } else {
     facilityList.innerHTML = '';
     filtered.forEach(f => {
-      const item = document.createElement('div');
+      const item = document.createElement('li');
       item.className = 'facility-item' + (f._index === activeIndex ? ' active' : '');
       item.dataset.index = f._index;
 
@@ -235,10 +235,10 @@ function render() {
                      : 'clinic';
 
       item.innerHTML = `
-        <span class="fac-dot ${dotClass}"></span>
+        <span class="fac-dot ${dotClass}" aria-hidden="true"></span>
         <div class="fac-info">
-          <div class="fac-name" title="${f.name}">${f.name}</div>
-          <div class="fac-sub">${f.city} · ${f.province}</div>
+          <span class="fac-name" title="${f.name}">${f.name}</span>
+          <span class="fac-sub">${f.city} · ${f.province}</span>
         </div>
         <span class="fac-badge ${f.sector}">${f.sector.toUpperCase()}</span>`;
 
@@ -297,9 +297,9 @@ function openDetail(f) {
   const sectorClass = f.sector === 'public'  ? 'chip-public' : 'chip-private';
 
   dcChips.innerHTML = `
-    <span class="chip ${typeClass}">${typeLabel}</span>
-    <span class="chip ${sectorClass}">${f.sector.toUpperCase()}</span>
-    <span class="chip chip-prov">${f.province.toUpperCase()}</span>`;
+    <li class="chip ${typeClass}">${typeLabel}</li>
+    <li class="chip ${sectorClass}">${f.sector.toUpperCase()}</li>
+    <li class="chip chip-prov">${f.province.toUpperCase()}</li>`;
 
   // Coordinates line
   dcCoords.textContent = `${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}`;

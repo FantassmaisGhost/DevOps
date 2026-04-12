@@ -21,6 +21,20 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* <output> is inline by default — make it block-level like its predecessor div */
+output { display: block; }
+
 html, body {
   height: 100%;
   background: var(--bg);
@@ -173,6 +187,13 @@ select:focus { border-color: var(--accent); }
 }
 .filter-row > div { flex: 1; }
 
+/* ── BASE RESETS for semantic elements ───────────────────── */
+dl, dt, dd, figure, figcaption { margin: 0; padding: 0; }
+address { font-style: normal; }
+
+/* Attribution list */
+.attribution ul { list-style: none; padding: 0; margin: 0; }
+
 /* Stats strip */
 .stats-strip {
   display: flex;
@@ -188,13 +209,17 @@ select:focus { border-color: var(--accent); }
   border-right: 1px solid var(--border);
 }
 .stat:last-child { border-right: none; }
-.stat-val { font-family: var(--font-disp); font-size: 18px; font-weight: 800; color: var(--accent); }
-.stat-key { font-size: 9px; letter-spacing: 1.5px; color: var(--text-muted); }
+/* dd (value) renders first visually, dt (label) second */
+.stat-val { order: 1; font-family: var(--font-disp); font-size: 18px; font-weight: 800; color: var(--accent); }
+.stat-key { order: 2; font-size: 9px; letter-spacing: 1.5px; color: var(--text-muted); }
 
 /* Facility list */
 .facility-list {
   flex: 1;
   overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .facility-item {
@@ -221,6 +246,7 @@ select:focus { border-color: var(--accent); }
 
 .fac-info { flex: 1; min-width: 0; }
 .fac-name {
+  display: block;
   font-size: 12px;
   font-weight: 700;
   color: var(--text);
@@ -230,6 +256,7 @@ select:focus { border-color: var(--accent); }
   text-overflow: ellipsis;
 }
 .fac-sub {
+  display: block;
   font-size: 10px;
   color: var(--text-muted);
   margin-top: 2px;
@@ -356,7 +383,7 @@ select:focus { border-color: var(--accent); }
 .detail-close:hover { color: var(--text); }
 
 .detail-body { padding: 12px 14px; }
-.detail-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.detail-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; list-style: none; padding: 0; }
 .chip {
   font-size: 9px; font-weight: 700; letter-spacing: 1px;
   padding: 3px 8px; border-radius: 3px;
@@ -392,12 +419,11 @@ select:focus { border-color: var(--accent); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px 14px;
-  display: flex;
-  gap: 14px;
   font-size: 11px;
   box-shadow: var(--shadow);
   z-index: 800;
 }
+.map-legend dl { display: flex; gap: 14px; margin: 0; }
 .legend-item { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .dot-hospital { background: var(--accent3); }
