@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login</title>
   <link rel="stylesheet" href="login.css" />
+  <script src="https://eegqpjzoaslfkospimjy.supabase.co"></script>
 </head>
 <body>
   <main class="login-page">
@@ -24,5 +25,34 @@
       </p>
     </article>
   </main>
+
+  <script>
+    const { createClient } = supabase;
+    const client = createClient(
+      "https://eegqpjzoaslfkospimjy.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlZ3FwanpvYXNsZmtvc3BpbWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MTQ0MzAsImV4cCI6MjA5MTM5MDQzMH0.hudLTCYP6aQEmeB1XSB5_ikzD1bgQeig5nJQ-r__kCM"
+    );
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const btn = e.target.querySelector('button[type="submit"]');
+
+      btn.textContent = 'Logging in…';
+      btn.disabled = true;
+
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        alert(error.message);
+        btn.textContent = 'Login';
+        btn.disabled = false;
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    });
+  </script>
 </body>
 </html>
