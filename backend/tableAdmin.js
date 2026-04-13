@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js'
 
-const CLINIC_ID = 1
+const CLINIC_ID = "00001"
 
 async function loadHours() {
     const { data, error } = await supabase
