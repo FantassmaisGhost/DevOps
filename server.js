@@ -18,17 +18,16 @@ const mimeTypes = {
 createServer((req, res) => {
   let url = req.url === '/' ? '/index.html' : req.url;
 
+  // Normalize ../backend/ requests to just look in backend/
+  url = url.replace('/..%2Fbackend/', '/').replace('/../backend/', '/');
+
   let filePath = join(__dirname, 'pages', url);
-  console.log(`REQUEST: ${req.url}`);
-  console.log(`TRYING pages: ${filePath} — exists: ${existsSync(filePath)}`);
 
   if (!existsSync(filePath)) {
     filePath = join(__dirname, 'backend', url);
-    console.log(`TRYING backend: ${filePath} — exists: ${existsSync(filePath)}`);
   }
   if (!existsSync(filePath)) {
     filePath = join(__dirname, 'pages', 'index.html');
-    console.log(`FALLING BACK to index.html`);
   }
 
   const ext = extname(filePath);
