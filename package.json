@@ -4,15 +4,17 @@
   "description": "Clinic management dashboard with Supabase",
   "main": "index.js",
   "scripts": {
-    "start": "npx serve pages",
-    "dev": "npx serve pages",
-    "test": "echo \"No tests configured\" && exit 0"
+    "start": "live-server",
+    "dev": "live-server",
+    "test": "echo \"No tests yet\""
   },
-  "keywords": [],
+  "keywords": [],a
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.4",
-    "serve": "^14.2.4"
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
   }
 }
