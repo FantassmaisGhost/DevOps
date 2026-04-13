@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Clinic management dashboard with Supabase",
   "main": "index.js",
+  "start": "npx serve pages --single",
   "scripts": {
     "start": "npx serve pages",
     "dev": "npx serve pages",
