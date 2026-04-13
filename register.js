@@ -10,7 +10,6 @@ form.addEventListener("submit", async (e) => {
     const password = document.getElementById("password").value;
     const role = document.getElementById("role").value;
 
-    // 🔹 Sign up user
     const { data, error } = await supabase.auth.signUp({
         email,
         password
@@ -31,7 +30,6 @@ form.addEventListener("submit", async (e) => {
 
     console.log("User created:", user.id);
 
-    // 🔹 Insert into users table
     const { error: insertError } = await supabase
         .from("users")
         .insert([
@@ -50,5 +48,20 @@ form.addEventListener("submit", async (e) => {
     }
 
     alert("Account created successfully!");
+
+    if (role === "patient") {
+        window.location.href = "dashboardPatient.html";
+
+    } else if (role === "staff") {
+        window.location.href = "dashboardStaff.html";
+
+    } else if (role === "admin") {
+        window.location.href = "dashboardAdmin.html";
+
+    } else {
+        // fallback
+        window.location.href = "login.html";
+    }
+    
     window.location.href = "login.html";
 });
