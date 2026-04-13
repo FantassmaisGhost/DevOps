@@ -16,17 +16,27 @@ const mimeTypes = {
 };
 
 createServer((req, res) => {
-  let url = req.url === '/' ? '/index.html' : req.url;
+  console.log(`RAW REQUEST: "${req.url}"`);
 
-  // Normalize ../backend/ requests to just look in backend/
-  url = url.replace('/..%2Fbackend/', '/').replace('/../backend/', '/');
+  let url = req.url === '/' ? '/index.html' : req.url;
+  url = decodeURIComponent(url);
+  console.log(`DECODED URL: "${url}"`);
+
+  // Strip any leading /../backend/ or ../backend/
+  url = url.replace(/^\/\.\.\/backend\//, '/');
+  url = url.replace(/^\/\.\.%2Fbackend\//, '/');
+  console.log(`NORMALIZED URL: "${url}"`);
 
   let filePath = join(__dirname, 'pages', url);
+  console.log(`TRYING pages: ${filePath} — exists: ${existsSync(filePath)}`);
 
   if (!existsSync(filePath)) {
     filePath = join(__dirname, 'backend', url);
+    console.log(`TRYING backend: ${filePath} — exists: ${existsSync(filePath)}`);
   }
+
   if (!existsSync(filePath)) {
+    console.log(`FALLING BACK to index.html`);
     filePath = join(__dirname, 'pages', 'index.html');
   }
 
@@ -37,7 +47,8 @@ createServer((req, res) => {
     const content = readFileSync(filePath);
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(content);
-  } catch {
+  } catch (e) {
+    console.log(`ERROR: ${e.message}`);
     res.writeHead(404);
     res.end('Not found');
   }
