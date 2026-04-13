@@ -1,30 +1,68 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <h2>Login</h2>
 
-    <form id = "loginForm"> 
-
-        <label> Email:</label>
-        <input type = "email" id = "email" required> <br><br>
+    <form id="loginForm">
+        <label>Email:</label>
+        <input type="email" id="email" required><br><br>
 
         <label>Password:</label>
-        <input type = "password" id = "password" required> <br><br>
+        <input type="password" id="password" required><br><br>
 
-        <button type = "submit"> Login </button> 
-
+        <button type="submit">Login</button>
     </form>
 
     <br>
+    <p>— or —</p>
+    <button id="googleBtn">Sign in with Google</button>
 
+    <br><br>
     <p>Don't have an account?</p>
     <a href="register.html">Create Account</a>
 
+    <script>
+        // Init Supabase
+        const { createClient } = supabase;
+        const client = createClient(
+            'YOUR_SUPABASE_URL',       // from Supabase project settings
+            'YOUR_SUPABASE_ANON_KEY'   // from Supabase project settings
+        );
+
+        // Google login
+        document.getElementById('googleBtn').addEventListener('click', async () => {
+            const { error } = await client.auth.signInWithOAuth({
+                provider: 'google'
+            });
+            if (error) console.error('Error:', error.message);
+        });
+
+        // Email/password login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const { data, error } = await client.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                alert(error.message);
+            } else {
+                console.log('Logged in:', data.user);
+                // TODO: redirect after login
+                // window.location.href = '/dashboard.html';
+            }
+        });
+    </script>
 </body>
 </html>
