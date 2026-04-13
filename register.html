@@ -1,44 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register</title>
+  <link rel="stylesheet" href="login.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
-    <h2>Create Account</h2>
+  <main class="login-page">
+    <article class="login-card">
+      <h2>Create Account</h2>
+      <form id="registerForm">
+        <label for="name">Name</label>
+        <input type="text" id="name" required />
 
-    <form id="registerForm">
-        <label>Name:</label>
-        <input type="text" id="name" required>
-        <br><br>
+        <label for="email">Email</label>
+        <input type="email" id="email" required />
 
-        <label>Email:</label>
-        <input type="email" id="email" required>
-        <br><br>
+        <label for="password">Password</label>
+        <input type="password" id="password" required />
 
-        <label>Password:</label>
-        <input type="password" id="password" required>
-        <br><br>
-
-        <label>Role:</label>
-        <br>
+        <label for="role">Role</label>
         <select id="role">
-            <option value="patient">Patient</option>
-            <option value="staff">Staff</option>
+          <option value="patient">Patient</option>
+          <option value="staff">Staff</option>
         </select>
 
-        <br><br>
-
         <button type="submit">Register</button>
-    </form>
+      </form>
+      <p class="footer-text">
+        Already have an account? <a href="login.html">Back to login</a>
+      </p>
+    </article>
+  </main>
 
-    <br>
-    <a href="login.html">Back to login</a>
+  <script>
+    const { createClient } = supabase;
+    const client = createClient(
+      "https://eegqpjzoaslfkospimjy.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlZ3FwanpvYXNsZmtvc3BpbWp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MTQ0MzAsImV4cCI6MjA5MTM5MDQzMH0.hudLTCYP6aQEmeB1XSB5_ikzD1bgQeig5nJQ-r__kCM"
+    );
 
-    <!-- ✅ Supabase v2 UMD build (IMPORTANT) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    <script type="module" src="/register.js"></script>
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+      const btn = e.target.querySelector('button[type="submit"]');
+
+      btn.textContent = 'Creating account…';
+      btn.disabled = true;
+
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, role }
+        }
+      });
+
+      if (error) {
+        alert(error.message);
+        btn.textContent = 'Register';
+        btn.disabled = false;
+      } else {
+        alert('Account created! Please check your email to confirm.');
+        window.location.href = 'login.html';
+      }
+    });
+  </script>
 </body>
 </html>
