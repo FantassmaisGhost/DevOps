@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Clinic management dashboard with Supabase",
   "main": "index.js",
-  "start": "node server.js",
   "scripts": {
     "start": "npx serve pages",
     "dev": "npx serve pages",
-    "test": "echo \"No tests configured\" && exit 0"
+    "test": "vitest",
+    "coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -15,5 +15,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
     "serve": "^14.2.4"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.4",
+    "vitest": "^4.1.4"
   }
 }
