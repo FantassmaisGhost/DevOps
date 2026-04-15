@@ -1,137 +1,87 @@
 /* ============================================================
-   SA HealthMap — directory.js
+   SA HealthMap — directory.js  (UPDATED — with location search)
    ============================================================
 
-   OVERVIEW — this file is organised into 8 sections:
+   OVERVIEW — this file is organised into 9 sections:
 
-   1. MAP INIT         — creates the Leaflet map, defines tile layer
-                         and sets the default view over South Africa.
-
-   2. MARKER STYLES    — defines colour-coded circle markers for
-                         hospitals, clinics, and private facilities.
-
-   3. LAYER GROUPS     — organises markers into a Leaflet LayerGroup
-                         so the entire set can be cleared and redrawn
-                         efficiently when filters change.
-
-   4. SIDEBAR SETUP    — populates the province <select> dropdown
-                         and wires up all filter/search controls.
-
-   5. RENDER LOGIC     — the central render() function that reads
-                         current filter state, filters SA_FACILITIES,
-                         redraws map markers, rebuilds the sidebar
-                         list, and updates the stats strip.
-
-   6. DETAIL CARD      — handles opening, populating, and closing
-                         the slide-up detail card when a facility
-                         is clicked in the list or on the map.
-
-   7. EVENT WIRING     — attaches all event listeners (search input,
-                         filter selects, clear button, card close).
-
-   8. INIT             — runs on page load: populates the sidebar,
-                         does the initial render, and flies the map
-                         to South Africa's bounding box.
+   1. MAP INIT          — creates the Leaflet map, tile layer, SA default view.
+   2. MARKER STYLES     — colour-coded CircleMarkers by type/sector.
+   3. LAYER GROUPS      — single LayerGroup for efficient clear/redraw.
+   4. SIDEBAR SETUP     — province dropdown + all filter/search controls.
+   5. LOCATION SEARCH   — "Search by location" geocoding (Nominatim) with
+                          "Use my current location" button (Geolocation API).
+                          Sets a reference point + optional radius filter;
+                          sidebar list is sorted by distance when active.
+   6. RENDER LOGIC      — central render() reads filters + location state,
+                          filters SA_FACILITIES, draws markers, builds list.
+   7. DETAIL CARD       — slide-up detail card for a selected facility.
+   8. EVENT WIRING      — all event listeners.
+   9. INIT              — initial render + fitBounds to South Africa.
 
    ============================================================ */
-
 
 /* ============================================================
    SECTION 1 — MAP INIT
-   ============================================================
-   We use OpenStreetMap tiles (same as the main GeoExplorer map).
-   The initial view is set to the geographic centre of South Africa
-   at a zoom level that shows the whole country.
    ============================================================ */
 
 const map = L.map('dir-map', {
-  center:      [-29.0, 25.0], // geographic centre of South Africa
-  zoom:        6,
+  center: [-29.0, 25.0],
+  zoom: 6,
   zoomControl: true,
 });
 
-// Move zoom control out of the top-left corner (the HUD lives there)
 map.zoomControl.setPosition('bottomright');
 
-// OpenStreetMap street tile layer — no API key required
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   maxZoom: 19,
 }).addTo(map);
 
-
 /* ============================================================
    SECTION 2 — MARKER STYLES
-   ============================================================
-   Leaflet's CircleMarker is used instead of the default pin so
-   we can apply colour coding by facility type and sector.
-
-   Colour logic:
-     - Private facilities  → coral (#ff6b6b) regardless of type
-     - Public hospitals    → blue  (#60b4ff)
-     - Public clinics/CHC  → teal  (#00e5a0)
    ============================================================ */
 
-/**
- * Returns a Leaflet CircleMarker options object for a given facility.
- * @param {Object} facility - A record from SA_FACILITIES
- * @returns {Object} Leaflet path options for L.circleMarker()
- */
 function markerOptions(facility) {
   let color;
-
   if (facility.sector === 'private') {
-    color = '#ff6b6b';           // coral — private sector
+    color = '#ff6b6b';
   } else if (facility.type === 'hospital') {
-    color = '#60b4ff';           // blue — public hospital
+    color = '#60b4ff';
   } else {
-    color = '#00e5a0';           // teal — public clinic / CHC
+    color = '#00e5a0';
   }
-
   return {
-    radius:      facility.type === 'hospital' ? 8 : 6, // hospitals slightly larger
-    fillColor:   color,
-    color:       '#0b0e14',      // dark border matching page background
-    weight:      1.5,
-    opacity:     1,
+    radius: facility.type === 'hospital' ? 8 : 6,
+    fillColor: color,
+    color: '#0b0e14',
+    weight: 1.5,
+    opacity: 1,
     fillOpacity: 0.82,
   };
 }
 
-
 /* ============================================================
    SECTION 3 — LAYER GROUP
-   ============================================================
-   All facility markers are added to a single LayerGroup rather
-   than directly to the map. This lets us call
-   markersLayer.clearLayers() to wipe all markers in one call
-   before redrawing filtered results.
    ============================================================ */
 
 const markersLayer = L.layerGroup().addTo(map);
+const markerRefs   = {};
 
-// Keeps a reference from facility index → Leaflet marker,
-// so clicking a sidebar item can trigger the matching map marker.
-const markerRefs = {};
-
+// Separate marker for the user's chosen/detected location
+let locationPinLayer = null;
 
 /* ============================================================
    SECTION 4 — SIDEBAR SETUP
-   ============================================================
-   Reads PROVINCES (derived from SA_FACILITIES in facilities.js)
-   and injects an <option> for each province into the select.
    ============================================================ */
 
-// Populate province dropdown with real SA provinces from the dataset
 const provinceSelect = document.getElementById('filter-province');
 PROVINCES.forEach(prov => {
-  const opt    = document.createElement('option');
-  opt.value    = prov;
+  const opt = document.createElement('option');
+  opt.value       = prov;
   opt.textContent = prov;
   provinceSelect.appendChild(opt);
 });
 
-// DOM references used throughout
 const typeSelect   = document.getElementById('filter-type');
 const sectorSelect = document.getElementById('filter-sector');
 const searchInput  = document.getElementById('dir-search');
@@ -141,98 +91,471 @@ const statShowing  = document.getElementById('stat-showing');
 const statTotal    = document.getElementById('stat-total');
 const hudCount     = document.getElementById('hud-count');
 
-
 /* ============================================================
-   SECTION 5 — RENDER LOGIC
+   SECTION 5 — LOCATION SEARCH
    ============================================================
-   render() is the single source of truth for what's visible.
-   It runs whenever any filter or search value changes.
 
-   Steps:
-     a. Read current filter state from the DOM controls.
-     b. Filter SA_FACILITIES against those values.
-     c. Clear existing map markers.
-     d. Add a new CircleMarker for each matching facility.
-     e. Rebuild the sidebar list from matching facilities.
-     f. Update the stats strip (count) and map HUD.
+   Adds two controls above (or inside) the existing search bar:
+
+   ┌────────────────────────────────────┬────────┐
+   │  📍 Search by location…            │  [📍]  │
+   └────────────────────────────────────┴────────┘
+       text input (geocode on Enter)    small "use my location" button
+
+   State:
+     userLat / userLng  — the reference coordinates (null = inactive)
+     activeRadius       — km threshold for filtering (0 = show all sorted by dist)
+
+   When a location is active:
+   • Facilities are sorted by straight-line distance.
+   • If a radius is selected, facilities beyond it are hidden.
+   • A subtle pin marker is placed on the map.
+   • A "× Clear location" link appears beneath the input.
    ============================================================ */
 
-// Tracks the currently selected (highlighted) facility index
+// ── Location state ──────────────────────────────────────────
+let userLat    = null;
+let userLng    = null;
+let activeRadius = 0;   // km; 0 means "sort only, no radius filter"
+
+// ── Inject location UI ──────────────────────────────────────
+// We inject HTML immediately after the existing #dir-search wrapper.
+// Adjust the selector to match where you want the bar to appear in your HTML.
+
+(function injectLocationUI() {
+  // Find a sensible anchor — the dir-search input's parent container
+  const searchWrap = searchInput.closest('.search-wrap') || searchInput.parentElement;
+
+  // ── Location search row ──
+  const locRow = document.createElement('div');
+  locRow.id        = 'loc-row';
+  locRow.className = 'loc-row';
+  locRow.innerHTML = `
+    <div class="loc-input-wrap">
+      <span class="loc-prefix-icon" aria-hidden="true">📍</span>
+      <input
+        id="loc-input"
+        type="text"
+        placeholder="Search by location…"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Search by location"
+      />
+      <button
+        id="loc-gps-btn"
+        class="loc-gps-btn"
+        title="Use my current location"
+        aria-label="Use my current location"
+      >⊕</button>
+    </div>
+    <div class="loc-status" id="loc-status" aria-live="polite"></div>
+  `;
+
+  // Insert after the search wrapper
+  searchWrap.insertAdjacentElement('afterend', locRow);
+
+  // ── Radius filter row ──
+  const radiusRow = document.createElement('div');
+  radiusRow.id        = 'radius-row';
+  radiusRow.className = 'radius-row hidden';
+  radiusRow.innerHTML = `
+    <label for="radius-select" class="radius-label">Show within</label>
+    <select id="radius-select" class="radius-select">
+      <option value="0">any distance</option>
+      <option value="5">5 km</option>
+      <option value="10">10 km</option>
+      <option value="20">20 km</option>
+      <option value="50">50 km</option>
+      <option value="100">100 km</option>
+    </select>
+    <button id="loc-clear-btn" class="loc-clear-btn">✕ clear location</button>
+  `;
+  locRow.insertAdjacentElement('afterend', radiusRow);
+
+  // ── Styles ──
+  const style = document.createElement('style');
+  style.textContent = `
+    /* ── Location row ───────────────────────────────── */
+    .loc-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 8px 0 4px;
+    }
+    .loc-input-wrap {
+      display: flex;
+      align-items: center;
+      background: #111520;
+      border: 1px solid #252b3d;
+      border-radius: 6px;
+      padding: 0 8px;
+      gap: 6px;
+      transition: border-color .2s;
+    }
+    .loc-input-wrap:focus-within {
+      border-color: #00e5a0;
+    }
+    .loc-prefix-icon {
+      font-size: 13px;
+      opacity: .65;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    #loc-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #dce2f0;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      padding: 9px 0;
+    }
+    #loc-input::placeholder { color: #3d4460; }
+
+    /* ── GPS button (small) ─────────────────────────── */
+    .loc-gps-btn {
+      background: none;
+      border: 1px solid #252b3d;
+      border-radius: 4px;
+      color: #00e5a0;
+      font-size: 15px;
+      line-height: 1;
+      padding: 3px 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background .15s, border-color .15s;
+    }
+    .loc-gps-btn:hover {
+      background: #00e5a015;
+      border-color: #00e5a0;
+    }
+    .loc-gps-btn.loading {
+      animation: loc-spin .8s linear infinite;
+      opacity: .7;
+      pointer-events: none;
+    }
+    @keyframes loc-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ── Status line ────────────────────────────────── */
+    .loc-status {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: #00e5a0;
+      min-height: 14px;
+      padding-left: 2px;
+    }
+    .loc-status.error { color: #ff6b6b; }
+
+    /* ── Radius row ─────────────────────────────────── */
+    .radius-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 2px 0 6px;
+    }
+    .radius-row.hidden { display: none; }
+    .radius-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: #7a85a8;
+      white-space: nowrap;
+    }
+    .radius-select {
+      background: #111520;
+      border: 1px solid #252b3d;
+      border-radius: 4px;
+      color: #dce2f0;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      padding: 3px 6px;
+      cursor: pointer;
+      outline: none;
+    }
+    .loc-clear-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #7a85a8;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      white-space: nowrap;
+      transition: color .15s;
+    }
+    .loc-clear-btn:hover { color: #ff6b6b; }
+
+    /* ── Distance badge on list items ───────────────── */
+    .fac-dist {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: #7a85a8;
+      white-space: nowrap;
+      margin-left: 4px;
+      align-self: center;
+    }
+    .fac-dist.nearby { color: #00e5a0; }
+  `;
+  document.head.appendChild(style);
+})();
+
+// ── Helper: Haversine distance (km) ─────────────────────────
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R    = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a    = Math.sin(dLat / 2) ** 2 +
+               Math.cos(lat1 * Math.PI / 180) *
+               Math.cos(lat2 * Math.PI / 180) *
+               Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Place / remove the user location pin ────────────────────
+function setLocationPin(lat, lng) {
+  if (locationPinLayer) {
+    map.removeLayer(locationPinLayer);
+    locationPinLayer = null;
+  }
+  if (lat == null) return;
+
+  locationPinLayer = L.circleMarker([lat, lng], {
+    radius:      10,
+    fillColor:   '#f9c74f',
+    color:       '#0b0e14',
+    weight:      2,
+    opacity:     1,
+    fillOpacity: 0.95,
+  }).addTo(map);
+
+  locationPinLayer.bindTooltip('Your location', {
+    permanent:  false,
+    direction:  'top',
+    className:  'fac-tooltip',
+    offset:     [0, -6],
+  });
+}
+
+// ── Activate a location ─────────────────────────────────────
+function activateLocation(lat, lng, label) {
+  userLat = lat;
+  userLng = lng;
+
+  setLocationPin(lat, lng);
+  map.flyTo([lat, lng], 12, { duration: 1.4 });
+
+  const status = document.getElementById('loc-status');
+  status.className   = 'loc-status';
+  status.textContent = `📍 ${label}`;
+
+  document.getElementById('radius-row').classList.remove('hidden');
+  render();
+}
+
+// ── Clear location ───────────────────────────────────────────
+function clearLocation() {
+  userLat = null;
+  userLng = null;
+  setLocationPin(null);
+
+  document.getElementById('loc-input').value  = '';
+  document.getElementById('loc-status').textContent = '';
+  document.getElementById('loc-status').className = 'loc-status';
+  document.getElementById('radius-row').classList.add('hidden');
+  document.getElementById('radius-select').value = '0';
+  activeRadius = 0;
+
+  // Return to SA bounding box
+  map.fitBounds(
+    L.latLngBounds(L.latLng(-34.82, 16.47), L.latLng(-22.13, 32.89)),
+    { padding: [20, 20] }
+  );
+  render();
+}
+
+// ── Geocode via Nominatim (free, no key) ────────────────────
+async function geocodeLocation(query) {
+  const status = document.getElementById('loc-status');
+  status.className   = 'loc-status';
+  status.textContent = 'Searching…';
+
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=za`;
+
+  try {
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const data = await res.json();
+
+    if (!data || data.length === 0) {
+      status.className   = 'loc-status error';
+      status.textContent = 'Location not found — try a city or suburb name.';
+      return;
+    }
+
+    const { lat, lon, display_name } = data[0];
+    // Shorten the display name to the first two comma-separated parts
+    const shortLabel = display_name.split(',').slice(0, 2).join(',').trim();
+    activateLocation(parseFloat(lat), parseFloat(lon), shortLabel);
+
+  } catch (err) {
+    status.className   = 'loc-status error';
+    status.textContent = 'Geocoding failed — check your connection.';
+    console.error('Geocoding error:', err);
+  }
+}
+
+// ── Geolocation (device GPS / network) ──────────────────────
+function useMyLocation() {
+  if (!navigator.geolocation) {
+    const status = document.getElementById('loc-status');
+    status.className   = 'loc-status error';
+    status.textContent = 'Geolocation is not supported by your browser.';
+    return;
+  }
+
+  const gpsBtn = document.getElementById('loc-gps-btn');
+  const status = document.getElementById('loc-status');
+  gpsBtn.classList.add('loading');
+  status.className   = 'loc-status';
+  status.textContent = 'Detecting your location…';
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      gpsBtn.classList.remove('loading');
+      const { latitude: lat, longitude: lng } = position.coords;
+      document.getElementById('loc-input').value = '';
+      activateLocation(lat, lng, 'Current location');
+    },
+    error => {
+      gpsBtn.classList.remove('loading');
+      status.className   = 'loc-status error';
+      const msgs = {
+        1: 'Location permission denied.',
+        2: 'Location unavailable.',
+        3: 'Location request timed out.',
+      };
+      status.textContent = msgs[error.code] || 'Could not get location.';
+    },
+    { timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+// ── Event listeners for location UI ─────────────────────────
+document.getElementById('loc-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const val = e.target.value.trim();
+    if (val) geocodeLocation(val);
+  }
+});
+
+document.getElementById('loc-gps-btn').addEventListener('click', useMyLocation);
+
+document.getElementById('loc-clear-btn').addEventListener('click', clearLocation);
+
+// Lazy-bind radius select (injected above, so available now)
+document.getElementById('radius-select').addEventListener('change', e => {
+  activeRadius = parseInt(e.target.value, 10) || 0;
+  render();
+});
+
+/* ============================================================
+   SECTION 6 — RENDER LOGIC
+   ============================================================ */
+
 let activeIndex = null;
 
 function render() {
-
-  // ── 5a: Read filter state ────────────────────────────────
+  // ── 6a: Read filter state ─────────────────────────────
   const query  = searchInput.value.trim().toLowerCase();
   const prov   = provinceSelect.value;
   const type   = typeSelect.value;
   const sector = sectorSelect.value;
 
-  // ── 5b: Filter dataset ───────────────────────────────────
-  const filtered = SA_FACILITIES.filter((f, i) => {
-    // Store original index on the object so we can reference it later
+  // ── 6b: Filter dataset ────────────────────────────────
+  let filtered = SA_FACILITIES.filter((f, i) => {
     f._index = i;
 
-    // Text search — matches name, city, or province
+    // Text search
     if (query) {
       const haystack = `${f.name} ${f.city} ${f.province}`.toLowerCase();
       if (!haystack.includes(query)) return false;
     }
 
-    // Province filter
     if (prov   && f.province !== prov)   return false;
-
-    // Type filter — 'clinic' matches both 'clinic' and CHCs in the dataset
     if (type   && f.type     !== type)   return false;
-
-    // Sector filter
     if (sector && f.sector   !== sector) return false;
+
+    // Location-based radius filter
+    if (userLat != null && activeRadius > 0) {
+      const dist = haversineKm(userLat, userLng, f.lat, f.lng);
+      if (dist > activeRadius) return false;
+    }
 
     return true;
   });
 
-  // ── 5c: Clear existing markers ───────────────────────────
+  // ── 6c: Annotate with distance + sort ─────────────────
+  if (userLat != null) {
+    filtered.forEach(f => {
+      f._distKm = haversineKm(userLat, userLng, f.lat, f.lng);
+    });
+    filtered.sort((a, b) => a._distKm - b._distKm);
+  } else {
+    filtered.forEach(f => { f._distKm = null; });
+  }
+
+  // ── 6d: Clear existing markers ────────────────────────
   markersLayer.clearLayers();
-  // Also clear the index → marker reference map
   Object.keys(markerRefs).forEach(k => delete markerRefs[k]);
 
-  // ── 5d: Draw filtered markers ────────────────────────────
+  // ── 6e: Draw filtered markers ─────────────────────────
   filtered.forEach(f => {
     const marker = L.circleMarker([f.lat, f.lng], markerOptions(f));
 
-    // Tooltip shows facility name on hover
-    marker.bindTooltip(f.name, {
-      permanent:   false,
-      direction:   'top',
-      className:   'fac-tooltip',
-      offset:      [0, -4],
-    });
+    marker.bindTooltip(
+      f._distKm != null
+        ? `${f.name} (${f._distKm < 1 ? '<1' : Math.round(f._distKm)} km)`
+        : f.name,
+      { permanent: false, direction: 'top', className: 'fac-tooltip', offset: [0, -4] }
+    );
 
-    // Clicking a map marker opens the detail card and highlights the list item
     marker.on('click', () => openDetail(f));
-
     markersLayer.addLayer(marker);
-    markerRefs[f._index] = marker; // store reference by original array index
+    markerRefs[f._index] = marker;
   });
 
-  // ── 5e: Rebuild sidebar list ─────────────────────────────
+  // ── 6f: Rebuild sidebar list ──────────────────────────
   if (filtered.length === 0) {
     facilityList.innerHTML = `
       <li class="no-results">
         No facilities match your filters.<br>
-        <span style="opacity:0.5">Try widening the search.</span>
+        <span style="opacity:0.5">Try widening the search or increasing the radius.</span>
       </li>`;
   } else {
     facilityList.innerHTML = '';
     filtered.forEach(f => {
       const item = document.createElement('li');
-      item.className = 'facility-item' + (f._index === activeIndex ? ' active' : '');
+      item.className   = 'facility-item' + (f._index === activeIndex ? ' active' : '');
       item.dataset.index = f._index;
 
-      // Determine dot class
       const dotClass = f.sector === 'private' ? 'private'
-                     : f.type === 'hospital'   ? 'hospital'
+                     : f.type   === 'hospital' ? 'hospital'
                      : 'clinic';
+
+      // Distance badge
+      let distBadge = '';
+      if (f._distKm != null) {
+        const km      = f._distKm;
+        const display = km < 1    ? '<1 km'
+                      : km < 10   ? `${km.toFixed(1)} km`
+                      :             `${Math.round(km)} km`;
+        const cls     = km <= 5 ? 'fac-dist nearby' : 'fac-dist';
+        distBadge     = `<span class="${cls}">${display}</span>`;
+      }
 
       item.innerHTML = `
         <span class="fac-dot ${dotClass}" aria-hidden="true"></span>
@@ -240,132 +563,106 @@ function render() {
           <span class="fac-name" title="${f.name}">${f.name}</span>
           <span class="fac-sub">${f.city} · ${f.province}</span>
         </div>
-        <span class="fac-badge ${f.sector}">${f.sector.toUpperCase()}</span>`;
+        <span class="fac-badge ${f.sector}">${f.sector.toUpperCase()}</span>
+        ${distBadge}`;
 
-      // Click: pan map to marker, open detail card, highlight list item
       item.addEventListener('click', () => {
         openDetail(f);
         map.flyTo([f.lat, f.lng], 13, { duration: 1.2 });
-        // Trigger the matching map marker's popup
-        if (markerRefs[f._index]) {
-          markerRefs[f._index].openTooltip();
-        }
+        if (markerRefs[f._index]) markerRefs[f._index].openTooltip();
       });
 
       facilityList.appendChild(item);
     });
   }
 
-  // ── 5f: Update stats and HUD ─────────────────────────────
+  // ── 6g: Update stats and HUD ──────────────────────────
   statShowing.textContent = filtered.length;
   statTotal.textContent   = TOTAL_COUNT;
   hudCount.textContent    = `${filtered.length} facilit${filtered.length === 1 ? 'y' : 'ies'} on map`;
 }
 
-
 /* ============================================================
-   SECTION 6 — DETAIL CARD
-   ============================================================
-   The detail card is a slide-up panel anchored to the bottom-
-   right of the map. It shows the full facility record.
-
-   openDetail()  — populates and reveals the card
-   closeDetail() — hides the card and removes active highlight
+   SECTION 7 — DETAIL CARD
    ============================================================ */
 
-const detailCard    = document.getElementById('detail-card');
-const dcName        = document.getElementById('dc-name');
-const dcSub         = document.getElementById('dc-sub');
-const dcChips       = document.getElementById('dc-chips');
-const dcCoords      = document.getElementById('dc-coords');
-const dcDirections  = document.getElementById('dc-directions');
+const detailCard   = document.getElementById('detail-card');
+const dcName       = document.getElementById('dc-name');
+const dcSub        = document.getElementById('dc-sub');
+const dcChips      = document.getElementById('dc-chips');
+const dcCoords     = document.getElementById('dc-coords');
+const dcDirections = document.getElementById('dc-directions');
 
-/**
- * Opens and populates the detail card for a facility.
- * @param {Object} f - A facility record from SA_FACILITIES
- */
 function openDetail(f) {
   activeIndex = f._index;
 
-  // Populate text fields
   dcName.textContent = f.name;
   dcSub.textContent  = `${f.city}, ${f.province}`;
 
-  // Build type/sector chip badges
-  const typeLabel   = f.type === 'hospital' ? 'HOSPITAL' : 'CLINIC / CHC';
-  const typeClass   = f.type === 'hospital' ? 'chip-hosp' : 'chip-clinic';
-  const sectorClass = f.sector === 'public'  ? 'chip-public' : 'chip-private';
+  const typeLabel = f.type === 'hospital' ? 'HOSPITAL' : 'CLINIC / CHC';
+  const typeClass = f.type === 'hospital' ? 'chip-hosp' : 'chip-clinic';
+  const sectClass = f.sector === 'public' ? 'chip-public' : 'chip-private';
+
+  // Distance chip (only when location is active)
+  let distChip = '';
+  if (f._distKm != null) {
+    const km      = f._distKm;
+    const display = km < 1 ? '<1 km' : km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
+    distChip = `<li class="chip chip-dist">${display} away</li>`;
+  }
 
   dcChips.innerHTML = `
     <li class="chip ${typeClass}">${typeLabel}</li>
-    <li class="chip ${sectorClass}">${f.sector.toUpperCase()}</li>
-    <li class="chip chip-prov">${f.province.toUpperCase()}</li>`;
+    <li class="chip ${sectClass}">${f.sector.toUpperCase()}</li>
+    <li class="chip chip-prov">${f.province.toUpperCase()}</li>
+    ${distChip}`;
 
-  // Coordinates line
   dcCoords.textContent = `${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}`;
 
-  // "Get Directions" opens Google Maps walking directions to the facility
   dcDirections.onclick = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lng}`;
+    // If we have the user's location, request directions from it
+    const origin = userLat != null ? `&origin=${userLat},${userLng}` : '';
+    const url    = `https://www.google.com/maps/dir/?api=1${origin}&destination=${f.lat},${f.lng}`;
     window.open(url, '_blank');
   };
 
-  // Show the card
   detailCard.classList.remove('hidden');
-  // Force reflow before adding 'visible' so the CSS transition fires
-  detailCard.offsetHeight;
+  detailCard.offsetHeight; // force reflow
   detailCard.classList.add('visible');
 
-  // Highlight the corresponding sidebar list item
   document.querySelectorAll('.facility-item').forEach(el => {
     el.classList.toggle('active', parseInt(el.dataset.index) === activeIndex);
   });
 }
 
-/** Hides the detail card and removes the active sidebar highlight. */
 function closeDetail() {
   detailCard.classList.remove('visible');
-  // Wait for CSS transition to finish, then hide the element entirely
   detailCard.addEventListener('transitionend', () => {
-    if (!detailCard.classList.contains('visible')) {
-      // Don't call hidden — keep it in place, just invisible
-    }
+    // Keep visible but collapsed — no need to fully hide
   }, { once: true });
   activeIndex = null;
   document.querySelectorAll('.facility-item').forEach(el => el.classList.remove('active'));
 }
 
-
 /* ============================================================
-   SECTION 7 — EVENT WIRING
-   ============================================================
-   All user-facing event listeners. Each one calls render() to
-   refresh the map and list in response to input changes.
+   SECTION 8 — EVENT WIRING
    ============================================================ */
 
-// Live search — fires on every keystroke
 searchInput.addEventListener('input', render);
-
-// Province, type, and sector dropdowns
 provinceSelect.addEventListener('change', render);
-typeSelect.addEventListener('change',     render);
-sectorSelect.addEventListener('change',   render);
+typeSelect.addEventListener('change', render);
+sectorSelect.addEventListener('change', render);
 
-// Clear search button — resets the input and re-renders
 clearBtn.addEventListener('click', () => {
   searchInput.value = '';
   searchInput.focus();
   render();
 });
 
-// Close button on the detail card
 document.getElementById('dc-close').addEventListener('click', closeDetail);
-
-// Clicking the map background (not a marker) closes the detail card
 map.on('click', closeDetail);
 
-// Tooltip styling injection — Leaflet tooltips need custom CSS
-// injected here because they live inside the Leaflet container
+// Tooltip CSS injection
 const tooltipStyle = document.createElement('style');
 tooltipStyle.textContent = `
   .fac-tooltip {
@@ -380,28 +677,24 @@ tooltipStyle.textContent = `
     white-space: nowrap !important;
   }
   .fac-tooltip::before { display: none; }
+
+  /* Distance chip in detail card */
+  .chip-dist {
+    background: #1a2a1f;
+    color: #00e5a0;
+    border: 1px solid #00e5a033;
+  }
 `;
 document.head.appendChild(tooltipStyle);
 
-
 /* ============================================================
-   SECTION 8 — INIT
-   ============================================================
-   Runs once when the page first loads.
-
-   Steps:
-     1. Run initial render() to populate map + sidebar.
-     2. Fit the map to South Africa's bounding box so all
-        facilities are visible from the start.
+   SECTION 9 — INIT
    ============================================================ */
 
-// Initial render — shows all facilities with no filters applied
 render();
 
-// Fit map to South Africa's geographic bounding box
-// Bounds: SW corner (-34.82, 16.47) → NE corner (-22.13, 32.89)
 const southAfricaBounds = L.latLngBounds(
-  L.latLng(-34.82, 16.47),  // south-west: Cape Point area
-  L.latLng(-22.13, 32.89)   // north-east: Limpopo / KZN border
+  L.latLng(-34.82, 16.47),
+  L.latLng(-22.13, 32.89)
 );
 map.fitBounds(southAfricaBounds, { padding: [20, 20] });
