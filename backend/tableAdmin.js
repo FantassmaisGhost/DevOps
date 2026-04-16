@@ -1,29 +1,36 @@
 import { supabase } from './supabase.js'
 
-const CLINIC_ID = "00001"
+// Get clinicID from URL parameters instead of using constant
+const params = new URLSearchParams(location.search)
+const CLINIC_ID = params.get('clinicID') // Fallback to "00001" if no param
+
+// Display the clinic ID somewhere on the page (optional)
+console.log('Editing hours for clinic:', CLINIC_ID)
 
 async function loadHours() {
     const { data, error } = await supabase
-        .from('operating_hours')
+        .from('Operating_Hours')
         .select('*')
-        .eq('clinicid', CLINIC_ID)
+        .eq('clinicid', CLINIC_ID)  // Uses the clinicID from URL
 
     if (error) {
         console.error('Error loading hours:', error)
         return
     }
 
-    data.forEach(row => {
-        const day = row.day
+    if (data && data.length > 0) {
+        data.forEach(row => {
+            const day = row.day
 
-        const openInput = document.querySelector(`input[data-day="${day}"][data-field="opentime"]`)
-        const closeInput = document.querySelector(`input[data-day="${day}"][data-field="closingtime"]`)
-        const isOpenInput = document.querySelector(`input[data-day="${day}"][data-field="isopen"]`)
+            const openInput = document.querySelector(`input[data-day="${day}"][data-field="opentime"]`)
+            const closeInput = document.querySelector(`input[data-day="${day}"][data-field="closingtime"]`)
+            const isOpenInput = document.querySelector(`input[data-day="${day}"][data-field="isopen"]`)
 
-        if (openInput) openInput.value = row.opentime ? row.opentime.slice(0, 5) : ''
-        if (closeInput) closeInput.value = row.closingtime ? row.closingtime.slice(0, 5) : ''
-        if (isOpenInput) isOpenInput.checked = row.isopen
-    })
+            if (openInput) openInput.value = row.opentime ? row.opentime.slice(0, 5) : ''
+            if (closeInput) closeInput.value = row.closingtime ? row.closingtime.slice(0, 5) : ''
+            if (isOpenInput) isOpenInput.checked = row.isopen
+        })
+    }
 }
 
 async function saveHours(e) {
@@ -81,14 +88,14 @@ async function saveHours(e) {
         }
 
         const { error } = await supabase
-            .from('operating_hours')
+            .from('Operating_Hours')
             .update(payload)
-            .eq('clinicid', CLINIC_ID)
+            .eq('clinicid', CLINIC_ID)  // Uses the clinicID from URL
             .eq('day', day)
 
         if (error) {
             console.error(`Error saving ${day}:`, error)
-            errors.push(`Database error on ${day}`)
+            errors.push(`Database error on ${day}: ${error.message}`)
         }
     }
 
@@ -100,9 +107,8 @@ async function saveHours(e) {
         return
     }
 
-    alert("Hours saved successfully!")
+    alert(`Hours saved successfully for clinic ${CLINIC_ID}!`)
 }
 
 document.getElementById('hoursForm').addEventListener('submit', saveHours)
-
 loadHours()
