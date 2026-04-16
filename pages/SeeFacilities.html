@@ -67,7 +67,6 @@
     .chip-prov    { background: rgba(255,255,255,0.07); color: var(--text-muted); }
     .chip-id      { background: rgba(245,166,35,0.12);  color: var(--warn); }
 
-    /* Panel */
     .panel {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); margin-bottom: 20px; overflow: hidden;
@@ -98,32 +97,17 @@
       padding: 8px 18px;
       cursor: pointer;
     }
-
-    /* Action card */
     .action-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 16px;
       border-bottom: 1px solid var(--border);
-      transition: background 0.15s;
     }
-    .action-card:last-child {
-      border-bottom: none;
-    }
-    .action-info {
-      flex: 1;
-    }
-    .action-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .action-desc {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+    .action-card:last-child { border-bottom: none; }
+    .action-info { flex: 1; }
+    .action-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .action-desc { font-size: 11px; color: var(--text-muted); }
     .btn-primary {
       font-family: var(--font-mono);
       font-size: 11px;
@@ -134,15 +118,10 @@
       color: var(--bg);
       padding: 8px 20px;
       cursor: pointer;
-      transition: opacity .15s;
-      letter-spacing: 0.05em;
       text-decoration: none;
       display: inline-block;
     }
-    .btn-primary:hover {
-      opacity: 0.85;
-    }
-
+    .btn-primary:hover { opacity: 0.85; }
     .loading-state { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 12px; }
     .error-state { text-align: center; padding: 60px 20px; }
     .error-state h2 { font-family: var(--font-disp); font-size: 18px; margin-bottom: 8px; }
@@ -163,7 +142,6 @@
   </header>
 
   <main class="page">
-    <!-- Dynamic content will be inserted here -->
     <section id="dynamic-content">
       <div class="loading-state">Loading facility information…</div>
     </section>
@@ -171,7 +149,7 @@
     <!-- Staff Management Panel -->
     <section class="panel">
       <header class="panel-header">
-        <h3 class="panel-title">Staff Management (Email/Password Login)</h3>
+        <h3 class="panel-title">Staff Management</h3>
         <small>Clinic ID: <span id="current-clinic-display"></span></small>
       </header>
       
@@ -187,8 +165,9 @@
             <option value="Pharmacist">Pharmacist</option>
           </select>
           <input type="tel" id="staff-phone" class="form-input" placeholder="Phone Number">
-          <button type="submit" class="btn-save" style="width: auto;">+ Add Staff (Auto-generate Password)</button>
+          <button type="submit" class="btn-save" style="width: auto;">+ Add Staff</button>
         </form>
+        <p style="font-size: 10px; color: #5a6280; margin-top: 10px;">Staff will login using the main login page with their Google account</p>
       </section>
       
       <section style="padding: 20px;">
@@ -209,7 +188,6 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ'
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Parse URL params
     const params = new URLSearchParams(location.search)
     const clinicID = params.get('clinicID')
     const clinicName = params.get('name') || 'Health Facility'
@@ -218,7 +196,6 @@
     const clinicSubtype = params.get('subtype') || ''
     const clinicProvince = params.get('province') || ''
 
-    // STAFF MANAGEMENT FUNCTIONS
     const CLINIC_ID = clinicID || '00001'
 
     function showToast(message, type) {
@@ -230,16 +207,6 @@
       setTimeout(() => {
         toast.style.display = 'none'
       }, 5000)
-    }
-
-    // Generate random password
-    function generateRandomPassword() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-      let password = ''
-      for (let i = 0; i < 8; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length))
-      }
-      return password
     }
 
     async function loadStaff() {
@@ -267,14 +234,22 @@
         return false
       }
       
-      // Generate random password
-      const generatedPassword = generateRandomPassword()
+      // Check if already exists
+      const { data: existing } = await supabase
+        .from('staffs')
+        .select('email')
+        .eq('email', email)
+        .single()
+      
+      if (existing) {
+        showToast('This email is already a staff member!', 'error')
+        return false
+      }
       
       const { error } = await supabase
         .from('staffs')
         .insert([{
           email: email,
-          password: generatedPassword,
           clinicid: CLINIC_ID,
           full_name: fullName,
           occupation: occupation,
@@ -282,20 +257,16 @@
         }])
       
       if (error) {
-        if (error.code === '23505') {
-          showToast('This email is already added to staff!', 'error')
-        } else {
-          showToast('Failed to add staff: ' + error.message, 'error')
-        }
+        showToast('Failed to add staff: ' + error.message, 'error')
         return false
       }
       
-      showToast(`✅ ${fullName} added! Password: ${generatedPassword}`, 'success')
+      showToast(`✅ ${fullName} added as staff! They can now login with Google.`, 'success')
       return true
     }
 
     async function removeStaff(email, name) {
-      if (!confirm(`Remove ${name} from staff? They will lose access.`)) return false
+      if (!confirm(`Remove ${name} from staff?`)) return false
       
       const { error } = await supabase
         .from('staffs')
@@ -386,7 +357,6 @@
       }
     }
 
-    // MAIN PAGE FUNCTIONS
     async function init() {
       if (!clinicID) {
         renderError('No facility selected.', 'Go back to the map and click a clinic or hospital.')
@@ -456,7 +426,6 @@
       `
     }
 
-    // Start the app
     init()
   </script>
 </body>
