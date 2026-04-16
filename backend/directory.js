@@ -407,7 +407,7 @@ async function geocodeLocation(query) {
     console.error('Geocoding error:', err);
   }
 }
-//Commit
+
 // ── Geolocation (device GPS / network) ──────────────────────
 function useMyLocation() {
   if (!navigator.geolocation) {
@@ -624,6 +624,57 @@ function openDetail(f) {
     const origin = userLat != null ? `&origin=${userLat},${userLng}` : '';
     const url    = `https://www.google.com/maps/dir/?api=1${origin}&destination=${f.lat},${f.lng}`;
     window.open(url, '_blank');
+  };
+
+  // ── Book Appointment button ─────────────────────────────
+  let bookBtn = document.getElementById('dc-book');
+  if (!bookBtn) {
+    bookBtn = document.createElement('button');
+    bookBtn.id        = 'dc-book';
+    bookBtn.className = 'btn-book';
+    bookBtn.textContent = '📅 Book Appointment';
+    dcDirections.insertAdjacentElement('afterend', bookBtn);
+
+    // Inject style once
+    if (!document.getElementById('btn-book-style')) {
+      const s = document.createElement('style');
+      s.id = 'btn-book-style';
+      s.textContent = `
+        .btn-book {
+          display: block;
+          width: 100%;
+          margin-top: 8px;
+          padding: 10px;
+          background: transparent;
+          border: 1px solid var(--accent, #00e5a0);
+          border-radius: 6px;
+          color: var(--accent, #00e5a0);
+          font-family: 'Space Mono', monospace;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          transition: background .15s, color .15s;
+        }
+        .btn-book:hover {
+          background: var(--accent, #00e5a0);
+          color: #0b0e14;
+        }
+      `;
+      document.head.appendChild(s);
+    }
+  }
+
+  bookBtn.onclick = () => {
+    const qs = new URLSearchParams({
+      clinicID: f.clinicID || '',
+      name:     f.name     || '',
+      type:     f.type     || '',
+      sector:   f.sector   || '',
+      city:     f.city     || '',
+      province: f.province || '',
+    });
+    window.location.href = `booking.html?${qs}`;
   };
 
   detailCard.classList.remove('hidden');
