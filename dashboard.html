@@ -198,17 +198,23 @@
             const email = session.user.email;
             
             // CHECK IF USER IS STAFF - ADD THIS BLOCK
-            const { data: staff } = await supabase
-                .from('staffs')
-                .select('*')
-                .eq('email', session.user.email)
-                .single();
+        // CHECK IF USER IS STAFF
+console.log("Checking staffs table for email:", session.user.email);
+const { data: staff, error } = await supabase
+    .from('staffs')
+    .select('*')
+    .eq('email', session.user.email)
+    .single();
 
-            if (staff) {
-                // Redirect to staff dashboard
-                window.location.href = '/pages/staff-dashboard.html';
-                return;
-            }
+console.log("Staff data:", staff);
+console.log("Staff error:", error);
+
+if (staff) {
+    console.log("Staff found! Redirecting to /pages/staff-dashboard.html");
+    window.location.href = '/pages/staff-dashboard.html';
+    return;
+}
+console.log("Not staff, showing patient dashboard");
             // END OF STAFF CHECK
             
             document.getElementById('userEmail').textContent = email;
