@@ -1,0 +1,130 @@
+/* Reset some defaults */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f9;
+  color: #333;
+  line-height: 1.5;
+}
+
+/* Center the content */
+main {
+  max-width: 600px;
+  margin: 60px auto;
+  padding: 20px;
+}
+
+/* Page title */
+main > header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+h1 {
+  font-size: 28px;
+  color: #2c3e50;
+}
+
+/* Appointment card */
+.appointment {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* Card header */
+.appointment header {
+  margin-bottom: 20px;
+}
+
+.appointment h2 {
+  font-size: 20px;
+  color: #34495e;
+}
+
+/* Details section */
+.details dl {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: 15px;
+  column-gap: 10px;
+  margin-top: 10px;
+}
+
+dt {
+  font-weight: bold;
+  color: #555;
+}
+
+dd {
+  margin: 0;
+  color: #222;
+}
+
+/* Actions section */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+/* Buttons */
+button {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Space between buttons */
+button:first-child {
+  margin-right: 10px;
+}
+
+/* Cancel button */
+#cancelBtn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+#cancelBtn:hover {
+  background-color: #c0392b;
+}
+
+/* Reschedule button */
+#rescheduleBtn {
+  background-color: #3498db;
+  color: white;
+}
+
+#rescheduleBtn:hover {
+  background-color: #2980b9;
+}
+
+/* Responsive (mobile) */
+@media (max-width: 500px) {
+  .details dl {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  button {
+    margin: 5px 0;
+  }
+
+  button:first-child {
+    margin-right: 0;
+  }
+}
