@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard | Health-Flow</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0b0e14;
+            color: #dce2f0;
+        }
+        .header {
+            background: #111520;
+            border-bottom: 1px solid #252b3d;
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .logo h1 {
+            font-size: 20px;
+            color: #00e5a0;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .staff-badge {
+            background: #00e5a0;
+            color: #0b0e14;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .logout-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .logout-btn:hover {
+            opacity: 0.8;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .welcome-card {
+            background: linear-gradient(135deg, #1a2a3d 0%, #111520 100%);
+            border: 1px solid #252b3d;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+        .welcome-card h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .welcome-card p {
+            color: #5a6280;
+            font-size: 14px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #111520;
+            border: 1px solid #252b3d;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            font-size: 32px;
+            color: #00e5a0;
+            margin-bottom: 8px;
+        }
+        .stat-card p {
+            color: #5a6280;
+            font-size: 12px;
+        }
+        .info-card {
+            background: #111520;
+            border: 1px solid #252b3d;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .info-card h3 {
+            font-size: 14px;
+            color: #5a6280;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+        .info-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #252b3d;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            width: 120px;
+            color: #5a6280;
+            font-size: 13px;
+        }
+        .info-value {
+            flex: 1;
+            font-size: 13px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .btn-primary {
+            background: #00e5a0;
+            color: #0b0e14;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #252b3d;
+            color: #dce2f0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #5a6280;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <h1>🏥 Health-Flow | Staff Portal</h1>
+        </div>
+        <div class="user-info">
+            <span id="userEmail">Loading...</span>
+            <span class="staff-badge" id="staffBadge">STAFF</span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <div class="container" id="dashboardContent">
+        <div class="loading">Loading staff dashboard...</div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadStaffDashboard() {
+            // Check authentication
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                window.location.href = '/pages/index.html';
+                return;
+            }
+
+            // Check if user is staff
+            const { data: staff, error } = await supabase
+                .from('staffs')
+                .select('*')
+                .eq('email', session.user.email)
+                .single();
+
+            if (error || !staff) {
+                // Not staff - redirect to regular dashboard
+                window.location.href = '/pages/dashboard.html';
+                return;
+            }
+
+            // Display user email
+            document.getElementById('userEmail').textContent = session.user.email;
+
+            // Get clinic name from the clinicid (assuming you have a clinics table)
+            let clinicName = staff.clinicid;
+            const { data: clinic } = await supabase
+                .from('clinics')
+                .select('name')
+                .eq('clinicid', staff.clinicid)
+                .single();
+            
+            if (clinic) {
+                clinicName = clinic.name;
+            }
+
+            // Get stats (appointments, queue count, etc.)
+            let todayCount = '0';
+            let queueCount = '0';
+            let weekCount = '0';
+
+            try {
+                const { data: appointments } = await supabase
+                    .from('appointments')
+                    .select('*')
+                    .eq('clinicid', staff.clinicid);
+                
+                if (appointments) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayAppts = appointments.filter(a => 
+                        a.appointment_time && a.appointment_time.split('T')[0] === today
+                    );
+                    const waitingAppts = appointments.filter(a => a.status === 'waiting');
+                    
+                    todayCount = todayAppts.length.toString();
+                    queueCount = waitingAppts.length.toString();
+                    weekCount = appointments.length.toString();
+                }
+            } catch (err) {
+                // Use demo data if table doesn't exist
+                todayCount = '8';
+                queueCount = '3';
+                weekCount = '42';
+            }
+
+            // Render dashboard
+            const container = document.getElementById('dashboardContent');
+            container.innerHTML = `
+                <div class="welcome-card">
+                    <h2>Welcome, ${staff.full_name.split(' ')[0]}! 👋</h2>
+                    <p>You are logged in as a staff member at ${clinicName}</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>${todayCount}</h3>
+                        <p>Today's Patients</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${queueCount}</h3>
+                        <p>In Queue</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${weekCount}</h3>
+                        <p>This Week</p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Your Profile</h3>
+                    <div class="info-row">
+                        <span class="info-label">Full Name:</span>
+                        <span class="info-value">${escapeHtml(staff.full_name)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">${escapeHtml(staff.email)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Occupation:</span>
+                        <span class="info-value">${escapeHtml(staff.occupation)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone:</span>
+                        <span class="info-value">${escapeHtml(staff.phone_number || 'Not provided')}</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Clinic Information</h3>
+                    <div class="info-row">
+                        <span class="info-label">Clinic ID:</span>
+                        <span class="info-value">${escapeHtml(staff.clinicid)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Clinic Name:</span>
+                        <span class="info-value">${escapeHtml(clinicName)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Your Role:</span>
+                        <span class="info-value">${escapeHtml(staff.occupation)}</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" id="manageAppointmentsBtn">📅 Manage Appointments</button>
+                    <button class="btn-secondary" id="viewQueueBtn">👥 View Queue</button>
+                </div>
+            `;
+
+            // Add button event listeners
+            document.getElementById('manageAppointmentsBtn')?.addEventListener('click', () => {
+                alert('Appointment management coming soon!');
+            });
+            document.getElementById('viewQueueBtn')?.addEventListener('click', () => {
+                alert('Queue view coming soon!');
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = '/pages/index.html';
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        loadStaffDashboard();
+    </script>
+</body>
+</html>

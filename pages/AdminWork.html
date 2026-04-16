@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background-color: #f4f6f8;
+    }
+
+    header {
+        background-color: #2c3e50;
+        color: white;
+        padding: 15px;
+        text-align: center;
+    }
+
+    nav {
+        background-color: #34495e;
+        padding: 10px;
+        text-align: center;
+    }
+
+    nav a {
+        color: white;
+        margin: 0 15px;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    nav a:hover {
+        text-decoration: underline;
+    }
+
+    main {
+        padding: 30px;
+    }
+
+    main section {
+        margin-bottom: 30px;
+    }
+
+    /* Dashboard cards */
+    .dashboard-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+    }
+
+    article {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    article a {
+        display: inline-block;
+        margin-top: 10px;
+        text-decoration: none;
+        color: #0984e3;
+        font-weight: bold;
+    }
+
+    .hours-section {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    th, td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f1f2f6;
+    }
+
+    input[type="time"] {
+        padding: 5px;
+    }
+
+    button {
+        padding: 10px 15px;
+        border: none;
+        background-color: #0984e3;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        opacity: 0.9;
+    }
+
+    footer {
+        text-align: center;
+        padding: 10px;
+        background: #ddd;
+        margin-top: 20px;
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Clinic Admin Dashboard</h1>
+</header>
+
+<nav>
+    <a href="#">Settings</a>
+</nav>
+
+<main>
+
+    <h2>Welcome, Admin</h2>
+
+    <section class="dashboard-cards">
+
+        <article>
+            <h3>Operating Hours</h3>
+            <p>Edit clinic opening and closing times below.</p>
+        </article>
+
+        <article>
+            <h3>Settings</h3>
+            <p>Update system or clinic settings.</p>
+            <a href="settings.html">Go to Settings</a>
+        </article>
+
+    </section>
+
+<section class="hours-section">
+    <h2>Current Operating Hours</h2>
+
+    <form id="hoursForm">
+        <table>
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>Open</th>
+                    <th>Close</th>
+                    <th>Open?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Monday</td>
+                    <td><input type="time" data-day="Monday" data-field="opentime" value="08:00"></td>
+                    <td><input type="time" data-day="Monday" data-field="closingtime" value="17:00"></td>
+                    <td><input type="checkbox" data-day="Monday" data-field="isopen" checked></td>
+                </tr>
+                <tr>
+                    <td>Tuesday</td>
+                    <td><input type="time" data-day="Tuesday" data-field="opentime" value="08:00"></td>
+                    <td><input type="time" data-day="Tuesday" data-field="closingtime" value="17:00"></td>
+                    <td><input type="checkbox" data-day="Tuesday" data-field="isopen" checked></td>
+                </tr>
+                <tr>
+                    <td>Wednesday</td>
+                    <td><input type="time" data-day="Wednesday" data-field="opentime" value="08:00"></td>
+                    <td><input type="time" data-day="Wednesday" data-field="closingtime" value="17:00"></td>
+                    <td><input type="checkbox" data-day="Wednesday" data-field="isopen" checked></td>
+                </tr>
+                <tr>
+                    <td>Thursday</td>
+                    <td><input type="time" data-day="Thursday" data-field="opentime" value="08:00"></td>
+                    <td><input type="time" data-day="Thursday" data-field="closingtime" value="17:00"></td>
+                    <td><input type="checkbox" data-day="Thursday" data-field="isopen" checked></td>
+                </tr>
+                <tr>
+                    <td>Friday</td>
+                    <td><input type="time" data-day="Friday" data-field="opentime" value="08:00"></td>
+                    <td><input type="time" data-day="Friday" data-field="closingtime" value="15:00"></td>
+                    <td><input type="checkbox" data-day="Friday" data-field="isopen" checked></td>
+                </tr>
+                <tr>
+                    <td>Saturday</td>
+                    <td><input type="time" data-day="Saturday" data-field="opentime" value="09:00"></td>
+                    <td><input type="time" data-day="Saturday" data-field="closingtime" value="13:00"></td>
+                    <td><input type="checkbox" data-day="Saturday" data-field="isopen" checked></td>
+                </tr>
+                <tr>
+                    <td>Sunday</td>
+                    <td><input type="time" data-day="Sunday" data-field="opentime"></td>
+                    <td><input type="time" data-day="Sunday" data-field="closingtime"></td>
+                    <td><input type="checkbox" data-day="Sunday" data-field="isopen"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <br>
+        <button type="submit" id="saveBtn">Save Changes</button>
+    </form>
+</section>
+
+</main>
+<script defer type="module" src="../backend/tableAdmin.js"></script>
+</body>
+</html>
