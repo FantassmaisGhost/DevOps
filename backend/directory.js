@@ -407,7 +407,7 @@ async function geocodeLocation(query) {
     console.error('Geocoding error:', err);
   }
 }
-
+//Commit
 // ── Geolocation (device GPS / network) ──────────────────────
 function useMyLocation() {
   if (!navigator.geolocation) {
