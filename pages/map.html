@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SA Health Facility Directory</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="directory.css" />
+</head>
+<body class="layout">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <span class="brand">
+      <span class="brand-icon" aria-hidden="true">✚</span>
+      <strong class="brand-name">SA HealthMap</strong>
+    </span>
+    <p class="topbar-meta">
+      <small class="meta-tag">Source: NDoH Data Dictionary · dsfsi/covid19za · HOTOSM · WHO</small>
+    </p>
+    <nav class="topbar-actions" aria-label="Site navigation">
+      <a href="index.html" class="btn-outline">← GeoExplorer</a>
+    </nav>
+  </header>
+
+  <!-- MAIN LAYOUT -->
+
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Facility filters and list">
+
+      <!-- Search -->
+      <section class="sidebar-section" aria-label="Search">
+        <label class="field-label" for="dir-search">SEARCH FACILITY</label>
+        <search class="search-wrap">
+          <input type="search" id="dir-search" placeholder="Name, city, province…" autocomplete="off" aria-label="Search by name, city or province"/>
+          <button id="dir-search-clear" class="clear-btn" title="Clear" aria-label="Clear search">✕</button>
+        </search>
+      </section>
+
+      <!-- Province filter -->
+      <section class="sidebar-section" aria-label="Province filter">
+        <label class="field-label" for="filter-province">PROVINCE</label>
+        <select id="filter-province" aria-label="Filter by province">
+          <option value="">All Provinces</option>
+        </select>
+      </section>
+
+      <!-- Type and sector filters -->
+      <fieldset class="sidebar-section filter-row" aria-label="Type and sector filters">
+        <legend class="sr-only">Type and sector filters</legend>
+        <section>
+          <label class="field-label" for="filter-type">TYPE</label>
+          <select id="filter-type" aria-label="Filter by facility type">
+            <option value="">All Types</option>
+            <option value="hospital">Hospital</option>
+            <option value="clinic">Clinic / CHC</option>
+          </select>
+        </section>
+        <section>
+          <label class="field-label" for="filter-sector">SECTOR</label>
+          <select id="filter-sector" aria-label="Filter by sector">
+            <option value="">All</option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+        </section>
+      </fieldset>
+
+      <!-- Stats strip -->
+      <dl class="stats-strip" aria-label="Facility counts">
+        <dd class="stat-val" id="stat-showing">—</dd>
+        <dt class="stat-key">SHOWN</dt>
+
+        <dd class="stat-val" id="stat-total">—</dd>
+        <dt class="stat-key">TOTAL</dt>
+
+        <dd class="stat-val" id="stat-provinces">9</dd>
+        <dt class="stat-key">PROVINCES</dt>
+      </dl>
+
+      <!-- Facility list -->
+      <ol class="facility-list" id="facility-list" aria-label="Matching facilities" aria-live="polite"></ol>
+
+      <!-- Data attribution -->
+      <footer class="attribution">
+        <p><strong>Data Sources</strong></p>
+        <ul>
+          <li>· <a href="https://github.com/dsfsi/covid19za" target="_blank" rel="noopener noreferrer">dsfsi/covid19za</a> — NDoH Data Dictionary (MIT)</li>
+          <li>· <a href="https://data.humdata.org/dataset/health-facilities-in-sub-saharan-africa" target="_blank" rel="noopener noreferrer">WHO / KEMRI-Wellcome</a> — SSA Master Facility List</li>
+          <li>· <a href="https://data.humdata.org/dataset/hotosm_zaf_health_facilities" target="_blank" rel="noopener noreferrer">HOTOSM</a> — ZA Health Facilities (ODbL)</li>
+        </ul>
+      </footer>
+    </aside>
+
+    <!-- Map -->
+    <main class="map-container" aria-label="Facility map">
+      <section id="dir-map" role="application" aria-label="Interactive map of South African health facilities"></section>
+
+      <!-- Detail card -->
+      <article class="detail-card hidden" id="detail-card" aria-label="Facility details" aria-live="polite">
+        <header class="detail-header">
+          <hgroup>
+            <h2 class="detail-name" id="dc-name"></h2>
+            <p class="detail-sub" id="dc-sub"></p>
+          </hgroup>
+          <button class="detail-close" id="dc-close" aria-label="Close detail card">✕</button>
+        </header>
+        <section class="detail-body">
+          <ul class="detail-chips" id="dc-chips" aria-label="Facility tags"></ul>
+          <address class="detail-coords" id="dc-coords"></address>
+          <button class="btn-directions" id="dc-directions">Get Directions</button>
+        </section>
+      </article>
+
+      <!-- Map legend -->
+    <figure class="map-legend" aria-label="Map legend">
+      <figcaption class="sr-only">Facility type colour key</figcaption>
+      <ul>
+        <li class="legend-item"><span class="dot dot-hospital" aria-hidden="true"></span>Hospital</li>
+        <li class="legend-item"><span class="dot dot-clinic" aria-hidden="true"></span>Clinic / CHC</li>
+        <li class="legend-item"><span class="dot dot-private" aria-hidden="true"></span>Private</li>
+      </ul>
+    </figure>
+
+      <!-- Counter HUD -->
+      <output class="map-hud" id="map-hud" aria-live="polite" aria-label="Visible facility count">
+        <span id="hud-count">— facilities on map</span>
+      </output>
+    </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="../backend/facilities.js"></script>
+  <script src="../backend/directory.js"></script>
+</body>
+</html>

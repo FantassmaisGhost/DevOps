@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecting...</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+</head>
+<body>
+    <h1>Redirecting...</h1>
+    <script>
+        const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function redirect() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Check if user is staff
+            const { data: staff } = await supabase
+                .from('staffs')
+                .select('*')
+                .eq('email', session.user.email)
+                .single();
+            
+            if (staff) {
+                // Staff goes to staff dashboard
+                window.location.href = 'staff-dashboard.html';
+            } else {
+                // Patient goes to regular dashboard
+                window.location.href = 'dashboard.html';
+            }
+        }
+        
+        redirect();
+    </script>
+</body>
+</html>

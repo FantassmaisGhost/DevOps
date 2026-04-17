@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health-Flow | Dashboard</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo svg {
+            width: 40px;
+            height: 40px;
+        }
+        .logo h1 {
+            color: #1e3c72;
+            font-size: 24px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background: #b91c1c;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+        .welcome-card h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .feature {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .feature h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .feature p {
+            color: #666;
+            font-size: 14px;
+        }
+        .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <svg viewBox="0 0 100 100" width="40" height="40">
+                <circle cx="50" cy="50" r="45" fill="#e6f0ff" stroke="#3282b8" stroke-width="3"/>
+                <rect x="45" y="25" width="10" height="50" fill="#0f4c75"/>
+                <rect x="25" y="45" width="50" height="10" fill="#0f4c75"/>
+                <path d="M20 60 L30 60 L35 50 L42 70 L50 40 L58 65 L65 55 L80 55" stroke="#ff4d6d" stroke-width="3" fill="none"/>
+            </svg>
+            <h1>Health-Flow</h1>
+        </div>
+        <div class="user-info">
+            <span id="userEmail">Loading...</span>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="welcome-card">
+            <h2 id="welcomeMsg">Welcome to Health-Flow!</h2>
+            <p>You are successfully logged in. Your dashboard is ready.</p>
+        </div>
+        <div class="stats">
+            <div class="stat-card">
+                <h3 id="todayCount">-</h3>
+                <p>Today's Patients</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="queueCount">-</h3>
+                <p>In Queue</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="weekCount">-</h3>
+                <p>This Week</p>
+            </div>
+        </div>
+        <div class="features">
+            <div class="feature">
+                <h4>📋 Queue Management</h4>
+                <p>Real-time patient queue with check-in and status tracking</p>
+                <span class="badge">Coming in Sprint 2</span>
+            </div>
+            <div class="feature">
+                <h4>📅 Appointment Scheduler</h4>
+                <p>Calendar view for booking and managing appointments</p>
+                <span class="badge">Coming in Sprint 2</span>
+            </div>
+            <div class="feature">
+                <h4>📊 Analytics Dashboard</h4>
+                <p>Visual insights on clinic performance and wait times</p>
+                <span class="badge">Coming in Sprint 3</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                window.location.href = 'index.html';
+                return null;
+            }
+            
+            const email = session.user.email;
+            
+            // CHECK IF USER IS STAFF - ADD THIS BLOCK
+        // CHECK IF USER IS STAFF
+console.log("Checking staffs table for email:", session.user.email);
+const { data: staff, error } = await supabase
+    .from('staffs')
+    .select('*')
+    .eq('email', session.user.email)
+    .single();
+
+console.log("Staff data:", staff);
+console.log("Staff error:", error);
+
+if (staff) {
+    console.log("Staff found! Redirecting to /pages/staff-dashboard.html");
+    window.location.href = '/pages/staff-dashboard.html';
+    return;
+}
+console.log("Not staff, showing patient dashboard");
+            // END OF STAFF CHECK
+            
+            document.getElementById('userEmail').textContent = email;
+            document.getElementById('welcomeMsg').textContent = `Welcome back, ${email.split('@')[0]}! 👋`;
+            
+            // Try to fetch real data from appointments table
+            try {
+                const { data: appointments, error } = await supabase
+                    .from('appointments')
+                    .select('*');
+                
+                if (!error && appointments) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayAppts = appointments.filter(a => 
+                        a.appointment_time && a.appointment_time.split('T')[0] === today
+                    );
+                    const waitingAppts = appointments.filter(a => a.status === 'waiting');
+                    
+                    document.getElementById('todayCount').textContent = todayAppts.length;
+                    document.getElementById('queueCount').textContent = waitingAppts.length;
+                    document.getElementById('weekCount').textContent = appointments.length;
+                } else {
+                    // Fallback to demo data
+                    document.getElementById('todayCount').textContent = '12';
+                    document.getElementById('queueCount').textContent = '5';
+                    document.getElementById('weekCount').textContent = '48';
+                }
+            } catch (err) {
+                console.log("Using demo stats");
+                document.getElementById('todayCount').textContent = '12';
+                document.getElementById('queueCount').textContent = '5';
+                document.getElementById('weekCount').textContent = '48';
+            }
+            
+            return session.user;
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        checkAuth();
+    </script>
+</body>
+</html>
