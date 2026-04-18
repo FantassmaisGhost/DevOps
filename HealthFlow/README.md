@@ -22,3 +22,30 @@
 5. Open http://localhost:5173
 
 ### Project Structure:
+src/
+├── components/
+│ ├── LoginForm.jsx
+│ ├── SignUpForm.jsx
+│ ├── CompleteProfile.jsx
+│ ├── ProtectedRoute.jsx
+│ ├── FormInput.jsx
+│ └── AuthCallback.jsx
+├── context/
+│ └── AuthContext.jsx
+└── backend/
+└── supabase/
+├── supabaseClient.js
+└── authSupabase.js
+
+
+### Role-Based Access:
+- **Admin:** Full system access (/admin)
+- **Staff:** Manage appointments and queue (/staff)
+- **Patient:** View and book appointments (/patient)
+
+### Technologies:
+- React 18
+- Vite
+- Tailwind CSS
+- Supabase (Auth & Database)
+- React Router DOM
