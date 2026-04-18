@@ -90,6 +90,16 @@ button:first-child {
   margin-right: 10px;
 }
 
+/*Edit button*/
+#editBtn{
+  background-color: orange;
+  color: white;
+}
+
+#editBtn:hover{
+  background-color: rgb(255, 140, 0);
+}
+
 /* Cancel button */
 #cancelBtn {
   background-color: #e74c3c;
