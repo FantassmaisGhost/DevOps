@@ -1,11 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { 
-  getCurrentUser, 
-  getUserRole, 
-  getUserProfile, 
-  onAuthStateChange,
-  getSession 
-} from '../backend/supabase/authSupabase';
+import { supabase } from '../backend/supabase/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -14,31 +8,34 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState(null);
+
+  const setAuthLoading = (isLoading) => {
+    setLoading(isLoading);
+  };
 
   useEffect(() => {
-    // Initialize auth state
+    // Get initial session
     const initAuth = async () => {
       try {
-        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
         
-        // Get current session
-        const currentSession = await getSession();
-        setSession(currentSession);
-        
-        if (currentSession?.user) {
-          const currentUser = currentSession.user;
-          setUser(currentUser);
+        if (session?.user) {
+          setUser(session.user);
           
-          // Get user role and profile from database
-          const userRole = await getUserRole(currentUser.id);
-          const userProfile = await getUserProfile(currentUser.id);
+          // Get user role from database
+          const { data } = await supabase
+            .from('users')
+            .select('role, full_name, phone')
+            .eq('id', session.user.id)
+            .single();
           
-          setRole(userRole);
-          setProfile(userProfile);
+          if (data) {
+            setRole(data.role);
+            setProfile(data);
+          }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('Auth error:', error);
       } finally {
         setLoading(false);
       }
@@ -47,24 +44,27 @@ export const AuthProvider = ({ children }) => {
     initAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = onAuthStateChange(async (event, newSession) => {
-      console.log('Auth event:', event);
-      setSession(newSession);
-      
-      if (event === 'SIGNED_IN' && newSession?.user) {
-        setUser(newSession.user);
-        const userRole = await getUserRole(newSession.user.id);
-        const userProfile = await getUserProfile(newSession.user.id);
-        setRole(userRole);
-        setProfile(userProfile);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setUser(session.user);
+        
+        const { data } = await supabase
+          .from('users')
+          .select('role, full_name, phone')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (data) {
+          setRole(data.role);
+          setProfile(data);
+        }
+        setLoading(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setRole(null);
         setProfile(null);
-        setSession(null);
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => {
@@ -76,10 +76,10 @@ export const AuthProvider = ({ children }) => {
     user,
     role,
     profile,
-    session,
     loading,
     setRole,
     setProfile,
+    setAuthLoading,
     isAdmin: role === 'admin',
     isStaff: role === 'staff',
     isPatient: role === 'patient',
@@ -88,7 +88,14 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading ? children : (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };
