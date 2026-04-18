@@ -17,6 +17,7 @@ const mimeTypes = {
   '.json': 'application/json',
 };
 
+// Simple static file server with SPA fallback for index.html
 /**
  * Resolve the file path for an incoming request URL.
  * Exported for testability.
