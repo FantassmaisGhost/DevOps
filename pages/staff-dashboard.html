@@ -130,9 +130,13 @@
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
+                sessionStorage.removeItem('userRole');
                 window.location.href = '/pages/index.html';
                 return;
             }
+
+            // Restore role
+            sessionStorage.setItem('userRole', 'staff');
 
             const { data: staff, error } = await supabase
                 .from('staffs')
@@ -190,6 +194,7 @@
         }
 
         async function logout() {
+            sessionStorage.removeItem('userRole');
             await supabase.auth.signOut();
             window.location.href = '/pages/index.html';
         }

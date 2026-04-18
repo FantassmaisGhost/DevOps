@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — SA HealthMap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0b0e14;
+      --surface:   #111520;
+      --surface2:  #171c28;
+      --border:    #252b3d;
+      --accent:    #00e5a0;
+      --accent2:   #ff6b6b;
+      --accent3:   #60b4ff;
+      --warn:      #f5a623;
+      --text:      #dce2f0;
+      --text-muted:#5a6280;
+      --font-mono: 'Space Mono', monospace;
+      --font-disp: 'Syne', sans-serif;
+      --radius:    6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-mono); }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 52px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-disp); font-weight: 800; font-size: 15px; }
+    .brand-icon { color: var(--accent); font-size: 18px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .admin-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      padding: 3px 8px; border-radius: 4px;
+      background: rgba(245,166,35,0.15); color: var(--warn);
+      border: 1px solid rgba(245,166,35,0.3);
+    }
+    .btn-outline {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-muted); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 6px 12px;
+      text-decoration: none; transition: color .15s, border-color .15s;
+    }
+    .btn-outline:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .page { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+
+    .clinic-header { margin-bottom: 28px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--text-muted); text-decoration: none;
+      margin-bottom: 16px; transition: color .15s;
+    }
+    .back-link:hover { color: var(--accent); }
+    .clinic-name { font-family: var(--font-disp); font-size: 22px; font-weight: 800; line-height: 1.2; margin-bottom: 6px; }
+    .clinic-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; }
+    .chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.05em; }
+    .chip-hosp    { background: rgba(96,180,255,0.15);  color: var(--accent3); }
+    .chip-clinic  { background: rgba(0,229,160,0.12);   color: var(--accent);  }
+    .chip-public  { background: rgba(0,229,160,0.12);   color: var(--accent);  }
+    .chip-private { background: rgba(255,107,107,0.12); color: var(--accent2); }
+    .chip-prov    { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+    .chip-id      { background: rgba(245,166,35,0.12);  color: var(--warn); }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 20px; overflow: hidden;
+    }
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+    }
+    .panel-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted); text-transform: uppercase; }
+    .form-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 8px 12px;
+    }
+    .btn-save {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: var(--bg);
+      padding: 8px 18px;
+      cursor: pointer;
+    }
+    .action-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .action-card:last-child { border-bottom: none; }
+    .action-info { flex: 1; }
+    .action-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .action-desc { font-size: 11px; color: var(--text-muted); }
+    .btn-primary {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: var(--bg);
+      padding: 8px 20px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .loading-state { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 12px; }
+    .error-state { text-align: center; padding: 60px 20px; }
+    .error-state h2 { font-family: var(--font-disp); font-size: 18px; margin-bottom: 8px; }
+    .error-state p  { font-size: 12px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <span class="brand">
+      <span class="brand-icon" aria-hidden="true">✚</span>
+      <strong class="brand-name">SA HealthMap</strong>
+    </span>
+    <div class="topbar-right">
+      <span class="admin-badge">ADMIN</span>
+      <a href="admin-dashboard.html" class="btn-outline">← Back to Admin Dashboard</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section id="dynamic-content">
+      <div class="loading-state">Loading facility information…</div>
+    </section>
+
+    <!-- Pending Staff Approvals Section -->
+    <section class="panel">
+      <header class="panel-header">
+        <h3 class="panel-title">Pending Staff Approvals</h3>
+        <small>Staff waiting for approval for this clinic</small>
+      </header>
+      <section style="padding: 20px;">
+        <section id="pending-staff-container">
+          <p>Loading pending requests...</p>
+        </section>
+      </section>
+    </section>
+
+    <!-- Staff Management Panel -->
+    <section class="panel">
+      <header class="panel-header">
+        <h3 class="panel-title">Staff Management</h3>
+        <small>Clinic ID: <span id="current-clinic-display"></span></small>
+      </header>
+      
+      <section style="padding: 20px; border-bottom: 1px solid var(--border);">
+        <h4 style="margin-bottom: 15px; font-size: 13px;">Add New Staff Member</h4>
+        <form id="add-staff-form" style="display: grid; gap: 12px;">
+          <input type="email" id="staff-email" class="form-input" placeholder="Staff Email" required>
+          <input type="text" id="staff-name" class="form-input" placeholder="Full Name" required>
+          <select id="staff-occupation" class="form-input" required>
+            <option value="Doctor">Doctor</option>
+            <option value="Nurse">Nurse</option>
+            <option value="Receptionist">Receptionist</option>
+            <option value="Pharmacist">Pharmacist</option>
+          </select>
+          <input type="tel" id="staff-phone" class="form-input" placeholder="Phone Number">
+          <button type="submit" class="btn-save" style="width: auto;">+ Add Staff</button>
+        </form>
+        <p style="font-size: 10px; color: #5a6280; margin-top: 10px;">Staff will login using the main login page with their Google account</p>
+      </section>
+      
+      <section style="padding: 20px;">
+        <h4 style="margin-bottom: 15px; font-size: 13px;">Current Staff Members</h4>
+        <section id="staff-list-container">
+          <p>Loading staff...</p>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <aside id="toast" style="position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 5px; display: none; z-index: 1000;"></aside>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabaseUrl = 'https://ixikhufrylaugpdxokwu.supabase.co'
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ'
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const params = new URLSearchParams(location.search)
+    const clinicID = params.get('clinicID')
+    const clinicName = params.get('name') || 'Health Facility'
+    const clinicType = params.get('type') || 'clinic'
+    const clinicSector = params.get('sector') || 'public'
+    const clinicSubtype = params.get('subtype') || ''
+    const clinicProvince = params.get('province') || ''
+
+    const CLINIC_ID = clinicID || '00001'
+
+    function showToast(message, type) {
+      const toast = document.getElementById('toast')
+      toast.textContent = message
+      toast.style.backgroundColor = type === 'success' ? '#00e5a0' : '#ff6b6b'
+      toast.style.color = type === 'success' ? '#0b0e14' : 'white'
+      toast.style.display = 'block'
+      setTimeout(() => {
+        toast.style.display = 'none'
+      }, 5000)
+    }
+
+    function escapeHtml(str) {
+      if (!str) return ''
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+    }
+
+    // ========== STAFF MANAGEMENT FUNCTIONS ==========
+    async function loadStaff() {
+      const { data, error } = await supabase
+        .from('staffs')
+        .select('*')
+        .eq('clinicid', CLINIC_ID)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Error loading staff:', error)
+        return []
+      }
+      return data || []
+    }
+
+    async function addStaff(email, fullName, occupation, phone) {
+      if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email address', 'error')
+        return false
+      }
+      
+      if (!fullName) {
+        showToast('Please enter full name', 'error')
+        return false
+      }
+      
+      const { data: existing } = await supabase
+        .from('staffs')
+        .select('email')
+        .eq('email', email)
+        .single()
+      
+      if (existing) {
+        showToast('This email is already a staff member!', 'error')
+        return false
+      }
+      
+      const { error } = await supabase
+        .from('staffs')
+        .insert([{
+          email: email,
+          clinicid: CLINIC_ID,
+          full_name: fullName,
+          occupation: occupation,
+          phone_number: phone
+        }])
+      
+      if (error) {
+        showToast('Failed to add staff: ' + error.message, 'error')
+        return false
+      }
+      
+      showToast(`✅ ${fullName} added as staff! They can now login with Google.`, 'success')
+      return true
+    }
+
+    async function removeStaff(email, name) {
+      if (!confirm(`Remove ${name} from staff?`)) return false
+      
+      const { error } = await supabase
+        .from('staffs')
+        .delete()
+        .eq('email', email)
+        .eq('clinicid', CLINIC_ID)
+      
+      if (error) {
+        showToast('Failed to remove staff', 'error')
+        return false
+      }
+      
+      showToast(`Removed ${name}`, 'success')
+      return true
+    }
+
+    async function renderStaffList() {
+      const staff = await loadStaff()
+      const container = document.getElementById('staff-list-container')
+      
+      if (!container) return
+      
+      if (staff.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No staff members yet. Add your first staff member above.</p>'
+        return
+      }
+      
+      container.innerHTML = staff.map(s => `
+        <article style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #252b3d;">
+          <header>
+            <strong>${escapeHtml(s.full_name)}</strong><br>
+            <small style="color: #5a6280;">${escapeHtml(s.email)} • ${escapeHtml(s.occupation)}</small><br>
+            <small style="color: #5a6280;">Phone: ${escapeHtml(s.phone_number || 'N/A')}</small>
+          </header>
+          <button class="remove-staff-btn" data-email="${s.email}" data-name="${escapeHtml(s.full_name)}" 
+                  style="background: #ff6b6b; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer;">
+            Remove
+          </button>
+        </article>
+      `).join('')
+      
+      document.querySelectorAll('.remove-staff-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const email = btn.getAttribute('data-email')
+          const name = btn.getAttribute('data-name')
+          const success = await removeStaff(email, name)
+          if (success) {
+            renderStaffList()
+          }
+        })
+      })
+    }
+
+    // ========== PENDING STAFF FUNCTIONS ==========
+    async function loadPendingStaff() {
+      const { data, error } = await supabase
+        .from('pending_staff')
+        .select('*')
+        .eq('clinicid', CLINIC_ID)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Error loading pending staff:', error)
+        return []
+      }
+      return data || []
+    }
+
+    async function approveStaff(pending) {
+      const { error: insertError } = await supabase
+        .from('staffs')
+        .insert([{
+          email: pending.email,
+          clinicid: pending.clinicid,
+          full_name: pending.full_name,
+          occupation: pending.occupation || 'Staff Member',
+          phone_number: pending.phone_number || null
+        }])
+      
+      if (insertError) {
+        showToast('Failed to approve staff: ' + insertError.message, 'error')
+        return false
+      }
+      
+      await supabase
+        .from('pending_staff')
+        .update({ status: 'approved' })
+        .eq('email', pending.email)
+      
+      showToast(`✅ ${pending.full_name} approved as staff!`, 'success')
+      return true
+    }
+
+    async function renderPendingStaff() {
+      const pending = await loadPendingStaff()
+      const container = document.getElementById('pending-staff-container')
+      
+      if (!container) return
+      
+      if (pending.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No pending staff requests for this clinic.</p>'
+        return
+      }
+      
+      container.innerHTML = pending.map(p => `
+        <article style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #252b3d;">
+          <header>
+            <strong>${escapeHtml(p.full_name)}</strong><br>
+            <small style="color: #5a6280;">${escapeHtml(p.email)}</small><br>
+            <small style="color: #5a6280;">Occupation: ${escapeHtml(p.occupation || 'Not specified')}</small>
+            ${p.phone_number ? `<br><small style="color: #5a6280;">Phone: ${escapeHtml(p.phone_number)}</small>` : ''}
+          </header>
+          <button class="approve-staff-btn" data-email="${p.email}" 
+                  style="background: #00e5a0; color: #0b0e14; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer;">
+            Approve
+          </button>
+        </article>
+      `).join('')
+      
+      document.querySelectorAll('.approve-staff-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const email = btn.getAttribute('data-email')
+          const pendingItem = pending.find(p => p.email === email)
+          if (pendingItem) {
+            const success = await approveStaff(pendingItem)
+            if (success) {
+              renderPendingStaff()
+              renderStaffList()
+            }
+          }
+        })
+      })
+    }
+
+    // ========== INIT FUNCTIONS ==========
+    function initStaffManagement() {
+      const clinicDisplay = document.getElementById('current-clinic-display')
+      if (clinicDisplay) {
+        clinicDisplay.textContent = CLINIC_ID
+      }
+      
+      renderStaffList()
+      renderPendingStaff()
+      
+      const form = document.getElementById('add-staff-form')
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault()
+          const email = document.getElementById('staff-email').value.trim()
+          const name = document.getElementById('staff-name').value.trim()
+          const occupation = document.getElementById('staff-occupation').value
+          const phone = document.getElementById('staff-phone').value.trim()
+          
+          const success = await addStaff(email, name, occupation, phone)
+          if (success) {
+            document.getElementById('staff-email').value = ''
+            document.getElementById('staff-name').value = ''
+            document.getElementById('staff-phone').value = ''
+            renderStaffList()
+          }
+        })
+      }
+    }
+
+    async function init() {
+      if (!clinicID) {
+        renderError('No facility selected.', 'Go back to the map and click a clinic or hospital.')
+        return
+      }
+      
+      renderClinicHeader()
+      renderActionCards()
+      initStaffManagement()
+    }
+
+    function renderClinicHeader() {
+      const typeLabel = clinicType === 'hospital' ? 'HOSPITAL' : 'CLINIC / CHC'
+      const typeClass = clinicType === 'hospital' ? 'chip-hosp' : 'chip-clinic'
+      const sectClass = clinicSector === 'public' ? 'chip-public' : 'chip-private'
+
+      const headerHtml = `
+        <div class="clinic-header">
+          <a href="admin-dashboard.html" class="back-link">← Back to Admin Dashboard</a>
+          <h1 class="clinic-name">${escapeHtml(clinicName)}</h1>
+          <div class="clinic-meta">
+            <span>${escapeHtml(clinicProvince)}</span>
+            ${clinicSubtype ? `<span>· ${escapeHtml(clinicSubtype)}</span>` : ''}
+          </div>
+          <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="chip ${typeClass}">${typeLabel}</span>
+            <span class="chip ${sectClass}">${clinicSector.toUpperCase()}</span>
+            <span class="chip chip-prov">${escapeHtml(clinicProvince).toUpperCase()}</span>
+            <span class="chip chip-id">ID: ${escapeHtml(clinicID)}</span>
+          </div>
+        </div>
+      `
+
+      const container = document.getElementById('dynamic-content')
+      container.innerHTML = headerHtml
+    }
+
+    function renderActionCards() {
+      const actionsHtml = `
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Management Actions</span>
+          </div>
+          <div class="action-card">
+            <div class="action-info">
+              <div class="action-title">Operating Hours</div>
+              <div class="action-desc">Edit clinic opening and closing times</div>
+            </div>
+            <a href="Changetime.html?clinicID=${encodeURIComponent(clinicID)}" class="btn-primary">Manage Hours →</a>
+          </div>
+        </div>
+      `
+      
+      const container = document.getElementById('dynamic-content')
+      container.insertAdjacentHTML('beforeend', actionsHtml)
+    }
+
+    function renderError(title, msg) {
+      const container = document.getElementById('dynamic-content')
+      container.innerHTML = `
+        <div class="error-state">
+          <h2>${escapeHtml(title)}</h2>
+          <p>${escapeHtml(msg)}</p>
+          <br>
+          <a href="admin-dashboard.html" class="btn-outline" style="margin-top:16px; display:inline-block;">← Back to Admin Dashboard</a>
+        </div>
+      `
+    }
+
+    init()
+  </script>
+</body>
+</html>

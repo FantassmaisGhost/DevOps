@@ -113,9 +113,13 @@
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
+                sessionStorage.removeItem('userRole');
                 window.location.href = '/pages/index.html';
                 return;
             }
+            
+            // Restore role
+            sessionStorage.setItem('userRole', 'patient');
             
             const email = session.user.email;
             document.getElementById('userEmail').textContent = email;
@@ -123,6 +127,7 @@
         }
 
         async function logout() {
+            sessionStorage.removeItem('userRole');
             await supabase.auth.signOut();
             window.location.href = '/pages/index.html';
         }

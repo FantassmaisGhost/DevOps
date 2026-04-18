@@ -34,12 +34,18 @@
             to { transform: rotate(360deg); }
         }
         p { color: #666; margin-top: 20px; }
+        .error-message {
+            color: #dc2626;
+            margin-top: 20px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="spinner"></div>
-        <p>Redirecting you to your dashboard...</p>
+        <div class="spinner" id="spinner"></div>
+        <p id="message">Redirecting you to your dashboard...</p>
+        <div id="errorMsg" class="error-message"></div>
     </div>
 
     <script>
@@ -54,6 +60,7 @@
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
+                localStorage.removeItem('userRole');
                 window.location.href = '/pages/index.html';
                 return;
             }
@@ -61,81 +68,114 @@
             const email = session.user.email;
             const userId = session.user.id;
             const userName = session.user.user_metadata?.full_name || email.split('@')[0];
-// PRIORITY 1: ADMIN
-if (selectedRole === 'admin') {
-    console.log("Checking admin for email:", email);
-    const { data: admin, error } = await supabase
-        .from('Admin')
-        .select('*')
-        .eq('Email', email)
-        .single();
-    
-    console.log("Admin query result:", admin);
-    console.log("Admin query error:", error);
 
-    if (admin) {
-        console.log("Admin found! Redirecting to admin dashboard");
-        window.location.href = '/pages/admin-dashboard.html';
-        return;
-    } else {
-        console.log("Admin not found, going back to index");
-        window.location.href = '/pages/index.html';
-        return;
-    }
-}
-// PRIORITY 2: STAFF
-else if (selectedRole === 'staff') {
-    // Check if already approved staff
-    const { data: staff } = await supabase
-        .from('staffs')
-        .select('*')
-        .eq('email', email)
-        .single();
+            // Check what type of user this actually is
+            const { data: admin } = await supabase
+                .from('Admin')
+                .select('*')
+                .eq('Email', email)
+                .single();
 
-    if (staff) {
-        window.location.href = '/pages/staff-dashboard.html';
-        return;
-    }
+            const { data: staff } = await supabase
+                .from('staffs')
+                .select('*')
+                .eq('email', email)
+                .single();
 
-    // Check if in pending_staff (registered but waiting)
-    const { data: pending } = await supabase
-        .from('pending_staff')
-        .select('*')
-        .eq('email', email)
-        .single();
+            const { data: pending } = await supabase
+                .from('pending_staff')
+                .select('*')
+                .eq('email', email)
+                .single();
 
-    if (pending) {
-        window.location.href = '/pages/pending-approval.html';
-        return;
-    }
+            // Determine actual user type
+            let actualRole = 'patient';
+            if (admin) actualRole = 'admin';
+            else if (staff) actualRole = 'staff';
+            else if (pending) actualRole = 'pending';
+
+            // If no role was selected (direct access), use actual role
+            if (!selectedRole) {
+                // Send to correct dashboard based on actual role
+                if (actualRole === 'admin') {
+                    localStorage.setItem('userRole', 'admin');
+                    window.location.href = '/pages/admin-dashboard.html';
+                } else if (actualRole === 'staff') {
+                    localStorage.setItem('userRole', 'staff');
+                    window.location.href = '/pages/staff-dashboard.html';
+                } else if (actualRole === 'pending') {
+                    localStorage.setItem('userRole', 'pending');
+                    window.location.href = '/pages/pending-approval.html';
+                } else {
+                    // Create patient record if needed
+                    const { data: patient } = await supabase
+                        .from('Patients')
+                        .select('*')
+                        .eq('id', userId)
+                        .single();
+
+                    if (!patient) {
+                        await supabase
+                            .from('Patients')
+                            .insert([{
+                                id: userId,
+                                role: 'patient',
+                                full_name: userName,
+                                created_at: new Date(),
+                                updated_at: new Date()
+                            }]);
+                    }
+                    localStorage.setItem('userRole', 'patient');
+                    window.location.href = '/pages/dashboard.html';
+                }
+                return;
+            }
+
+            // VALIDATE: Check if selected role matches actual role
+            let isValid = false;
+            let targetUrl = '';
+
+            if (selectedRole === 'admin' && actualRole === 'admin') {
+                isValid = true;
+                targetUrl = '/pages/admin-dashboard.html';
+                localStorage.setItem('userRole', 'admin');
+            } 
+            else if (selectedRole === 'staff' && actualRole === 'staff') {
+                isValid = true;
+                targetUrl = '/pages/staff-dashboard.html';
+                localStorage.setItem('userRole', 'staff');
+            }
+            else if (selectedRole === 'staff' && actualRole === 'pending') {
+                isValid = true;
+                targetUrl = '/pages/pending-approval.html';
+                localStorage.setItem('userRole', 'pending');
+            }
+            else if (selectedRole === 'patient' && actualRole === 'patient') {
+                isValid = true;
+                targetUrl = '/pages/dashboard.html';
+                localStorage.setItem('userRole', 'patient');
+            }
+            else if (selectedRole === 'patient' && (actualRole === 'admin' || actualRole === 'staff' || actualRole === 'pending')) {
+                // Staff/Admin can also access patient dashboard if they want
+                isValid = true;
+                targetUrl = '/pages/dashboard.html';
+                localStorage.setItem('userRole', 'patient');
+            }
+
+            if (isValid) {
+                window.location.href = targetUrl;
+            } else {
+                // Show error message for 3 seconds, then redirect to index
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('message').style.display = 'none';
+                document.getElementById('errorMsg').innerHTML = `❌ Access Denied: You are not authorized as "${selectedRole}".<br>Redirecting to login page...`;
                 
-    // Staff selected role but not registered - send back to login
-    window.location.href = '/pages/index.html';
-    return;
-}else{
-
-    // PRIORITY 3: PATIENT (default)
-    const { data: patient } = await supabase
-        .from('Patients')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-    if (!patient) {
-        await supabase
-        .from('Patients')
-        .insert([{
-            id: userId,
-            role: 'patient',
-            full_name: userName,
-            created_at: new Date(),
-            updated_at: new Date()
-        }]);
-    }
-
-    window.location.href = '/pages/dashboard.html';
-    }
- }
+                setTimeout(() => {
+                    localStorage.removeItem('userRole');
+                    window.location.href = '/pages/index.html';
+                }, 3000);
+            }
+        }
 
         handleRedirect();
     </script>
