@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Dashboard | Health-Flow</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,7 +11,7 @@
             background: #0b0e14;
             color: #dce2f0;
         }
-        .header {
+        header {
             background: #111520;
             border-bottom: 1px solid #252b3d;
             padding: 16px 40px;
@@ -22,8 +21,12 @@
             flex-wrap: wrap;
             gap: 15px;
         }
-        .logo h1 { font-size: 20px; color: #00e5a0; }
-        .user-info { display: flex; align-items: center; gap: 15px; }
+        header h1 { font-size: 20px; color: #00e5a0; }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
         .staff-badge {
             background: #00e5a0;
             color: #0b0e14;
@@ -40,7 +43,11 @@
             border-radius: 8px;
             cursor: pointer;
         }
-        .container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+        main { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 30px 20px; 
+        }
         .welcome-card {
             background: linear-gradient(135deg, #1a2a3d 0%, #111520 100%);
             border: 1px solid #252b3d;
@@ -48,8 +55,14 @@
             padding: 30px;
             margin-bottom: 25px;
         }
-        .welcome-card h2 { font-size: 24px; margin-bottom: 8px; }
-        .welcome-card p { color: #5a6280; font-size: 14px; }
+        .welcome-card h2 { 
+            font-size: 24px; 
+            margin-bottom: 8px; 
+        }
+        .welcome-card p { 
+            color: #5a6280; 
+            font-size: 14px; 
+        }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -63,8 +76,15 @@
             padding: 20px;
             text-align: center;
         }
-        .stat-card h3 { font-size: 32px; color: #00e5a0; margin-bottom: 8px; }
-        .stat-card p { color: #5a6280; font-size: 12px; }
+        .stat-card h3 { 
+            font-size: 32px; 
+            color: #00e5a0; 
+            margin-bottom: 8px; 
+        }
+        .stat-card p { 
+            color: #5a6280; 
+            font-size: 12px; 
+        }
         .info-card {
             background: #111520;
             border: 1px solid #252b3d;
@@ -85,9 +105,21 @@
             border-bottom: 1px solid #252b3d;
         }
         .info-row:last-child { border-bottom: none; }
-        .info-label { width: 120px; color: #5a6280; font-size: 13px; }
-        .info-value { flex: 1; font-size: 13px; }
-        .action-buttons { display: flex; gap: 15px; margin-top: 20px; }
+        .info-label { 
+            width: 120px; 
+            color: #5a6280; 
+            font-size: 13px; 
+            font-weight: bold;
+        }
+        .info-value { 
+            flex: 1; 
+            font-size: 13px; 
+        }
+        .action-buttons { 
+            display: flex; 
+            gap: 15px; 
+            margin-top: 20px; 
+        }
         .btn-primary {
             background: #00e5a0;
             color: #0b0e14;
@@ -105,102 +137,29 @@
             border-radius: 8px;
             cursor: pointer;
         }
-        .loading { text-align: center; padding: 60px; color: #5a6280; }
+        .loading { 
+            text-align: center; 
+            padding: 60px; 
+            color: #5a6280; 
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo"><h1>🏥 Health-Flow | Staff Portal</h1></div>
-        <div class="user-info">
-            <span id="userEmail">Loading...</span>
-            <span class="staff-badge">STAFF</span>
+
+    <header>
+        <h1>🏥 Health-Flow | Staff Portal</h1>
+        <section class="user-info">
+            <strong id="userEmail">Loading...</strong>
+            <strong class="staff-badge">STAFF</strong>
             <button class="logout-btn" id="logoutBtn">Logout</button>
-        </div>
-    </div>
-    <div class="container" id="dashboardContent">
-        <div class="loading">Loading staff dashboard...</div>
-    </div>
+        </section>
+    </header>
 
-    <script>
-        const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_7T38wLjTEs7UJKMMTxl9tQ_OLM6Wsf3";
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <main id="dashboardContent">
+        <p class="loading">Loading staff dashboard...</p>
+    </main>
 
-        async function loadStaffDashboard() {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (!session) {
-                sessionStorage.removeItem('userRole');
-                window.location.href = '/pages/index.html';
-                return;
-            }
+    <script type="module" src="../backend/staff-dashboard.js"></script>
 
-            // Restore role
-            sessionStorage.setItem('userRole', 'staff');
-
-            const { data: staff, error } = await supabase
-                .from('staffs')
-                .select('*')
-                .eq('email', session.user.email)
-                .single();
-
-            if (error || !staff) {
-                window.location.href = '/pages/dashboard.html';
-                return;
-            }
-
-            document.getElementById('userEmail').textContent = session.user.email;
-
-            document.getElementById('dashboardContent').innerHTML = `
-                <div class="welcome-card">
-                    <h2>Welcome, ${staff.full_name.split(' ')[0]}! 👋</h2>
-                    <p>You are logged in as a staff member at Clinic ${staff.clinicid}</p>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card"><h3>0</h3><p>Today's Patients</p></div>
-                    <div class="stat-card"><h3>0</h3><p>In Queue</p></div>
-                    <div class="stat-card"><h3>0</h3><p>This Week</p></div>
-                </div>
-                <div class="info-card">
-                    <h3>Your Profile</h3>
-                    <div class="info-row"><span class="info-label">Full Name:</span><span class="info-value">${escapeHtml(staff.full_name)}</span></div>
-                    <div class="info-row"><span class="info-label">Email:</span><span class="info-value">${escapeHtml(staff.email)}</span></div>
-                    <div class="info-row"><span class="info-label">Occupation:</span><span class="info-value">${escapeHtml(staff.occupation)}</span></div>
-                    <div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${escapeHtml(staff.phone_number || 'Not provided')}</span></div>
-                </div>
-                <div class="info-card">
-                    <h3>Clinic Information</h3>
-                    <div class="info-row"><span class="info-label">Clinic ID:</span><span class="info-value">${escapeHtml(staff.clinicid)}</span></div>
-                    <div class="info-row"><span class="info-label">Your Role:</span><span class="info-value">${escapeHtml(staff.occupation)}</span></div>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn-primary" id="manageAppointmentsBtn">📅 Manage Appointments</button>
-                    <button class="btn-secondary" id="viewQueueBtn">👥 View Queue</button>
-                </div>
-            `;
-
-            document.getElementById('manageAppointmentsBtn')?.addEventListener('click', () => alert('Appointment management coming soon!'));
-            document.getElementById('viewQueueBtn')?.addEventListener('click', () => alert('Queue view coming soon!'));
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str).replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
-        async function logout() {
-            sessionStorage.removeItem('userRole');
-            await supabase.auth.signOut();
-            window.location.href = '/pages/index.html';
-        }
-
-        document.getElementById('logoutBtn').addEventListener('click', logout);
-        loadStaffDashboard();
-    </script>
 </body>
 </html>

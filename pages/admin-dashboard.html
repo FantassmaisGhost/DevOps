@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | Health-Flow</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,7 +11,7 @@
             background: #0b0e14;
             color: #dce2f0;
         }
-        .header {
+        header {
             background: #111520;
             border-bottom: 1px solid #252b3d;
             padding: 16px 40px;
@@ -20,7 +19,7 @@
             justify-content: space-between;
             align-items: center;
         }
-        .logo h1 { font-size: 20px; color: #f5a623; }
+        header h1 { font-size: 20px; color: #f5a623; }
         .admin-badge {
             background: #f5a623;
             color: #0b0e14;
@@ -37,20 +36,24 @@
             border-radius: 8px;
             cursor: pointer;
         }
-        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-        .card {
+        main { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+        }
+        article {
             background: #111520;
             border: 1px solid #252b3d;
             border-radius: 16px;
             padding: 30px;
             margin-bottom: 20px;
         }
-        .card h2 { 
+        article h2 { 
             color: #f5a623; 
             margin-bottom: 20px;
             font-size: 18px;
         }
-        .card p {
+        article p {
             color: #5a6280;
             margin-bottom: 20px;
         }
@@ -69,70 +72,38 @@
         .btn-primary:hover {
             opacity: 0.85;
         }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo"><h1>🏥 Health-Flow | Admin Portal</h1></div>
-        <div class="user-info">
-            <span id="userEmail">Loading...</span>
-            <span class="admin-badge">ADMIN</span>
+
+    <header>
+        <h1>🏥 Health-Flow | Admin Portal</h1>
+        <section class="user-info">
+            <strong id="userEmail">Loading...</strong>
+            <strong class="admin-badge">ADMIN</strong>
             <button class="logout-btn" id="logoutBtn">Logout</button>
-        </div>
-    </div>
-    <div class="container">
-        <div class="card">
+        </section>
+    </header>
+
+    <main>
+        <article>
             <h2>🗺️ Clinic Map</h2>
             <p>View all clinic locations on an interactive map.</p>
             <a href="map.html" class="btn-primary">Open Map →</a>
-        </div>
-        <div class="card">
+        </article>
+        <article>
             <h2>⚙️ Settings</h2>
             <p>Update system settings and preferences.</p>
             <a href="settings.html" class="btn-primary">Manage Settings →</a>
-        </div>
-    </div>
+        </article>
+    </main>
 
-    <script>
-        const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_7T38wLjTEs7UJKMMTxl9tQ_OLM6Wsf3";
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <script type="module" src="../backend/admin-dashboard.js"></script>
 
-        async function loadAdminDashboard() {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (!session) {
-                sessionStorage.removeItem('userRole');
-                window.location.href = '/pages/index.html';
-                return;
-            }
-
-            // Restore role
-            sessionStorage.setItem('userRole', 'admin');
-
-            const { data: admin } = await supabase
-                .from('Admin')
-                .select('*')
-                .eq('Email', session.user.email)
-                .single();
-
-            if (!admin) {
-                sessionStorage.removeItem('userRole');
-                window.location.href = '/pages/index.html';
-                return;
-            }
-
-            document.getElementById('userEmail').textContent = session.user.email;
-        }
-
-        async function logout() {
-            sessionStorage.removeItem('userRole');
-            await supabase.auth.signOut();
-            window.location.href = '/pages/index.html';
-        }
-
-        document.getElementById('logoutBtn').addEventListener('click', logout);
-        loadAdminDashboard();
-    </script>
 </body>
 </html>

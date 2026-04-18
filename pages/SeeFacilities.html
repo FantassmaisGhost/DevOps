@@ -25,7 +25,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-mono); }
 
-    .topbar {
+    header.topbar {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 20px; height: 52px;
       background: var(--surface); border-bottom: 1px solid var(--border);
@@ -44,11 +44,12 @@
       font-family: var(--font-mono); font-size: 11px;
       color: var(--text-muted); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 6px 12px;
-      text-decoration: none; transition: color .15s, border-color .15s;
+      text-decoration: none;
+      transition: color .15s, border-color .15s;
     }
     .btn-outline:hover { color: var(--text); border-color: var(--text-muted); }
 
-    .page { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
+    main.page { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
 
     .clinic-header { margin-bottom: 28px; }
     .back-link {
@@ -142,19 +143,19 @@
 <body>
 
   <header class="topbar">
-    <span class="brand">
-      <span class="brand-icon" aria-hidden="true">✚</span>
+    <strong class="brand">
+      <strong class="brand-icon" aria-hidden="true">✚</strong>
       <strong class="brand-name">SA HealthMap</strong>
-    </span>
-    <div class="topbar-right">
-      <span class="admin-badge">ADMIN</span>
+    </strong>
+    <section class="topbar-right">
+      <strong class="admin-badge">ADMIN</strong>
       <a href="admin-dashboard.html" class="btn-outline">← Back to Admin Dashboard</a>
-    </div>
+    </section>
   </header>
 
   <main class="page">
     <section id="dynamic-content">
-      <div class="loading-state">Loading facility information…</div>
+      <p class="loading-state">Loading facility information…</p>
     </section>
 
     <!-- Pending Staff Approvals Section -->
@@ -174,7 +175,7 @@
     <section class="panel">
       <header class="panel-header">
         <h3 class="panel-title">Current Staff Members</h3>
-        <small>Clinic ID: <span id="current-clinic-display"></span></small>
+        <small>Clinic ID: <strong id="current-clinic-display"></strong></small>
       </header>
       
       <section style="padding: 20px;">
@@ -188,276 +189,7 @@
 
   <aside id="toast" style="position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 5px; display: none; z-index: 1000;"></aside>
 
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+  <script type="module" src="../backend/SeeFacilities.js"></script>
 
-    const supabaseUrl = 'https://ixikhufrylaugpdxokwu.supabase.co'
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ'
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    const params = new URLSearchParams(location.search)
-    const clinicID = params.get('clinicID')
-    const clinicName = params.get('name') || 'Health Facility'
-    const clinicType = params.get('type') || 'clinic'
-    const clinicSector = params.get('sector') || 'public'
-    const clinicSubtype = params.get('subtype') || ''
-    const clinicProvince = params.get('province') || ''
-
-    const CLINIC_ID = clinicID || '00001'
-
-    function showToast(message, type) {
-      const toast = document.getElementById('toast')
-      toast.textContent = message
-      toast.style.backgroundColor = type === 'success' ? '#00e5a0' : '#ff6b6b'
-      toast.style.color = type === 'success' ? '#0b0e14' : 'white'
-      toast.style.display = 'block'
-      setTimeout(() => {
-        toast.style.display = 'none'
-      }, 5000)
-    }
-
-    function escapeHtml(str) {
-      if (!str) return ''
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-    }
-
-    // ========== STAFF MANAGEMENT FUNCTIONS ==========
-    async function loadStaff() {
-      const { data, error } = await supabase
-        .from('staffs')
-        .select('*')
-        .eq('clinicid', CLINIC_ID)
-        .order('created_at', { ascending: false })
-      
-      if (error) {
-        console.error('Error loading staff:', error)
-        return []
-      }
-      return data || []
-    }
-
-    async function removeStaff(email, name) {
-      if (!confirm(`Remove ${name} from staff? They will lose staff access.`)) return false
-      
-      const { error } = await supabase
-        .from('staffs')
-        .delete()
-        .eq('email', email)
-        .eq('clinicid', CLINIC_ID)
-      
-      if (error) {
-        showToast('Failed to remove staff', 'error')
-        return false
-      }
-      
-      showToast(`Removed ${name} from staff`, 'success')
-      return true
-    }
-
-    async function renderStaffList() {
-      const staff = await loadStaff()
-      const container = document.getElementById('staff-list-container')
-      
-      if (!container) return
-      
-      if (staff.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No staff members for this clinic.</p>'
-        return
-      }
-      
-      container.innerHTML = staff.map(s => `
-        <article style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #252b3d;">
-          <header>
-            <strong>${escapeHtml(s.full_name)}</strong><br>
-            <small style="color: #5a6280;">${escapeHtml(s.email)} • ${escapeHtml(s.occupation)}</small><br>
-            <small style="color: #5a6280;">Phone: ${escapeHtml(s.phone_number || 'N/A')}</small>
-          </header>
-          <button class="remove-staff-btn" data-email="${s.email}" data-name="${escapeHtml(s.full_name)}" 
-                  class="btn-danger">
-            Remove
-          </button>
-        </article>
-      `).join('')
-      
-      document.querySelectorAll('.remove-staff-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const email = btn.getAttribute('data-email')
-          const name = btn.getAttribute('data-name')
-          const success = await removeStaff(email, name)
-          if (success) {
-            renderStaffList()
-          }
-        })
-      })
-    }
-
-    // ========== PENDING STAFF FUNCTIONS ==========
-    async function loadPendingStaff() {
-      const { data, error } = await supabase
-        .from('pending_staff')
-        .select('*')
-        .eq('clinicid', CLINIC_ID)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-      
-      if (error) {
-        console.error('Error loading pending staff:', error)
-        return []
-      }
-      return data || []
-    }
-
-    async function approveStaff(pending) {
-      const { error: insertError } = await supabase
-        .from('staffs')
-        .insert([{
-          email: pending.email,
-          clinicid: pending.clinicid,
-          full_name: pending.full_name,
-          occupation: pending.occupation || 'Staff Member',
-          phone_number: pending.phone_number || null
-        }])
-      
-      if (insertError) {
-        showToast('Failed to approve staff: ' + insertError.message, 'error')
-        return false
-      }
-      
-      await supabase
-        .from('pending_staff')
-        .update({ status: 'approved' })
-        .eq('email', pending.email)
-      
-      showToast(`✅ ${pending.full_name} approved as staff!`, 'success')
-      return true
-    }
-
-    async function renderPendingStaff() {
-      const pending = await loadPendingStaff()
-      const container = document.getElementById('pending-staff-container')
-      
-      if (!container) return
-      
-      if (pending.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No pending staff requests for this clinic.</p>'
-        return
-      }
-      
-      container.innerHTML = pending.map(p => `
-        <article style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #252b3d;">
-          <header>
-            <strong>${escapeHtml(p.full_name)}</strong><br>
-            <small style="color: #5a6280;">${escapeHtml(p.email)}</small><br>
-            <small style="color: #5a6280;">Occupation: ${escapeHtml(p.occupation || 'Not specified')}</small>
-            ${p.phone_number ? `<br><small style="color: #5a6280;">Phone: ${escapeHtml(p.phone_number)}</small>` : ''}
-          </header>
-          <button class="approve-staff-btn" data-email="${p.email}" 
-                  style="background: #00e5a0; color: #0b0e14; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer;">
-            Approve
-          </button>
-        </article>
-      `).join('')
-      
-      document.querySelectorAll('.approve-staff-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const email = btn.getAttribute('data-email')
-          const pendingItem = pending.find(p => p.email === email)
-          if (pendingItem) {
-            const success = await approveStaff(pendingItem)
-            if (success) {
-              renderPendingStaff()
-              renderStaffList()
-            }
-          }
-        })
-      })
-    }
-
-    // ========== INIT FUNCTIONS ==========
-    function initStaffManagement() {
-      const clinicDisplay = document.getElementById('current-clinic-display')
-      if (clinicDisplay) {
-        clinicDisplay.textContent = CLINIC_ID
-      }
-      
-      renderStaffList()
-      renderPendingStaff()
-    }
-
-    async function init() {
-      if (!clinicID) {
-        renderError('No facility selected.', 'Go back to the map and click a clinic or hospital.')
-        return
-      }
-      
-      renderClinicHeader()
-      renderActionCards()
-      initStaffManagement()
-    }
-
-    function renderClinicHeader() {
-      const typeLabel = clinicType === 'hospital' ? 'HOSPITAL' : 'CLINIC / CHC'
-      const typeClass = clinicType === 'hospital' ? 'chip-hosp' : 'chip-clinic'
-      const sectClass = clinicSector === 'public' ? 'chip-public' : 'chip-private'
-
-      const headerHtml = `
-        <div class="clinic-header">
-          <a href="admin-dashboard.html" class="back-link">← Back to Admin Dashboard</a>
-          <h1 class="clinic-name">${escapeHtml(clinicName)}</h1>
-          <div class="clinic-meta">
-            <span>${escapeHtml(clinicProvince)}</span>
-            ${clinicSubtype ? `<span>· ${escapeHtml(clinicSubtype)}</span>` : ''}
-          </div>
-          <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
-            <span class="chip ${typeClass}">${typeLabel}</span>
-            <span class="chip ${sectClass}">${clinicSector.toUpperCase()}</span>
-            <span class="chip chip-prov">${escapeHtml(clinicProvince).toUpperCase()}</span>
-            <span class="chip chip-id">ID: ${escapeHtml(clinicID)}</span>
-          </div>
-        </div>
-      `
-
-      const container = document.getElementById('dynamic-content')
-      container.innerHTML = headerHtml
-    }
-
-    function renderActionCards() {
-      const actionsHtml = `
-        <div class="panel">
-          <div class="panel-header">
-            <span class="panel-title">Management Actions</span>
-          </div>
-          <div class="action-card">
-            <div class="action-info">
-              <div class="action-title">Operating Hours</div>
-              <div class="action-desc">Edit clinic opening and closing times</div>
-            </div>
-            <a href="Changetime.html?clinicID=${encodeURIComponent(clinicID)}" class="btn-primary">Manage Hours →</a>
-          </div>
-        </div>
-      `
-      
-      const container = document.getElementById('dynamic-content')
-      container.insertAdjacentHTML('beforeend', actionsHtml)
-    }
-
-    function renderError(title, msg) {
-      const container = document.getElementById('dynamic-content')
-      container.innerHTML = `
-        <div class="error-state">
-          <h2>${escapeHtml(title)}</h2>
-          <p>${escapeHtml(msg)}</p>
-          <br>
-          <a href="admin-dashboard.html" class="btn-outline" style="margin-top:16px; display:inline-block;">← Back to Admin Dashboard</a>
-        </div>
-      `
-    }
-
-    init()
-  </script>
 </body>
 </html>
