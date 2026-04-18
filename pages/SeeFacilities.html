@@ -97,6 +97,17 @@
       padding: 8px 18px;
       cursor: pointer;
     }
+    .btn-danger {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      background: #ff6b6b;
+      border: none;
+      border-radius: var(--radius);
+      color: white;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
     .action-card {
       display: flex;
       align-items: center;
@@ -159,32 +170,15 @@
       </section>
     </section>
 
-    <!-- Staff Management Panel -->
+    <!-- Current Staff Members Panel (Remove Only) -->
     <section class="panel">
       <header class="panel-header">
-        <h3 class="panel-title">Staff Management</h3>
+        <h3 class="panel-title">Current Staff Members</h3>
         <small>Clinic ID: <span id="current-clinic-display"></span></small>
       </header>
       
-      <section style="padding: 20px; border-bottom: 1px solid var(--border);">
-        <h4 style="margin-bottom: 15px; font-size: 13px;">Add New Staff Member</h4>
-        <form id="add-staff-form" style="display: grid; gap: 12px;">
-          <input type="email" id="staff-email" class="form-input" placeholder="Staff Email" required>
-          <input type="text" id="staff-name" class="form-input" placeholder="Full Name" required>
-          <select id="staff-occupation" class="form-input" required>
-            <option value="Doctor">Doctor</option>
-            <option value="Nurse">Nurse</option>
-            <option value="Receptionist">Receptionist</option>
-            <option value="Pharmacist">Pharmacist</option>
-          </select>
-          <input type="tel" id="staff-phone" class="form-input" placeholder="Phone Number">
-          <button type="submit" class="btn-save" style="width: auto;">+ Add Staff</button>
-        </form>
-        <p style="font-size: 10px; color: #5a6280; margin-top: 10px;">Staff will login using the main login page with their Google account</p>
-      </section>
-      
       <section style="padding: 20px;">
-        <h4 style="margin-bottom: 15px; font-size: 13px;">Current Staff Members</h4>
+        <p style="font-size: 11px; color: #5a6280; margin-bottom: 15px;">Staff members are added automatically when they register. Click Remove to revoke staff access.</p>
         <section id="staff-list-container">
           <p>Loading staff...</p>
         </section>
@@ -246,49 +240,8 @@
       return data || []
     }
 
-    async function addStaff(email, fullName, occupation, phone) {
-      if (!email || !email.includes('@')) {
-        showToast('Please enter a valid email address', 'error')
-        return false
-      }
-      
-      if (!fullName) {
-        showToast('Please enter full name', 'error')
-        return false
-      }
-      
-      const { data: existing } = await supabase
-        .from('staffs')
-        .select('email')
-        .eq('email', email)
-        .single()
-      
-      if (existing) {
-        showToast('This email is already a staff member!', 'error')
-        return false
-      }
-      
-      const { error } = await supabase
-        .from('staffs')
-        .insert([{
-          email: email,
-          clinicid: CLINIC_ID,
-          full_name: fullName,
-          occupation: occupation,
-          phone_number: phone
-        }])
-      
-      if (error) {
-        showToast('Failed to add staff: ' + error.message, 'error')
-        return false
-      }
-      
-      showToast(`✅ ${fullName} added as staff! They can now login with Google.`, 'success')
-      return true
-    }
-
     async function removeStaff(email, name) {
-      if (!confirm(`Remove ${name} from staff?`)) return false
+      if (!confirm(`Remove ${name} from staff? They will lose staff access.`)) return false
       
       const { error } = await supabase
         .from('staffs')
@@ -301,7 +254,7 @@
         return false
       }
       
-      showToast(`Removed ${name}`, 'success')
+      showToast(`Removed ${name} from staff`, 'success')
       return true
     }
 
@@ -312,7 +265,7 @@
       if (!container) return
       
       if (staff.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No staff members yet. Add your first staff member above.</p>'
+        container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No staff members for this clinic.</p>'
         return
       }
       
@@ -324,7 +277,7 @@
             <small style="color: #5a6280;">Phone: ${escapeHtml(s.phone_number || 'N/A')}</small>
           </header>
           <button class="remove-staff-btn" data-email="${s.email}" data-name="${escapeHtml(s.full_name)}" 
-                  style="background: #ff6b6b; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer;">
+                  class="btn-danger">
             Remove
           </button>
         </article>
@@ -433,25 +386,6 @@
       
       renderStaffList()
       renderPendingStaff()
-      
-      const form = document.getElementById('add-staff-form')
-      if (form) {
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault()
-          const email = document.getElementById('staff-email').value.trim()
-          const name = document.getElementById('staff-name').value.trim()
-          const occupation = document.getElementById('staff-occupation').value
-          const phone = document.getElementById('staff-phone').value.trim()
-          
-          const success = await addStaff(email, name, occupation, phone)
-          if (success) {
-            document.getElementById('staff-email').value = ''
-            document.getElementById('staff-name').value = ''
-            document.getElementById('staff-phone').value = ''
-            renderStaffList()
-          }
-        })
-      }
     }
 
     async function init() {
