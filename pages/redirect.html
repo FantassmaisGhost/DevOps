@@ -54,7 +54,7 @@
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
-                window.location.href = 'index.html';
+                window.location.href = '/pages/index.html';
                 return;
             }
 
@@ -63,6 +63,7 @@
             const userName = session.user.user_metadata?.full_name || email.split('@')[0];
 
             if (selectedRole === 'staff') {
+                // Check if already approved staff
                 const { data: staff } = await supabase
                     .from('staffs')
                     .select('*')
@@ -70,38 +71,35 @@
                     .single();
 
                 if (staff) {
-                    window.location.href = 'staff-dashboard.html';
+                    window.location.href = '/pages/staff-dashboard.html';
                     return;
                 }
 
+                // Check if in pending_staff (registered but waiting)
                 const { data: pending } = await supabase
                     .from('pending_staff')
                     .select('*')
                     .eq('email', email)
                     .single();
 
-                if (!pending) {
-                    await supabase
-                        .from('pending_staff')
-                        .insert([{
-                            email: email,
-                            full_name: userName,
-                            clinicid: 'pending',
-                            status: 'pending'
-                        }]);
+                if (pending) {
+                    window.location.href = '/pages/pending-approval.html';
+                    return;
                 }
-
-                window.location.href = 'pending-approval.html';
+                
+                // Staff selected role but not registered - send back to login
+                window.location.href = '/pages/index.html';
             } else {
+                // Patient role
                 const { data: patient } = await supabase
-                    .from('Patients')
+                    .from('patients')
                     .select('*')
                     .eq('id', userId)
                     .single();
 
                 if (!patient) {
                     await supabase
-                        .from('Patients')
+                        .from('patients')
                         .insert([{
                             id: userId,
                             role: 'patient',
@@ -111,7 +109,7 @@
                         }]);
                 }
 
-                window.location.href = 'dashboard.html';
+                window.location.href = '/pages/dashboard.html';
             }
         }
 

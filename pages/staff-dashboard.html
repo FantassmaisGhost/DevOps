@@ -130,7 +130,7 @@
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
-                window.location.href = 'index.html';
+                window.location.href = '/pages/index.html';
                 return;
             }
 
@@ -141,7 +141,7 @@
                 .single();
 
             if (error || !staff) {
-                window.location.href = 'dashboard.html';
+                window.location.href = '/pages/dashboard.html';
                 return;
             }
 
@@ -191,7 +191,7 @@
 
         async function logout() {
             await supabase.auth.signOut();
-            window.location.href = 'index.html';
+            window.location.href = '/pages/index.html';
         }
 
         document.getElementById('logoutBtn').addEventListener('click', logout);

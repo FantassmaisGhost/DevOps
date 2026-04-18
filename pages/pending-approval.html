@@ -33,6 +33,13 @@
             font-family: monospace;
             margin: 20px 0;
         }
+        .clinic-info {
+            background: #e5f3ff;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
         .logout-btn {
             background: #dc2626;
             color: white;
@@ -60,8 +67,9 @@
     <div class="container">
         <div class="icon">⏳</div>
         <h1>Pending Approval</h1>
-        <p>Your staff account has been registered but is waiting for administrator approval.</p>
+        <p>Your staff account has been registered and is waiting for administrator approval.</p>
         <div class="email" id="userEmail">Loading...</div>
+        <div class="clinic-info" id="clinicInfo">Loading clinic information...</div>
         <p style="font-size: 14px;">You will receive staff access once an administrator approves your account.</p>
         <div class="spinner" id="spinner"></div>
         <button class="logout-btn" id="logoutBtn">Logout</button>
@@ -72,16 +80,41 @@
         const SUPABASE_ANON_KEY = "sb_publishable_7T38wLjTEs7UJKMMTxl9tQ_OLM6Wsf3";
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        let checkInterval;
+
         async function checkAndRedirect() {
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
-                window.location.href = 'index.html';
+                window.location.href = '/pages/index.html';
                 return;
             }
             
             document.getElementById('userEmail').textContent = session.user.email;
             
+            // Get pending staff record
+            const { data: pending } = await supabase
+                .from('pending_staff')
+                .select('*')
+                .eq('email', session.user.email)
+                .single();
+            
+            if (pending) {
+                // Get clinic name - using correct field name 'Name' (capital N)
+                const { data: clinic } = await supabase
+                    .from('Facilities')
+                    .select('Name')
+                    .eq('ClinicID', pending.clinicid)
+                    .single();
+                
+                if (clinic) {
+                    document.getElementById('clinicInfo').innerHTML = `🏥 Requested Clinic: ${clinic.Name}`;
+                } else {
+                    document.getElementById('clinicInfo').innerHTML = `🏥 Clinic ID: ${pending.clinicid}`;
+                }
+            }
+            
+            // Check if user is now approved staff
             const { data: staff } = await supabase
                 .from('staffs')
                 .select('*')
@@ -89,21 +122,23 @@
                 .single();
             
             if (staff) {
-                window.location.href = 'staff-dashboard.html';
+                clearInterval(checkInterval);
+                window.location.href = '/pages/staff-dashboard.html';
             } else {
                 document.getElementById('spinner').style.display = 'none';
             }
         }
         
         async function logout() {
+            clearInterval(checkInterval);
             await supabase.auth.signOut();
-            window.location.href = 'index.html';
+            window.location.href = '/pages/index.html';
         }
         
         document.getElementById('logoutBtn').addEventListener('click', logout);
         
         checkAndRedirect();
-        setInterval(checkAndRedirect, 5000);
+        checkInterval = setInterval(checkAndRedirect, 5000);
     </script>
 </body>
 </html>
