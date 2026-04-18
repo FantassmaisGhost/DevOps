@@ -146,6 +146,19 @@
       <div class="loading-state">Loading facility information…</div>
     </section>
 
+    <!-- Pending Staff Approvals Section -->
+    <section class="panel">
+      <header class="panel-header">
+        <h3 class="panel-title">Pending Staff Approvals</h3>
+        <small>Staff waiting for approval for this clinic</small>
+      </header>
+      <section style="padding: 20px;">
+        <section id="pending-staff-container">
+          <p>Loading pending requests...</p>
+        </section>
+      </section>
+    </section>
+
     <!-- Staff Management Panel -->
     <section class="panel">
       <header class="panel-header">
@@ -209,6 +222,16 @@
       }, 5000)
     }
 
+    function escapeHtml(str) {
+      if (!str) return ''
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+    }
+
+    // ========== STAFF MANAGEMENT FUNCTIONS ==========
     async function loadStaff() {
       const { data, error } = await supabase
         .from('staffs')
@@ -234,7 +257,6 @@
         return false
       }
       
-      // Check if already exists
       const { data: existing } = await supabase
         .from('staffs')
         .select('email')
@@ -283,15 +305,6 @@
       return true
     }
 
-    function escapeHtml(str) {
-      if (!str) return ''
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-    }
-
     async function renderStaffList() {
       const staff = await loadStaff()
       const container = document.getElementById('staff-list-container')
@@ -329,6 +342,89 @@
       })
     }
 
+    // ========== PENDING STAFF FUNCTIONS ==========
+    async function loadPendingStaff() {
+      const { data, error } = await supabase
+        .from('pending_staff')
+        .select('*')
+        .eq('clinicid', CLINIC_ID)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Error loading pending staff:', error)
+        return []
+      }
+      return data || []
+    }
+
+    async function approveStaff(pending) {
+      const { error: insertError } = await supabase
+        .from('staffs')
+        .insert([{
+          email: pending.email,
+          clinicid: pending.clinicid,
+          full_name: pending.full_name,
+          occupation: pending.occupation || 'Staff Member',
+          phone_number: pending.phone_number || null
+        }])
+      
+      if (insertError) {
+        showToast('Failed to approve staff: ' + insertError.message, 'error')
+        return false
+      }
+      
+      await supabase
+        .from('pending_staff')
+        .update({ status: 'approved' })
+        .eq('email', pending.email)
+      
+      showToast(`✅ ${pending.full_name} approved as staff!`, 'success')
+      return true
+    }
+
+    async function renderPendingStaff() {
+      const pending = await loadPendingStaff()
+      const container = document.getElementById('pending-staff-container')
+      
+      if (!container) return
+      
+      if (pending.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No pending staff requests for this clinic.</p>'
+        return
+      }
+      
+      container.innerHTML = pending.map(p => `
+        <article style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #252b3d;">
+          <header>
+            <strong>${escapeHtml(p.full_name)}</strong><br>
+            <small style="color: #5a6280;">${escapeHtml(p.email)}</small><br>
+            <small style="color: #5a6280;">Occupation: ${escapeHtml(p.occupation || 'Not specified')}</small>
+            ${p.phone_number ? `<br><small style="color: #5a6280;">Phone: ${escapeHtml(p.phone_number)}</small>` : ''}
+          </header>
+          <button class="approve-staff-btn" data-email="${p.email}" 
+                  style="background: #00e5a0; color: #0b0e14; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer;">
+            Approve
+          </button>
+        </article>
+      `).join('')
+      
+      document.querySelectorAll('.approve-staff-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const email = btn.getAttribute('data-email')
+          const pendingItem = pending.find(p => p.email === email)
+          if (pendingItem) {
+            const success = await approveStaff(pendingItem)
+            if (success) {
+              renderPendingStaff()
+              renderStaffList()
+            }
+          }
+        })
+      })
+    }
+
+    // ========== INIT FUNCTIONS ==========
     function initStaffManagement() {
       const clinicDisplay = document.getElementById('current-clinic-display')
       if (clinicDisplay) {
@@ -336,6 +432,7 @@
       }
       
       renderStaffList()
+      renderPendingStaff()
       
       const form = document.getElementById('add-staff-form')
       if (form) {
