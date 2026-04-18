@@ -81,7 +81,16 @@ const LOGIN_PAGE        = "/pages/dashboard.html"; // ← update if your login p
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let allData = [], filteredData = [], columns = [], sortCol = null, sortAsc = true;
-
+//
+const columnLabels = {
+  "Staff.FullName": "Doctor",
+  "Facilities.Name": "Clinic",
+  reason: "Reason",
+  status: "Status",
+  ClinicID: "Clinic ID",
+  appointment_date: "Appointment Date",
+  appointment_time: "Appointment Time"
+};
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = LOGIN_PAGE; return; }
@@ -103,7 +112,7 @@ async function loadData(email) {
   document.getElementById("tableBody").innerHTML =
     '<tr><td class="empty-state"><span class="spinner"></span>Loading your appointments…</td></tr>';
 
-  const { data, error } = await sb.from(TABLE_NAME).select("*").eq(USER_COL, email);
+  const { data, error } = await sb.from(TABLE_NAME).select(`*,Staff(FullName),Facilities(Name)`).eq(USER_COL, email);
 
   if (error) {
     document.getElementById("tableBody").innerHTML =
@@ -118,13 +127,19 @@ async function loadData(email) {
       '<tr><td class="empty-state">No appointments found for your account.</td></tr>';
     updateStats(); document.getElementById("paginationBar").textContent = ""; return;
   }
-  columns = Object.keys(allData[0]);
+  columns = ["Staff.FullName", "Facilities.Name", "reason", "status", "ClinicID", "appointment_date", "appointment_time"];
   buildHead(); updateStats(); applyFilters();
 }
 
+function getValue(row, col) {
+  if (col.includes(".")) {
+    return col.split(".").reduce((obj, key) => obj?.[key], row);
+  }
+  return row[col];
+}
 function buildHead() {
   document.getElementById("tableHead").innerHTML =
-    "<tr>" + columns.map(c => '<th onclick="sortBy(\'' + c + '\')">' + c.replace(/_/g," ") + "</th>").join("") + "</tr>";
+    "<tr>" + columns.map(c => '<th onclick="sortBy(\'' + c + '\')">' + columnLabels[c] || c + "</th>").join("") + "</tr>";
 }
 
 function updateStats() {
@@ -157,7 +172,7 @@ function render() {
     document.getElementById("paginationBar").textContent = "0 rows"; return;
   }
   document.getElementById("tableBody").innerHTML =
-    filteredData.map(row => "<tr>" + columns.map(c => "<td>" + format(row[c]) + "</td>").join("") + "</tr>").join("");
+    filteredData.map(row => "<tr>" + columns.map(c => "<td>" + format(getValue(row, c)) + "</td>").join("") + "</tr>").join("");
   document.getElementById("paginationBar").textContent =
     filteredData.length + " of " + allData.length + " row" + (allData.length !== 1 ? "s" : "");
 }
