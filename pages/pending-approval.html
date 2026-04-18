@@ -40,17 +40,6 @@
             margin: 20px 0;
             font-size: 14px;
         }
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .logout-btn:hover { background: #b91c1c; }
         .spinner {
             width: 40px;
             height: 40px;
@@ -61,6 +50,16 @@
             margin: 20px auto;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .close-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -72,7 +71,7 @@
         <div class="clinic-info" id="clinicInfo">Loading clinic information...</div>
         <p style="font-size: 14px;">You will receive staff access once an administrator approves your account.</p>
         <div class="spinner" id="spinner"></div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
+        <button class="close-btn" id="closeBtn">Close Window</button>
     </div>
 
     <script>
@@ -86,7 +85,8 @@
             const { data: { session } } = await supabase.auth.getSession();
             
             if (!session) {
-                window.location.href = '/pages/index.html';
+                // No session, just stay on page (don't redirect)
+                document.getElementById('spinner').style.display = 'none';
                 return;
             }
             
@@ -100,7 +100,7 @@
                 .single();
             
             if (pending) {
-                // Get clinic name - using correct field name 'Name' (capital N)
+                // Get clinic name
                 const { data: clinic } = await supabase
                     .from('Facilities')
                     .select('Name')
@@ -129,13 +129,12 @@
             }
         }
         
-        async function logout() {
-            clearInterval(checkInterval);
-            await supabase.auth.signOut();
-            window.location.href = '/pages/index.html';
-        }
-        
-        document.getElementById('logoutBtn').addEventListener('click', logout);
+        // Just close the tab/window
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            window.close();
+            // If window.close doesn't work (browser restriction), send them to a blank page
+            window.location.href = 'about:blank';
+        });
         
         checkAndRedirect();
         checkInterval = setInterval(checkAndRedirect, 5000);
