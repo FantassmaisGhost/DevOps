@@ -61,57 +61,81 @@
             const email = session.user.email;
             const userId = session.user.id;
             const userName = session.user.user_metadata?.full_name || email.split('@')[0];
+// PRIORITY 1: ADMIN
+if (selectedRole === 'admin') {
+    console.log("Checking admin for email:", email);
+    const { data: admin, error } = await supabase
+        .from('Admin')
+        .select('*')
+        .eq('Email', email)
+        .single();
+    
+    console.log("Admin query result:", admin);
+    console.log("Admin query error:", error);
 
-            if (selectedRole === 'staff') {
-                // Check if already approved staff
-                const { data: staff } = await supabase
-                    .from('staffs')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
+    if (admin) {
+        console.log("Admin found! Redirecting to admin dashboard");
+        window.location.href = '/pages/admin-dashboard.html';
+        return;
+    } else {
+        console.log("Admin not found, going back to index");
+        window.location.href = '/pages/index.html';
+        return;
+    }
+}
+// PRIORITY 2: STAFF
+else if (selectedRole === 'staff') {
+    // Check if already approved staff
+    const { data: staff } = await supabase
+        .from('staffs')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-                if (staff) {
-                    window.location.href = '/pages/staff-dashboard.html';
-                    return;
-                }
+    if (staff) {
+        window.location.href = '/pages/staff-dashboard.html';
+        return;
+    }
 
-                // Check if in pending_staff (registered but waiting)
-                const { data: pending } = await supabase
-                    .from('pending_staff')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
+    // Check if in pending_staff (registered but waiting)
+    const { data: pending } = await supabase
+        .from('pending_staff')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-                if (pending) {
-                    window.location.href = '/pages/pending-approval.html';
-                    return;
-                }
+    if (pending) {
+        window.location.href = '/pages/pending-approval.html';
+        return;
+    }
                 
-                // Staff selected role but not registered - send back to login
-                window.location.href = '/pages/index.html';
-            } else {
-                // Patient role
-                const { data: patient } = await supabase
-                    .from('patients')
-                    .select('*')
-                    .eq('id', userId)
-                    .single();
+    // Staff selected role but not registered - send back to login
+    window.location.href = '/pages/index.html';
+    return;
+}else{
 
-                if (!patient) {
-                    await supabase
-                        .from('patients')
-                        .insert([{
-                            id: userId,
-                            role: 'patient',
-                            full_name: userName,
-                            created_at: new Date(),
-                            updated_at: new Date()
-                        }]);
-                }
+    // PRIORITY 3: PATIENT (default)
+    const { data: patient } = await supabase
+        .from('Patients')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-                window.location.href = '/pages/dashboard.html';
-            }
-        }
+    if (!patient) {
+        await supabase
+        .from('Patients')
+        .insert([{
+            id: userId,
+            role: 'patient',
+            full_name: userName,
+            created_at: new Date(),
+            updated_at: new Date()
+        }]);
+    }
+
+    window.location.href = '/pages/dashboard.html';
+    }
+ }
 
         handleRedirect();
     </script>

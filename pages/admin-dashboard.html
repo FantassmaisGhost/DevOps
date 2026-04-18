@@ -107,9 +107,9 @@
             }
 
             const { data: admin } = await supabase
-                .from('admins')
+                .from('Admin')
                 .select('*')
-                .eq('email', session.user.email)
+                .eq('Email', session.user.email)
                 .single();
 
             if (!admin) {
