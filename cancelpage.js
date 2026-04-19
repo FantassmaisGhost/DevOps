@@ -1,7 +1,8 @@
 import supabase from "./supabase.js";
 
 const params = new URLSearchParams(window.location.search);
-const appointmentId = params.get("id");
+//const appointmentId = params.get("id");
+const id = '4623d52d-760d-4dbd-b768-d925a365b866';
 
 const dateEl = document.getElementById("date");
 const timeEl = document.getElementById("time");
@@ -10,17 +11,20 @@ const reasonEl = document.getElementById("reason");
 const statusPill = document.getElementById("statusPill");
 
 async function loadAppointment() {
-  if (!appointmentId) {
+  if (!id) {
     showError("No appointment ID.");
     return;
   }
 
   // 1️⃣ Get appointment
   const { data: appointment, error: err1 } = await supabase
-    .from("appointments")
-    .select("*")
-    .eq("id", appointmentId)
-    .single();
+  .from("appointments")
+  .select("*")
+  .eq("id", id)
+  .single();
+
+console.log("appointment:", appointment);
+console.log("err1:", err1);
 
   if (err1 || !appointment) {
     console.error(err1);
@@ -39,9 +43,10 @@ async function loadAppointment() {
     console.error(err2);
   }
 
+  
   // 3️⃣ Populate UI
-  dateEl.textContent = appointment.date || "-";
-  timeEl.textContent = appointment.time || "-";
+  dateEl.textContent = appointment.appointment_date || "-";
+  timeEl.textContent = appointment.appointment_time || "-";
   reasonEl.textContent = appointment.reason || "-";
   clinicEl.textContent = facility?.name || "Unknown clinic";
   statusPill.textContent = appointment.status || "unknown";
