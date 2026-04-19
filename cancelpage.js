@@ -1,56 +1,84 @@
-import supabase from "./supabase.js";
+import { supabase } from "./supabase.js";
 
 const params = new URLSearchParams(window.location.search);
-const appointmentId = 4623d52d-760d-4dbd-b768-d925a365b866;
-//let id = 4623d52d-760d-4dbd-b768-d925a365b866;
+const appointmentId = Number(params.get("id"));
 
 const dateEl = document.getElementById("date");
 const timeEl = document.getElementById("time");
 const clinicEl = document.getElementById("clinic");
 const reasonEl = document.getElementById("reason");
 const statusPill = document.getElementById("statusPill");
+const cancelBtn = document.getElementById("cancelBtn");
 
 async function loadAppointment() {
-  if (!appointmentId) {
-    showError("No appointment ID.");
+  if (!Number.isInteger(appointmentId)) {
+    showError("Invalid or missing appointment ID.");
+    disableActions();
     return;
   }
 
-  //Get appointment
-  const { data: appointment, error: err1 } = await supabase
-    .from("appointments")
+  const { data: appointment, error: appointmentError } = await supabase
+    .from("Appointments")
     .select("*")
     .eq("id", appointmentId)
     .maybeSingle();
 
-  if (err1 || !appointment) {
-    console.error(err1);
-    showError("Failed to load appointment.");
+  console.log("Appointment:", appointment, appointmentError);
+
+  if (appointmentError) {
+    showError(`Failed to load appointment: ${appointmentError.message}`);
+    disableActions();
     return;
   }
 
-  //Get clinic name using ClinicID
-  const { data: facility, error: err2 } = await supabase
-    .from("Facilities")
-    .select("Name")
-    .eq("id", appointment.ClinicID)
-    .maybeSingle();
-
-  if (err2) {
-    console.error(err2);
+  if (!appointment) {
+    showError("Appointment not found.");
+    disableActions();
+    return;
   }
 
-  //Populate appointment article with the data
+  let clinicName = "Unknown clinic";
+
+  if (appointment.clinicid) {
+    const { data: facility, error: facilityError } = await supabase
+      .from("Facilities")
+      .select("name")
+      .eq("clinicid", appointment.clinicid)
+      .maybeSingle();
+
+    console.log("Facility:", facility, facilityError);
+
+    if (facilityError) {
+      console.error("Failed to load clinic details:", facilityError.message);
+    } else {
+      clinicName = facility?.name || clinicName;
+    }
+  }
+
   dateEl.textContent = appointment.appointment_date || "-";
   timeEl.textContent = appointment.appointment_time || "-";
   reasonEl.textContent = appointment.reason || "-";
-  clinicEl.textContent = facility.Name || "Unknown clinic";
+  clinicEl.textContent = clinicName;
   statusPill.textContent = appointment.status || "unknown";
+
+  if ((appointment.status || "").toLowerCase() === "cancelled" && cancelBtn) {
+    cancelBtn.disabled = true;
+  }
 }
 
-// function showError(msg) {
-//   document.querySelector(".appointment").innerHTML =
-//     `<p class="error-message">${msg}</p>`;
-// }
+function disableActions() {
+  if (cancelBtn) {
+    cancelBtn.disabled = true;
+  }
+}
+
+function showError(msg) {
+  const appointmentCard = document.querySelector(".appointment");
+  if (!appointmentCard) {
+    return;
+  }
+
+  appointmentCard.innerHTML = `<p class="error-message">${msg}</p>`;
+}
 
 loadAppointment();
