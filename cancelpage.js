@@ -24,7 +24,6 @@ async function loadAppointment() {
     .maybeSingle();
 
   console.log("Appointment:", appointment, appointmentError);
-  console.log("Appointment clinicid:", appointment?.clinicid);
 
   if (appointmentError) {
     showError(`Failed to load appointment: ${appointmentError.message}`);
@@ -43,7 +42,7 @@ async function loadAppointment() {
   if (appointment.clinicid) {
     const { data: facility, error: facilityError } = await supabase
       .from("Facilities")
-      .select("*")
+      .select("name")
       .eq("clinicid", appointment.clinicid)
       .maybeSingle();
 
@@ -61,9 +60,44 @@ async function loadAppointment() {
   reasonEl.textContent = appointment.reason || "-";
   clinicEl.textContent = clinicName;
   statusPill.textContent = appointment.status || "unknown";
+}
 
-  if ((appointment.status || "").toLowerCase() === "cancelled" && cancelBtn) {
-    cancelBtn.disabled = true;
+async function cancelAppointment() {
+  if (!Number.isInteger(appointmentId)) {
+    showError("Invalid appointment ID.");
+    return;
+  }
+
+  if (!confirm("Are you sure you want to cancel this appointment?")) {
+    return;
+  }
+
+  cancelBtn.disabled = true;
+  cancelBtn.textContent = "Cancelling...";
+
+  const { error } = await supabase
+    .from("Appointments")
+    .delete()
+    .eq("id", appointmentId);
+
+  if (error) {
+    console.error("Cancel failed:", error.message);
+    cancelBtn.disabled = false;
+    cancelBtn.textContent = "Cancel Appointment";
+    showError(`Failed to cancel appointment: ${error.message}`);
+    return;
+  }
+
+  statusPill.textContent = "cancelled";
+  cancelBtn.textContent = "Appointment Cancelled";
+  cancelBtn.disabled = true;
+
+  const appointmentCard = document.querySelector(".appointment");
+  if (appointmentCard) {
+    const message = document.createElement("p");
+    message.className = "success-message";
+    message.textContent = "Appointment cancelled successfully.";
+    appointmentCard.appendChild(message);
   }
 }
 
@@ -80,6 +114,10 @@ function showError(msg) {
   }
 
   appointmentCard.innerHTML = `<p class="error-message">${msg}</p>`;
+}
+
+if (cancelBtn) {
+  cancelBtn.addEventListener("click", cancelAppointment);
 }
 
 loadAppointment();
