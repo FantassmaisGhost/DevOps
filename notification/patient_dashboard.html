@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patient Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  background: #f4f6f9;
+  color: #333;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.05);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+input {
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 12px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2980b9;
+}
+
+.notification {
+  padding: 12px;
+  border-left: 4px solid #3498db;
+  background: #ecf5ff;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.badge {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: white;
+}
+
+.booked { background: #3498db; }
+.completed { background: #2ecc71; }
+.cancelled { background: #e74c3c; }
+
+.appointment {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #2ecc71;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  display: none;
+}
+
+.loading {
+  text-align: center;
+  padding: 10px;
+  color: #888;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1 id="welcome">Welcome</h1>
+  </div>
+
+  <div class="card">
+    <h2>Book Appointment</h2>
+
+    <form id="appointmentForm">
+      <input type="datetime-local" id="time" required>
+      <input type="text" id="reason" placeholder="Reason for visit" required>
+      <button type="submit">Book Appointment</button>
+    </form>
+
+    <div id="loading" class="loading" style="display:none;">
+      Booking appointment...
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Notifications</h2>
+    <div id="notifications"></div>
+  </div>
+
+  <div class="card">
+    <h2>Your Appointments</h2>
+    <div id="appointments"></div>
+  </div>
+
+</div>
+
+<div id="toast" class="toast">Success</div>
+
+<script type="module" src="js/bookAppointment.js"></script>
+<script type="module" src="js/notifications.js"></script>
+<script type="module" src="js/appointments.js"></script>
+<script type="module" src="js/userInfo.js"></script>
+
+</body>
+</html>
