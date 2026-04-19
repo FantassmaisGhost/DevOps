@@ -632,7 +632,11 @@ function openDetail(f) {
     bookBtn = document.createElement('button');
     bookBtn.id        = 'dc-book';
     bookBtn.className = 'btn-book';
+<<<<<<< HEAD
     bookBtn.textContent = '📅 See Facility';
+=======
+    bookBtn.textContent = '📅 Book Appointment';
+>>>>>>> main
     dcDirections.insertAdjacentElement('afterend', bookBtn);
 
     // Inject style once
@@ -674,7 +678,11 @@ function openDetail(f) {
       city:     f.city     || '',
       province: f.province || '',
     });
+<<<<<<< HEAD
     window.location.href = `SeeFacilities.html?${qs}`;
+=======
+    window.location.href = `booking.html?${qs}`;
+>>>>>>> main
   };
 
   detailCard.classList.remove('hidden');

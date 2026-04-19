@@ -11,7 +11,12 @@
       Step 3 — Enter patient details → confirm
    4. On submit, write to appointments table in Supabase
    ============================================================ */
-import { supabase } from './supabase.js'
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── Days of week helpers ────────────────────────────────────
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
@@ -55,8 +60,8 @@ async function init() {
 
 // ── Load operating hours ────────────────────────────────────
 async function loadHours() {
-  const { data, error } = await supabase
-    .from('operating_hours')
+  const { data, error } = await sb
+    .from('Operating_Hours')
     .select('*')
     .eq('clinicid', clinicID)
 
@@ -396,21 +401,20 @@ async function submitBooking() {
   ].join('-')
 
   const record = {
-    clinicid:       clinicID,
-    clinic_name:    clinicName,
+    id:                8,
+    ClinicID:       clinicID,
     appointment_date: dateStr,
     appointment_time: selectedSlot,
-    patient_firstname: firstName,
-    patient_lastname:  lastName,
-    patient_phone:     phone,
-    patient_id:        idNumber || null,
+    patient_name: firstName+" "+lastName,
+    patient_email:     phone+"@example.com",  // Supabase requires a unique email, so we fake one using the phone number
+    //patient_id:        idNumber || null,
     reason:            reason   || null,
     notes:             notes    || null,
     status:            'pending',
-    created_at:        new Date().toISOString(),
+    appointment_date:        new Date().toISOString(),
   }
 
-  const { error } = await supabase.from('appointments').insert([record])
+  const { error } = await sb.from('Appointments').insert([record])
 
   if (error) {
     console.error('Booking error:', error)
