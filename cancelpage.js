@@ -10,8 +10,8 @@ const reasonEl = document.getElementById("reason");
 const statusPill = document.getElementById("statusPill");
 
 async function loadAppointment() {
-  if (!id) {
-    showError("No appointment ID.");
+  if (!appointmentId) {
+    console.log("No appointment ID.");
     return;
   }
 
