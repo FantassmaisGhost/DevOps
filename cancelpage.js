@@ -1,7 +1,7 @@
 import { supabase } from "./supabase.js";
 
 const params = new URLSearchParams(window.location.search);
-const appointmentId = 1;//params.get("id");
+const appointmentId = Number(params.get("id"));
 
 const dateEl = document.getElementById("date");
 const timeEl = document.getElementById("time");
@@ -11,21 +11,24 @@ const statusPill = document.getElementById("statusPill");
 const cancelBtn = document.getElementById("cancelBtn");
 
 async function loadAppointment() {
-  if (!appointmentId) {
-    console.log("No appointment ID.");
+  if (!Number.isInteger(appointmentId)) {
+    showError("Invalid or missing appointment ID.");
+    disableActions();
     return;
   }
 
-  //Get appointment
-  const { data: appointment, error: err1 } = await supabase
+  const { data: appointment, error: appointmentError } = await supabase
     .from("Appointments")
     .select("*")
     .eq("id", appointmentId)
-    .single();
+    .maybeSingle();
 
-  if (err1 || !appointment) {
-    console.error(err1);
-    console.log("Failed to load appointment.");
+  console.log("Appointment:", appointment, appointmentError);
+  console.log("Appointment clinicid:", appointment?.clinicid);
+
+  if (appointmentError) {
+    showError(`Failed to load appointment: ${appointmentError.message}`);
+    disableActions();
     return;
   }
 
@@ -40,7 +43,7 @@ async function loadAppointment() {
   if (appointment.clinicid) {
     const { data: facility, error: facilityError } = await supabase
       .from("Facilities")
-      .select("name")
+      .select("*")
       .eq("clinicid", appointment.clinicid)
       .maybeSingle();
 
@@ -49,13 +52,12 @@ async function loadAppointment() {
     if (facilityError) {
       console.error("Failed to load clinic details:", facilityError.message);
     } else {
-      clinicName = facility?.name || clinicName;
+      clinicName = facility?.name || "Unknown clinic";
     }
   }
 
-  // 3️⃣ Populate UI
-  dateEl.textContent = appointment.date || "-";
-  timeEl.textContent = appointment.time || "-";
+  dateEl.textContent = appointment.appointment_date || "-";
+  timeEl.textContent = appointment.appointment_time || "-";
   reasonEl.textContent = appointment.reason || "-";
   clinicEl.textContent = clinicName;
   statusPill.textContent = appointment.status || "unknown";
