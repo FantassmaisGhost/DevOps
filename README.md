@@ -98,10 +98,10 @@ health-flow/
    const SUPABASE_URL = "your-project-url";
    const SUPABASE_KEY = "your-anon-key";
 // Key functions:
-- supabaseClient          // Supabase instance
-- getCurrentUserRow()     // Fetch current user data
-- needsOnboarding()       // Check if profile is complete
-- routeUser()             // Redirect based on role
-- protectPage(role)       // Role-based access control
-- logout()                // Sign out function
-- pageForRole(role)       // Get dashboard URL
+- supabaseClient           // Supabase instance
+- getCurrentUserRow()      // Fetch current user data
+- needsOnboarding()        // Check if profile is complete
+- routeUser()              // Redirect based on role
+- protectPage(role)        // Role-based access control
+- logout()                 // Sign out function
+- pageForRole(role)        // Get dashboard URL
