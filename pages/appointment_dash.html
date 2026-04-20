@@ -47,6 +47,7 @@ th:hover { color: var(--text); }
 tbody tr { transition: background 0.15s; }
 tbody tr:hover { background: var(--surface2); }
 .status { padding: 4px 10px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+.section-title {font-size: 20px; font-weight: 600; margin-top: 9px; margin-bottom: 7px; color: var(--text);}
 .completed { background: rgba(93,212,180,0.2); color: var(--success); }
 .scheduled { background: rgba(124,106,245,0.2); color: var(--accent); }
 .cancelled  { background: rgba(240,112,112,0.2); color: var(--danger); }
@@ -60,7 +61,7 @@ tbody tr:hover { background: var(--surface2); }
 <body>
 <main class="main">
   <div class="topbar">
-    <div class="topbar-title">My Appointments</div>
+    <div class="topbar-title">🏥 Health-Flow</div>
     <div class="topbar-right">
       <div class="user-pill" id="userPill">Loading…</div>
       <div class="search-box"><input id="searchInput" placeholder="Search…" oninput="applyFilters()"/></div>
@@ -69,6 +70,7 @@ tbody tr:hover { background: var(--surface2); }
       <button class="btn-logout" onclick="handleLogout()">Sign out</button>
     </div>
   </div>
+  <div class="section-title">My Bookings</div>
   <div class="stats-row">
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value" id="statTotal">—</div></div>
     <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" id="statCompleted">—</div></div>
