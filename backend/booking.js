@@ -399,9 +399,15 @@ async function submitBooking() {
     String(selectedDate.getDate()).padStart(2, '0'),
   ].join('-')
 
-  // ✅ FIX 1: Properly fetch the session before using it
   const { data: { session } } = await sb.auth.getSession()
-  const userId = session?.user?.id ?? null
+
+  if (!session) {
+    alert("You must be logged in to book.");
+    return;
+  }
+
+const userId = session.user.id
+const userEmail = session.user.email   // ✅ THIS is what you need
 
   const record = {
     id:               crypto.randomUUID(),
@@ -409,7 +415,7 @@ async function submitBooking() {
     appointment_date: dateStr,                   // ✅ FIX 2: patient's chosen date
     appointment_time: selectedSlot,
     patient_name:     firstName + " " + lastName,
-    patient_email:    phone + "@example.com",
+    patient_email:    userEmail,
     PatientID:       userId,
     reason:           reason || null,
     notes:            notes  || null,
