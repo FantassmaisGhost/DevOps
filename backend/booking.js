@@ -374,56 +374,69 @@ function renderDetails(container) {
 
 // ── Submit booking ───────────────────────────────────────────
 async function submitBooking() {
-  const firstName = document.getElementById('f-firstname').value.trim()
-  const lastName  = document.getElementById('f-lastname').value.trim()
-  const phone     = document.getElementById('f-phone').value.trim()
-  const idNumber  = document.getElementById('f-idnumber').value.trim()
-  const reason    = document.getElementById('f-reason').value.trim()
-  const notes     = document.getElementById('f-notes').value.trim()
-  const errEl     = document.getElementById('form-error')
+  const firstName = document.getElementById('f-firstname').value.trim();
+  const lastName  = document.getElementById('f-lastname').value.trim();
+  const phone     = document.getElementById('f-phone').value.trim();
+  const idNumber  = document.getElementById('f-idnumber').value.trim();
+  const reason    = document.getElementById('f-reason').value.trim();
+  const notes     = document.getElementById('f-notes').value.trim();
+  const errEl     = document.getElementById('form-error');
+  const submitBtn = document.getElementById('btn-submit');
 
   if (!firstName || !lastName || !phone) {
-    errEl.textContent = 'Please fill in your first name, last name and phone number.'
-    errEl.style.display = 'block'
-    return
+    errEl.textContent = 'Please fill in your first name, last name and phone number.';
+    errEl.style.display = 'block';
+    return;
   }
 
-  const submitBtn = document.getElementById('btn-submit')
-  submitBtn.disabled = true
-  submitBtn.textContent = 'Booking…'
-  errEl.style.display = 'none'
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
 
-  // Format date as YYYY-MM-DD
+  if (!session) {
+    errEl.textContent = 'Please log in before booking an appointment.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Booking...';
+  errEl.style.display = 'none';
+
   const dateStr = [
     selectedDate.getFullYear(),
     String(selectedDate.getMonth() + 1).padStart(2, '0'),
     String(selectedDate.getDate()).padStart(2, '0'),
-  ].join('-')
+  ].join('-');
 
   const record = {
-    id:                8,
-    ClinicID:       clinicID,
+    ClinicID: clinicID,
     appointment_date: dateStr,
     appointment_time: selectedSlot,
-    patient_name: firstName+" "+lastName,
-    patient_email:     phone+"@example.com",  // Supabase requires a unique email, so we fake one using the phone number
-    //patient_id:        idNumber || null,
-    reason:            reason   || null,
-    notes:             notes    || null,
-    status:            'pending',
-    appointment_date:        new Date().toISOString(),
-  }
+    patient_name: `${firstName} ${lastName}`,
+    patient_email: session.user.email,
+    patient_id: session.user.id,
+    patient_phone: phone,
+    patient_id_number: idNumber || null,
+    reason: reason || null,
+    notes: notes || null,
+    status: 'scheduled',
+  };
 
-  const { error } = await sb.from('Appointments').insert([record])
+  const { error } = await sb.from('Appointments').insert([record]);
 
   if (error) {
-    console.error('Booking error:', error)
-    // Still show confirmation — table may not exist yet in dev
-    // In production you'd surface the error to the user
+    console.error('Booking error:', error);
+    errEl.textContent = `Failed to book appointment: ${error.message}`;
+    errEl.style.display = 'block';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Confirm Booking';
+    return;
   }
 
-  renderConfirmation(firstName, lastName, dateStr)
+  renderConfirmation(firstName, lastName, dateStr);
 }
+
 
 // ── Confirmation screen ──────────────────────────────────────
 function renderConfirmation(firstName, lastName, dateStr) {

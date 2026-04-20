@@ -95,6 +95,16 @@ const LOGIN_PAGE        = "/pages/dashboard.html"; // ← update if your login p
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let allData = [], filteredData = [], columns = [], sortCol = null, sortAsc = true;
 //
+columns = [
+  "Facilities.Name",
+  "reason",
+  "status",
+  "appointment_date",
+  "appointment_time",
+  "actions"
+];
+
+
 const columnLabels = {
   "Staff.FullName": "Doctor",
   "Facilities.Name": "Clinic",
@@ -102,7 +112,8 @@ const columnLabels = {
   status: "Status",
   ClinicID: "Clinic ID",
   appointment_date: "Appointment Date",
-  appointment_time: "Appointment Time"
+  appointment_time: "Appointment Time",
+  actions : "Actions"
 };
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
@@ -181,14 +192,24 @@ function sortBy(col) {
 function render() {
   if (!filteredData.length) {
     document.getElementById("tableBody").innerHTML =
-      '<tr><td colspan="' + (columns.length||1) + '" class="empty-state">No matching records.</td></tr>';
-    document.getElementById("paginationBar").textContent = "0 rows"; return;
+      '<tr><td colspan="' + (columns.length || 1) + '" class="empty-state">No matching records.</td></tr>';
+    document.getElementById("paginationBar").textContent = "0 rows";
+    return;
   }
-  document.getElementById("tableBody").innerHTML =
-    filteredData.map(row => "<tr>" + columns.map(c => "<td>" + format(getValue(row, c)) + "</td>").join("") + "</tr>").join("");
+
+  document.getElementById("tableBody").innerHTML = filteredData.map(row => {
+    return "<tr>" + columns.map(c => {
+      if (c === "actions") {
+        return `<td><a href="/pages/cancelpage.html?id=${row.id}">View</a></td>`;
+      }
+      return "<td>" + format(getValue(row, c)) + "</td>";
+    }).join("") + "</tr>";
+  }).join("");
+
   document.getElementById("paginationBar").textContent =
     filteredData.length + " of " + allData.length + " row" + (allData.length !== 1 ? "s" : "");
 }
+
 
 function format(val) {
   if (val === null || val === undefined || val === "") return "—";
