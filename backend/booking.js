@@ -393,38 +393,37 @@ async function submitBooking() {
   submitBtn.textContent = 'Booking…'
   errEl.style.display = 'none'
 
-  // Format date as YYYY-MM-DD
   const dateStr = [
     selectedDate.getFullYear(),
     String(selectedDate.getMonth() + 1).padStart(2, '0'),
     String(selectedDate.getDate()).padStart(2, '0'),
   ].join('-')
 
+  // ✅ FIX 1: Properly fetch the session before using it
+  const { data: { session } } = await sb.auth.getSession()
+  const userId = session?.user?.id ?? null
+
   const record = {
-    id:                8,
-    ClinicID:       clinicID,
-    appointment_date: dateStr,
+    id:               crypto.randomUUID(),
+    ClinicID:         clinicID,
+    appointment_date: dateStr,                   // ✅ FIX 2: patient's chosen date
     appointment_time: selectedSlot,
-    patient_name: firstName+" "+lastName,
-    patient_email:     phone+"@example.com",  // Supabase requires a unique email, so we fake one using the phone number
-    //patient_id:        idNumber || null,
-    reason:            reason   || null,
-    notes:             notes    || null,
-    status:            'pending',
-    appointment_date:        new Date().toISOString(),
+    patient_name:     firstName + " " + lastName,
+    patient_email:    phone + "@example.com",
+    PatientID:       userId,
+    reason:           reason || null,
+    notes:            notes  || null,
+    status:           'pending',
   }
 
   const { error } = await sb.from('Appointments').insert([record])
 
   if (error) {
     console.error('Booking error:', error)
-    // Still show confirmation — table may not exist yet in dev
-    // In production you'd surface the error to the user
   }
 
   renderConfirmation(firstName, lastName, dateStr)
 }
-
 // ── Confirmation screen ──────────────────────────────────────
 function renderConfirmation(firstName, lastName, dateStr) {
   const refCode = `BK-${Date.now().toString(36).toUpperCase().slice(-6)}`
