@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health-Flow | Complete Your Profile</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: none;
+        }
+        h1 { font-size: 24px; color: #1e3c72; margin-bottom: 8px; text-align: center; }
+        .subtitle { color: #666; font-size: 14px; text-align: center; margin-bottom: 28px; }
+        .form-group { margin-bottom: 18px; }
+        .row { display: flex; gap: 12px; }
+        .row .form-group { flex: 1; }
+        label { display: block; margin-bottom: 6px; color: #333; font-weight: 500; font-size: 14px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        textarea { resize: vertical; min-height: 72px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+        .message.error { background: #fee; color: #c33; border: 1px solid #fcc; display: block; }
+        .logout-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: #999;
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .hint { color: #888; font-size: 12px; margin-top: 4px; }
+        .req { color: #e53e3e; margin-left: 2px; }
+    </style>
+</head>
+<body>
+    <div class="container" id="appRoot">
+        <h1>Complete your profile</h1>
+        <p class="subtitle">We need a few details before you continue.</p>
+
+        <form id="onboardingForm" novalidate>
+            <div class="form-group">
+                <label for="fullName">Full name<span class="req">*</span></label>
+                <input type="text" id="fullName" placeholder="Jane Doe" required>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="phone">Phone<span class="req">*</span></label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        placeholder="+27..."
+                        pattern="^\+?[0-9]{10,15}$"
+                        title="10–15 digits, optional +"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label for="alternateContact">Alternate contact</label>
+                    <input
+                        type="tel"
+                        id="alternateContact"
+                        placeholder="+27..."
+                        pattern="^\+?[0-9]{10,15}$"
+                        title="10–15 digits, optional +">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="gender">Gender<span class="req">*</span></label>
+                    <select id="gender" required>
+                        <option value="">Select...</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                        <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="occupation">Occupation<span class="req">*</span></label>
+                    <select id="occupation">
+                        <option value="">Select...</option>
+                        <option value="employed">Employed</option>
+                        <option value="unemployed">Unemployed</option>
+                        <option value="student">Student</option>
+                        <option value="retired">Retired</option>
+                        <option value="self-employed">Self-employed</option>
+                        <option value="part-time">Part-time</option>
+                        <option value="intern">Intern</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Address<span class="req">*</span></label>
+                <textarea id="address" placeholder="Street, city, postal code"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="allergies">Allergies<span class="req">*</span></label>
+                <textarea id="allergies" placeholder="List any known allergies, or 'None'"></textarea>
+            </div>
+
+            <button type="submit" id="saveBtn">Save and continue</button>
+        </form>
+
+        <a class="logout-link" id="logoutLink">Sign out</a>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+    const appRoot = document.getElementById('appRoot');
+    const form = document.getElementById('onboardingForm');
+    const fullNameInput = document.getElementById('fullName');
+    const phoneInput = document.getElementById('phone');
+    const altContactInput = document.getElementById('alternateContact');
+    const genderInput = document.getElementById('gender');
+    const occupationInput = document.getElementById('occupation');
+    const addressInput = document.getElementById('address');
+    const allergiesInput = document.getElementById('allergies');
+    const saveBtn = document.getElementById('saveBtn');
+    const messageDiv = document.getElementById('message');
+
+    function showError(text) {
+        messageDiv.textContent = text;
+        messageDiv.className = 'message error';
+    }
+
+    const isEditMode = new URLSearchParams(window.location.search).has('edit');
+
+    async function init() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.href = 'index.html'; return; }
+
+        const row = await getCurrentUserRow();
+        if (row && !needsOnboarding(row) && !isEditMode) {
+            window.location.href = pageForRole(row.role);
+            return;
+        }
+
+        if (isEditMode) {
+            document.querySelector('h1').textContent = 'Edit your profile';
+            document.querySelector('.subtitle').textContent = 'Update your details below.';
+        }
+
+        if (row) {
+            if (row.full_name) fullNameInput.value = row.full_name;
+            if (row.phone) phoneInput.value = row.phone;
+            if (row.alternate_contact) altContactInput.value = row.alternate_contact;
+            if (row.gender) genderInput.value = row.gender;
+            if (row.occupation) occupationInput.value = row.occupation;
+            if (row.address) addressInput.value = row.address;
+            if (row.allergies) allergiesInput.value = row.allergies;
+        }
+
+        appRoot.style.display = 'block';
+    }
+
+    async function save(e) {
+        e?.preventDefault();
+
+        const full_name = fullNameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const alternate_contact = altContactInput.value.trim() || null;
+        const gender = genderInput.value;
+        const occupation = occupationInput.value;
+        const address = addressInput.value.trim();
+        const allergies = allergiesInput.value.trim();
+
+        if (!full_name || !phone || !gender || !occupation || !address || !allergies) {
+            return showError('Please fill in all required fields');
+        }
+
+        const phonePattern = /^\+?[0-9]{10,15}$/;
+        if (!phonePattern.test(phone)) return showError('Enter a valid phone number (10–15 digits, optional +)');
+        if (alternate_contact && !phonePattern.test(alternate_contact)) {
+            return showError('Alternate contact must be a valid phone number');
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { error } = await supabaseClient
+            .from('users')
+            .upsert({
+                id: user.id,
+                email: user.email,
+                full_name,
+                phone,
+                alternate_contact,
+                gender,
+                occupation,
+                address,
+                allergies
+            }, { onConflict: 'id' });
+
+        if (error) {
+            showError(error.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save and continue';
+            return;
+        }
+
+        await routeUser();
+    }
+
+    form.addEventListener('submit', save);
+    document.getElementById('logoutLink').addEventListener('click', logout);
+
+    init();
+    </script>
+</body>
+</html>
