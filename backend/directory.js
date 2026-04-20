@@ -91,26 +91,11 @@ const statShowing  = document.getElementById('stat-showing');
 const statTotal    = document.getElementById('stat-total');
 const hudCount     = document.getElementById('hud-count');
 
+// Read user role from localStorage (set during login)
+const userRole = localStorage.getItem('userRole') || 'patient';
+
 /* ============================================================
    SECTION 5 — LOCATION SEARCH
-   ============================================================
-
-   Adds two controls above (or inside) the existing search bar:
-
-   ┌────────────────────────────────────┬────────┐
-   │  📍 Search by location…            │  [📍]  │
-   └────────────────────────────────────┴────────┘
-       text input (geocode on Enter)    small "use my location" button
-
-   State:
-     userLat / userLng  — the reference coordinates (null = inactive)
-     activeRadius       — km threshold for filtering (0 = show all sorted by dist)
-
-   When a location is active:
-   • Facilities are sorted by straight-line distance.
-   • If a radius is selected, facilities beyond it are hidden.
-   • A subtle pin marker is placed on the map.
-   • A "× Clear location" link appears beneath the input.
    ============================================================ */
 
 // ── Location state ──────────────────────────────────────────
@@ -119,11 +104,7 @@ let userLng    = null;
 let activeRadius = 0;   // km; 0 means "sort only, no radius filter"
 
 // ── Inject location UI ──────────────────────────────────────
-// We inject HTML immediately after the existing #dir-search wrapper.
-// Adjust the selector to match where you want the bar to appear in your HTML.
-
 (function injectLocationUI() {
-  // Find a sensible anchor — the dir-search input's parent container
   const searchWrap = searchInput.closest('.search-wrap') || searchInput.parentElement;
 
   // ── Location search row ──
@@ -151,7 +132,6 @@ let activeRadius = 0;   // km; 0 means "sort only, no radius filter"
     <div class="loc-status" id="loc-status" aria-live="polite"></div>
   `;
 
-  // Insert after the search wrapper
   searchWrap.insertAdjacentElement('afterend', locRow);
 
   // ── Radius filter row ──
@@ -370,7 +350,6 @@ function clearLocation() {
   document.getElementById('radius-select').value = '0';
   activeRadius = 0;
 
-  // Return to SA bounding box
   map.fitBounds(
     L.latLngBounds(L.latLng(-34.82, 16.47), L.latLng(-22.13, 32.89)),
     { padding: [20, 20] }
@@ -397,7 +376,6 @@ async function geocodeLocation(query) {
     }
 
     const { lat, lon, display_name } = data[0];
-    // Shorten the display name to the first two comma-separated parts
     const shortLabel = display_name.split(',').slice(0, 2).join(',').trim();
     activateLocation(parseFloat(lat), parseFloat(lon), shortLabel);
 
@@ -453,10 +431,8 @@ document.getElementById('loc-input').addEventListener('keydown', e => {
 });
 
 document.getElementById('loc-gps-btn').addEventListener('click', useMyLocation);
-
 document.getElementById('loc-clear-btn').addEventListener('click', clearLocation);
 
-// Lazy-bind radius select (injected above, so available now)
 document.getElementById('radius-select').addEventListener('change', e => {
   activeRadius = parseInt(e.target.value, 10) || 0;
   render();
@@ -479,7 +455,6 @@ function render() {
   let filtered = SA_FACILITIES.filter((f, i) => {
     f._index = i;
 
-    // Text search
     if (query) {
       const haystack = `${f.name} ${f.city} ${f.province}`.toLowerCase();
       if (!haystack.includes(query)) return false;
@@ -489,7 +464,6 @@ function render() {
     if (type   && f.type     !== type)   return false;
     if (sector && f.sector   !== sector) return false;
 
-    // Location-based radius filter
     if (userLat != null && activeRadius > 0) {
       const dist = haversineKm(userLat, userLng, f.lat, f.lng);
       if (dist > activeRadius) return false;
@@ -546,7 +520,6 @@ function render() {
                      : f.type   === 'hospital' ? 'hospital'
                      : 'clinic';
 
-      // Distance badge
       let distBadge = '';
       if (f._distKm != null) {
         const km      = f._distKm;
@@ -603,7 +576,6 @@ function openDetail(f) {
   const typeClass = f.type === 'hospital' ? 'chip-hosp' : 'chip-clinic';
   const sectClass = f.sector === 'public' ? 'chip-public' : 'chip-private';
 
-  // Distance chip (only when location is active)
   let distChip = '';
   if (f._distKm != null) {
     const km      = f._distKm;
@@ -620,10 +592,75 @@ function openDetail(f) {
   dcCoords.textContent = `${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}`;
 
   dcDirections.onclick = () => {
-    // If we have the user's location, request directions from it
     const origin = userLat != null ? `&origin=${userLat},${userLng}` : '';
     const url    = `https://www.google.com/maps/dir/?api=1${origin}&destination=${f.lat},${f.lng}`;
     window.open(url, '_blank');
+  };
+
+  // ── Book / See Facility button ──────────────────────────
+  let bookBtn = document.getElementById('dc-book');
+  if (!bookBtn) {
+    bookBtn = document.createElement('button');
+    bookBtn.id        = 'dc-book';
+    bookBtn.className = 'btn-book';
+
+    // ── CONFLICT RESOLVED: role-based label ──
+   // Button label
+if (userRole === 'patient') {
+  bookBtn.textContent = '📅 Book Appointment';
+} else {
+  bookBtn.textContent = '📅 See Facility';
+}
+
+// Redirect
+
+    dcDirections.insertAdjacentElement('afterend', bookBtn);
+
+    if (!document.getElementById('btn-book-style')) {
+      const s = document.createElement('style');
+      s.id = 'btn-book-style';
+      s.textContent = `
+        .btn-book {
+          display: block;
+          width: 100%;
+          margin-top: 8px;
+          padding: 10px;
+          background: transparent;
+          border: 1px solid var(--accent, #00e5a0);
+          border-radius: 6px;
+          color: var(--accent, #00e5a0);
+          font-family: 'Space Mono', monospace;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          transition: background .15s, color .15s;
+        }
+        .btn-book:hover {
+          background: var(--accent, #00e5a0);
+          color: #0b0e14;
+        }
+      `;
+      document.head.appendChild(s);
+    }
+  }
+
+  bookBtn.onclick = () => {
+    const qs = new URLSearchParams({
+      clinicID: f.clinicID || '',
+      name:     f.name     || '',
+      type:     f.type     || '',
+      sector:   f.sector   || '',
+      city:     f.city     || '',
+      province: f.province || '',
+    });
+
+    // ── CONFLICT RESOLVED: role-based redirect ──
+    if (userRole === 'patient') {
+      window.location.href = `booking.html?${qs}`;
+    } else {
+      window.location.href = `SeeFacilities.html?${qs}`;
+    }
   };
 
   detailCard.classList.remove('hidden');
