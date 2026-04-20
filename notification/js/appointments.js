@@ -5,10 +5,10 @@ async function loadAppointments() {
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data, error } = await supabase
-    .from("appointments")
+    .from("Appointments") // ✅ IMPORTANT
     .select("*")
-    .eq("patient_id", user.id)
-    .order("created_at", { ascending: false });
+    .eq("PatientID", user.id)
+    .order("appointment_date", { ascending: false });
 
   if (error) return console.error(error);
 
@@ -20,7 +20,7 @@ async function loadAppointments() {
     div.classList.add("appointment");
 
     div.innerHTML = `
-      <span>${new Date(a.appointment_time).toLocaleString()}</span>
+      <span>${a.appointment_date} ${a.appointment_time}</span>
       <span class="badge ${a.status}">${a.status}</span>
     `;
 
