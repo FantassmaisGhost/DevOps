@@ -1,23 +1,295 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health-Flow | Admin</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #1e3c72;
+        }
+        .shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: none;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            border-radius: 16px;
+            padding: 16px 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 24px;
+        }
+        .brand { font-weight: 700; font-size: 18px; }
+        .logout {
+            background: #f5f5f5;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #333;
+            transition: background 0.2s;
+        }
+        .logout:hover { background: #e0e0e0; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 820px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+
+        .profile-card { text-align: center; }
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 24px rgba(102,126,234,0.35);
+            background-size: cover;
+            background-position: center;
+        }
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .profile-email {
+            color: #777;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .role-badge {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 4px 12px;
+            background: #eef2ff;
+            color: #4c51bf;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #8a8fa3;
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px 24px;
+        }
+        .info-item .label {
+            font-size: 12px;
+            color: #8a8fa3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .info-item .value {
+            font-size: 15px;
+            color: #1e3c72;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        .info-item .value.muted { color: #b0b4c1; font-weight: 400; font-style: italic; }
+
+        .welcome {
+            margin-bottom: 20px;
+        }
+        .welcome h1 {
+            font-size: 26px;
+            margin-bottom: 4px;
+        }
+        .welcome p { color: #666; font-size: 14px; }
+
+        .edit-link {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .edit-link:hover { transform: translateY(-2px); }
+    </style>
 </head>
-
 <body>
-  <h1>Admin Dashboard</h1>
+    <div class="shell" id="shell">
+        <div class="topbar">
+            <div class="brand">Health-Flow</div>
+            <button class="logout" id="logoutBtn">Sign out</button>
+        </div>
 
-  <div>
-    <p>Manage Users (coming soon)</p>
-    <p>System Analytics (coming soon)</p>
-  </div>
+        <div class="layout">
+            <aside class="card profile-card">
+                <div class="avatar" id="avatar">?</div>
+                <div class="profile-name" id="profileName">...</div>
+                <div class="profile-email" id="profileEmail">...</div>
+                <div class="role-badge" id="roleBadge">admin</div>
+                <br>
+                <a class="edit-link" href="onboarding.html?edit=1">Edit profile</a>
+            </aside>
 
-  <button onclick="logout()">Logout</button>
+            <section>
+                <div class="card welcome">
+                    <h1>Welcome, <span id="firstName">...</span></h1>
+                    <p>Here's everything we have on file for you.</p>
+                </div>
 
-  <script src="app.js"></script>
-  <script>
-    protectPage("admin");
-  </script>
+                <div class="card" style="margin-top: 20px;">
+                    <div class="section-title">Contact</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="label">Phone</div>
+                            <div class="value" id="fPhone">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">Alternate contact</div>
+                            <div class="value" id="fAltContact">-</div>
+                        </div>
+                        <div class="info-item" style="grid-column: 1 / -1;">
+                            <div class="label">Address</div>
+                            <div class="value" id="fAddress">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <div class="section-title">Personal</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="label">Gender</div>
+                            <div class="value" id="fGender">-</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="label">Occupation</div>
+                            <div class="value" id="fOccupation">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <div class="section-title">Medical</div>
+                    <div class="info-item">
+                        <div class="label">Allergies</div>
+                        <div class="value" id="fAllergies">-</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+    const GENDER_LABELS = {
+        male: 'Male',
+        female: 'Female',
+        other: 'Other',
+        prefer_not_to_say: 'Prefer not to say'
+    };
+    const OCCUPATION_LABELS = {
+        employed: 'Employed',
+        unemployed: 'Unemployed',
+        student: 'Student',
+        retired: 'Retired',
+        'self-employed': 'Self-employed',
+        'part-time': 'Part-time',
+        intern: 'Intern',
+        other: 'Other'
+    };
+
+    function setField(id, value, labelMap) {
+        const el = document.getElementById(id);
+        if (value === null || value === undefined || String(value).trim() === '') {
+            el.textContent = 'Not provided';
+            el.classList.add('muted');
+            return;
+        }
+        el.textContent = labelMap ? (labelMap[value] || value) : value;
+        el.classList.remove('muted');
+    }
+
+    function initials(name) {
+        if (!name) return '?';
+        const parts = name.trim().split(/\s+/);
+        const first = parts[0]?.[0] || '';
+        const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+        return (first + last).toUpperCase() || '?';
+    }
+
+    async function init() {
+        await protectPage('admin');
+        const row = await getCurrentUserRow();
+        if (!row) return;
+
+        const name = row.full_name || row.email;
+        const first = (row.full_name || '').split(' ')[0] || row.email;
+
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileEmail').textContent = row.email || '';
+        document.getElementById('firstName').textContent = first;
+        document.getElementById('roleBadge').textContent = row.role || 'admin';
+
+        const avatar = document.getElementById('avatar');
+        if (row.avatar_url) {
+            avatar.textContent = '';
+            avatar.style.backgroundImage = `url('${row.avatar_url}')`;
+        } else {
+            avatar.textContent = initials(row.full_name);
+        }
+
+        setField('fPhone', row.phone);
+        setField('fAltContact', row.alternate_contact);
+        setField('fAddress', row.address);
+        setField('fGender', row.gender, GENDER_LABELS);
+        setField('fOccupation', row.occupation, OCCUPATION_LABELS);
+        setField('fAllergies', row.allergies);
+
+        document.getElementById('shell').style.display = 'block';
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    init();
+    </script>
 </body>
 </html>
