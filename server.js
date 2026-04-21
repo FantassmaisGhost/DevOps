@@ -1,85 +1,165 @@
 'use strict';
 
+
+
 const { createServer } = require('http');
+
 const { readFileSync, existsSync } = require('fs');
+
 const { join, extname } = require('path');
 
+
+
+const PORT = process.env.PORT || 8080;
+
+
+
 const mimeTypes = {
+
   '.html': 'text/html',
+
   '.css':  'text/css',
+
   '.js':   'application/javascript',
+
   '.png':  'image/png',
+
   '.jpg':  'image/jpeg',
+
   '.svg':  'image/svg+xml',
+
   '.ico':  'image/x-icon',
+
   '.json': 'application/json',
+
 };
 
-function resolveFile(requestUrl, rootDir) {
-  // 1. Split query params and then DECODE the URI to handle spaces/%20
-  const urlPath = decodeURIComponent((requestUrl || '/').split('?')[0]);
-  
-  // 2. Determine relative path (Root becomes pages/index.html)
-  let relativePath = urlPath === '/' ? '/pages/index.html' : urlPath;
-  
-  // 3. Define priority: Try raw path, then try under pages/
-  const pathsToTry = [
-    join(rootDir, relativePath),
-    join(rootDir, 'pages', relativePath)
-  ];
-  
-  let filePath = pathsToTry.find(p => existsSync(p) && !p.endsWith('/') && !p.endsWith('\\'));
 
-  // 4. SPA Fallback (Required by Test Suite)
-  if (!filePath) {
-    filePath = join(rootDir, 'pages', 'index.html');
+
+// Simple static file server with SPA fallback for index.html
+
+/**
+
+ * Resolve the file path for an incoming request URL.
+
+ * Exported for testability.
+
+ *
+
+ * @param {string} requestUrl  - raw req.url
+
+ * @param {string} rootDir     - project root directory
+
+ * @returns {{ filePath: string, contentType: string }}
+
+ */
+
+function resolveFile(requestUrl, rootDir) {
+
+  const url = decodeURIComponent(requestUrl === '/' ? '/index.html' : requestUrl);
+
+
+
+  // 1. Try exact path from project root
+
+  let filePath = join(rootDir, url);
+
+
+
+  // 2. Try pages/ subdirectory
+
+  if (!existsSync(filePath)) {
+
+    filePath = join(rootDir, 'pages', url);
+
   }
 
-  const ext = extname(filePath);
+
+
+  // 3. SPA fallback — serve index.html
+
+  if (!existsSync(filePath)) {
+
+    filePath = join(rootDir, 'pages', 'index.html');
+
+  }
+
+
+
+  const ext         = extname(filePath);
+
   const contentType = mimeTypes[ext] || 'text/plain';
 
+
+
   return { filePath, contentType };
+
 }
 
-// ... (keep all your mimeTypes and resolveFile functions at the top)
+
+
+/**
+
+ * HTTP request handler. Exported for testability.
+
+ *
+
+ * @param {string} rootDir
+
+ * @returns {function(req, res): void}
+
+ */
 
 function createHandler(rootDir) {
-  return function (req, res) {
-    if (req.url === '/favicon.ico') {
-      res.writeHead(204);
-      return res.end();
-    }
+
+  return function handler(req, res) {
+
+    const { filePath, contentType } = resolveFile(req.url, rootDir);
 
     try {
-      const { filePath, contentType } = resolveFile(req.url, rootDir);
 
-      if (existsSync(filePath)) {
-        const content = readFileSync(filePath);
-        res.writeHead(200, { 'Content-Type': contentType });
-        return res.end(content);
-      } 
-      
-      res.writeHead(404);
-      res.end('Not found');
+      const content = readFileSync(filePath);
+
+      res.writeHead(200, { 'Content-Type': contentType });
+
+      res.end(content);
+
     } catch (e) {
+
       res.writeHead(404);
+
       res.end('Not found');
+
     }
+
   };
+
 }
 
-// THE STARTUP BLOCK
+
+
+// Only start listening when this file is run directly (not required by tests)
+
 if (require.main === module) {
-  // Use process.cwd() to ensure we are in the DevOps directory
-  const root = process.cwd();
-  const server = createServer(createHandler(root));
-  
-  // Azure provides the port via process.env.PORT
-  const port = process.env.PORT || 8080;
 
-  server.listen(port, () => {
-    console.log('Server is running');
-  });
+  const server = createServer(createHandler(__dirname))
+
+  const port = process.env.PORT || process.env.IISNODE_VERSION ? null : 8080
+
+
+
+  if (process.env.PORT) {
+
+    server.listen(process.env.PORT)
+
+  } else {
+
+    server.listen(8080, () => console.log(`Server running on port 8080`))
+
+  }
+
 }
+
+
 
 module.exports = { resolveFile, createHandler, mimeTypes };
