@@ -41,6 +41,8 @@ function resolveFile(requestUrl, rootDir) {
   return { filePath, contentType };
 }
 
+// ... (keep all your mimeTypes and resolveFile functions at the top)
+
 function createHandler(rootDir) {
   return function (req, res) {
     if (req.url === '/favicon.ico') {
@@ -60,18 +62,24 @@ function createHandler(rootDir) {
       res.writeHead(404);
       res.end('Not found');
     } catch (e) {
-      if (!res.writableEnded) {
-        res.writeHead(404);
-        res.end('Not found');
-      }
+      res.writeHead(404);
+      res.end('Not found');
     }
   };
 }
 
+// THE STARTUP BLOCK
 if (require.main === module) {
-  const server = createServer(createHandler(process.cwd()));
+  // Use process.cwd() to ensure we are in the DevOps directory
+  const root = process.cwd();
+  const server = createServer(createHandler(root));
+  
+  // Azure provides the port via process.env.PORT
   const port = process.env.PORT || 8080;
-  server.listen(port);
+
+  server.listen(port, () => {
+    console.log('Server is running');
+  });
 }
 
 module.exports = { resolveFile, createHandler, mimeTypes };
