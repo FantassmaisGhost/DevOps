@@ -5,7 +5,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-     "start": "npx serve pages",
+    "start": "node server.js",
     "dev": "npx serve pages",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
