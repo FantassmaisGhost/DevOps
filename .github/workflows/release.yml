@@ -79,7 +79,7 @@ jobs:
       - name: Package application (exclude dev files)
         run: |
           mkdir -p dist
-          cp -r backend pages server.js web.config package.json package-lock.json node_modules dist/
+          cp -r backend pages server.js web.config package.json iisnode.yml babel.config babel.config.js package-lock.json node_modules dist/
           # node_modules included so Azure has dependencies without needing npm install
           echo "Packaged version ${{ steps.get_version.outputs.version }}"
 

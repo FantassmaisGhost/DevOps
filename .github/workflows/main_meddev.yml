@@ -46,6 +46,9 @@ jobs:
             pages/
             server.js
             web.config
+            iisnode.yml
+            babel.config
+            babel.config.js
             package.json
             package-lock.json
           retention-days: 1
