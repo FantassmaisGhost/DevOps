@@ -60,6 +60,11 @@ h1 {
   color: #155724;
 }
 
+.status-pill.cancelled {
+  background: red;
+  color: white;
+}
+
 /* Details section */
 .details dl {
   display: grid;

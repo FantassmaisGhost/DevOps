@@ -9,8 +9,34 @@ const clinicEl = document.getElementById("clinic");
 const reasonEl = document.getElementById("reason");
 const statusPill = document.getElementById("statusPill");
 const cancelBtn = document.getElementById("cancelBtn");
+const rescheduleBtn = document.getElementById("rescheduleBtn");
 
-let currentAppointment = null;
+function disableActions() {
+  if (cancelBtn) cancelBtn.disabled = true;
+  if (rescheduleBtn) rescheduleBtn.disabled = true;
+}
+
+function showError(message) {
+  const appointmentCard = document.querySelector(".appointment");
+  if (!appointmentCard) return;
+
+  appointmentCard.innerHTML = `<p class="error-message">${message}</p>`;
+}
+
+function applyStatus(status) {
+  const normalizedStatus = (status || "unknown").toLowerCase();
+
+  statusPill.textContent = normalizedStatus;
+  statusPill.classList.remove("cancelled");
+
+  if (normalizedStatus === "cancelled") {
+    statusPill.classList.add("cancelled");
+    if (cancelBtn) {
+      cancelBtn.disabled = true;
+      cancelBtn.textContent = "Cancelled";
+    }
+  }
+}
 
 async function loadAppointment() {
   if (!appointmentId) {
@@ -19,55 +45,55 @@ async function loadAppointment() {
     return;
   }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    window.location.href = "/pages/dashboard.html";
-    return;
-  }
-
-  const { data: appointment, error } = await supabase
+  const { data: appointment, error: appointmentError } = await supabase
     .from("Appointments")
-    .select("id, patient_email, appointment_date, appointment_time, reason, status, ClinicID, Facilities(Name)")
+    .select("*")
     .eq("id", appointmentId)
-    .eq("patient_email", session.user.email)
     .maybeSingle();
 
-  if (error) {
-    showError(`Failed to load appointment: ${error.message}`);
+  if (appointmentError) {
+    showError(`Failed to load appointment: ${appointmentError.message}`);
     disableActions();
     return;
   }
 
   if (!appointment) {
-    showError("Appointment not found for this account.");
+    showError("Appointment not found.");
     disableActions();
     return;
   }
 
-  currentAppointment = appointment;
+  let clinicName = "Unknown clinic";
+
+  if (appointment.clinicid) {
+    const { data: facility, error: facilityError } = await supabase
+      .from("Facilities")
+      .select("name")
+      .eq("clinicid", appointment.clinicid)
+      .maybeSingle();
+
+    if (facilityError) {
+      console.error("Failed to load clinic details:", facilityError.message);
+    } else if (facility?.name) {
+      clinicName = facility.name;
+    }
+  }
 
   dateEl.textContent = appointment.appointment_date || "-";
   timeEl.textContent = appointment.appointment_time || "-";
+  clinicEl.textContent = clinicName;
   reasonEl.textContent = appointment.reason || "-";
-  clinicEl.textContent = appointment.Facilities?.Name || appointment.ClinicID || "Unknown clinic";
-  setStatus(appointment.status || "unknown");
-
-  const normalizedStatus = String(appointment.status || "").toLowerCase();
-  if (normalizedStatus === "cancelled" || normalizedStatus === "completed") {
-    cancelBtn.disabled = true;
-    cancelBtn.textContent = normalizedStatus === "cancelled" ? "Already Cancelled" : "Cannot Cancel Completed Appointment";
-  }
+  applyStatus(appointment.status);
 }
 
 async function cancelAppointment() {
-  if (!appointmentId || !currentAppointment) {
-    showError("Appointment details are not available.");
-    return;
-  }
+  if (!appointmentId || !cancelBtn) return;
 
-  if (!confirm("Are you sure you want to cancel this appointment?")) {
-    return;
-  }
+  const confirmCancel = window.confirm(
+    "Are you sure you want to cancel this appointment?"
+  );
+
+  if (!confirmCancel) return;
 
   cancelBtn.disabled = true;
   cancelBtn.textContent = "Cancelling...";
@@ -75,57 +101,17 @@ async function cancelAppointment() {
   const { error } = await supabase
     .from("Appointments")
     .update({ status: "cancelled" })
-    .eq("id", appointmentId)
-    .eq("patient_email", currentAppointment.patient_email);
+    .eq("id", appointmentId);
 
   if (error) {
+    console.error("Cancel error:", error.message);
+    alert(`Failed to cancel appointment: ${error.message}`);
     cancelBtn.disabled = false;
     cancelBtn.textContent = "Cancel Appointment";
-    showError(`Failed to cancel appointment: ${error.message}`);
     return;
   }
 
-  currentAppointment.status = "cancelled";
-  setStatus("cancelled");
-  cancelBtn.textContent = "Appointment Cancelled";
-  cancelBtn.disabled = true;
-
-  const appointmentCard = document.querySelector(".appointment");
-  if (appointmentCard && !appointmentCard.querySelector(".success-message")) {
-    const message = document.createElement("p");
-    message.className = "success-message";
-    message.textContent = "Appointment cancelled successfully.";
-    appointmentCard.appendChild(message);
-  }
-}
-
-function setStatus(status) {
-  statusPill.textContent = status;
-  statusPill.className = "status-pill " + String(status).toLowerCase();
-}
-
-function disableActions() {
-  if (cancelBtn) {
-    cancelBtn.disabled = true;
-  }
-}
-
-function showError(message) {
-  const appointmentCard = document.querySelector(".appointment");
-  if (!appointmentCard) {
-    return;
-  }
-
-  const existing = appointmentCard.querySelector(".error-message");
-  if (existing) {
-    existing.textContent = message;
-    return;
-  }
-
-  const error = document.createElement("p");
-  error.className = "error-message";
-  error.textContent = message;
-  appointmentCard.prepend(error);
+  applyStatus("cancelled");
 }
 
 if (cancelBtn) {
