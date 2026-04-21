@@ -177,7 +177,7 @@ jobs:
     needs: build
     environment:
       name: Production
-      url: https://meddev.azurewebsites.net
+      url: meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net
 
     steps:
       - name: Download build artifact
