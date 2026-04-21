@@ -3,9 +3,9 @@
 #
 # Triggers automatically when a version tag (v*.*.*) is pushed,
 # which happens when you run:
-#   npm run release:patch   → bumps 1.0.0 → 1.0.1
-#   npm run release:minor   → bumps 1.0.0 → 1.1.0
-#   npm run release:major   → bumps 1.0.0 → 2.0.0
+#   npm run release:patch → bumps 1.0.0 → 1.0.1
+#   npm run release:minor → bumps 1.0.0 → 1.1.0
+#   npm run release:major → bumps 1.0.0 → 2.0.0
 #
 # The workflow:
 #   1. Runs the full test suite (must pass to release)
@@ -21,9 +21,9 @@ on:
       - "v*.*.*"
 
 permissions:
-  contents: write      # needed to create GitHub Releases
-  id-token: write      # needed for Azure OIDC login
-  issues: write        # needed to link release to issues
+  contents: write  # needed to create GitHub Releases
+  id-token: write  # needed for Azure OIDC login
+  issues:  write   # needed to link release to issues
 
 jobs:
   # ── 1. Test gate ──────────────────────────────────────────
@@ -79,8 +79,8 @@ jobs:
       - name: Package application (exclude dev files)
         run: |
           mkdir -p dist
-          cp -r backend pages server.js web.config package.json package-lock.json dist/
-          # Omit test files, coverage, and node_modules (Azure restores via npm ci)
+          cp -r backend pages server.js web.config package.json iisnode.yml babel.config babel.config.js package-lock.json node_modules dist/
+          # node_modules included so Azure has dependencies without needing npm install
           echo "Packaged version ${{ steps.get_version.outputs.version }}"
 
       - name: Upload build artifact
@@ -99,7 +99,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history for changelog
+          fetch-depth: 0  # full history for changelog
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -143,29 +143,29 @@ jobs:
               '### Deploy',
               '```bash',
               `unzip meddev-${tag}.zip -d meddev`,
-              'cd meddev && npm ci --omit=dev && node server.js',
+              'cd meddev && node server.js',
               '```',
             ].join('\n');
 
             const release = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo:  context.repo.repo,
-              tag_name: tag,
-              name: `MedDev ${tag}`,
+              tag_name:   tag,
+              name:       `MedDev ${tag}`,
               body,
-              draft: false,
+              draft:      false,
               prerelease: tag.includes('-'),
             });
 
             // Attach the zip
             const zip = fs.readFileSync(`meddev-${tag}.zip`);
             await github.rest.repos.uploadReleaseAsset({
-              owner:    context.repo.owner,
-              repo:     context.repo.repo,
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
               release_id: release.data.id,
-              name:     `meddev-${tag}.zip`,
-              data:     zip,
-              headers:  { 'content-type': 'application/zip' },
+              name:       `meddev-${tag}.zip`,
+              data:       zip,
+              headers:    { 'content-type': 'application/zip' },
             });
 
             core.info(`Release created: ${release.data.html_url}`);
@@ -177,7 +177,7 @@ jobs:
     needs: build
     environment:
       name: Production
-      url: https://meddev.azurewebsites.net
+      url: https://meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net
 
     steps:
       - name: Download build artifact
@@ -189,13 +189,12 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id:       ${{ secrets.AZUREAPPSERVICE_CLIENTID_8BCB22CCD0114E80B8652B99C8C20BC8 }}      
+          client-id:       ${{ secrets.AZUREAPPSERVICE_CLIENTID_8BCB22CCD0114E80B8652B99C8C20BC8 }}
           tenant-id:       ${{ secrets.AZUREAPPSERVICE_TENANTID_224B1CD79C4D42D4A50EE4AEE898B401 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E3550A30C26043A186C5D00E53867AF1 }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name:  MedDev
-          slot-name: Production
-          package:   dist/
+          app-name: MedDev
+          package:  dist/
