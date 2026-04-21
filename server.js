@@ -15,18 +15,28 @@ const mimeTypes = {
   '.json': 'application/json',
 };
 
-// This function is required for your GitHub Tests to pass
 function resolveFile(requestUrl, rootDir) {
   const urlPath = requestUrl.split('?')[0];
   const decodedUrl = decodeURIComponent(urlPath === '/' ? '/index.html' : urlPath);
 
-  // Check Root first (since you moved index.html there), then pages
+  // 1. Define paths to try
   const pathsToTry = [
     join(rootDir, decodedUrl),
     join(rootDir, 'pages', decodedUrl)
   ];
 
-  let filePath = pathsToTry.find(p => existsSync(p)) || join(rootDir, 'index.html');
+  let filePath = pathsToTry.find(p => existsSync(p));
+
+  // 2. SPA Fallback - The test EXPLICITLY wants pages/index.html
+  if (!filePath) {
+    filePath = join(rootDir, 'pages', 'index.html');
+  }
+
+  // 3. Last ditch - if pages/index doesn't exist, check root index
+  if (!existsSync(filePath)) {
+    filePath = join(rootDir, 'index.html');
+  }
+
   const ext = extname(filePath);
   const contentType = mimeTypes[ext] || 'text/plain';
 
@@ -35,7 +45,6 @@ function resolveFile(requestUrl, rootDir) {
 
 function createHandler(rootDir) {
   return function (req, res) {
-    // 1. Safety check for favicon (prevents Azure 500 loop)
     if (req.url === '/favicon.ico') {
       res.writeHead(204);
       return res.end();
@@ -44,26 +53,28 @@ function createHandler(rootDir) {
     try {
       const { filePath, contentType } = resolveFile(req.url, rootDir);
 
-      if (existsSync(filePath)) {
+      if (existsSync(filePath) && !filePath.endsWith('/') && !filePath.endsWith('\\')) {
         const content = readFileSync(filePath);
         res.writeHead(200, { 'Content-Type': contentType });
         return res.end(content);
-      } else {
-        // Fallback to the root index.html
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        return res.end(readFileSync(join(rootDir, 'index.html')));
-      }
+      } 
+      
+      // If file doesn't exist, throw to catch block for the 404
+      throw new Error('Not found');
+
     } catch (e) {
-      // Return a plain text 404 to satisfy tests if things go wrong
-      res.writeHead(404);
-      res.end('Not found');
+      // Ensure we only send ONE response
+      if (!res.writableEnded) {
+        res.writeHead(404);
+        res.end('Not found');
+      }
     }
   };
 }
 
-// Start the server using process.cwd() for Azure stability
 if (require.main === module) {
-  const server = createServer(createHandler(process.cwd()));
+  const root = existsSync(join(process.cwd(), 'pages')) ? process.cwd() : __dirname;
+  const server = createServer(createHandler(root));
   const port = process.env.PORT || 8080;
   server.listen(port);
 }
