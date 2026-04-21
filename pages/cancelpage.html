@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Appointments</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="cancelpage.css" />
+</head>
+<body>
+  <main class="main" id="main-content">
+    <header class="topbar">
+      <h1 class="topbar-title">Health-Flow</h1>
+      <nav class="topbar-right" aria-label="Page actions">
+        <button class="btn-back" type="button" onclick="window.location.href='dashboard.html'">
+          Back to Dashboard
+        </button>
+      </nav>
+    </header>
+
+    <section aria-labelledby="page-heading">
+      <h2 id="page-heading" class="section-title">My Appointments</h2>
+      <p class="section-subtitle">View all your appointments and manage them here.</p>
+
+      <section id="appointmentsContainer" class="appointments-list" aria-live="polite">
+        <p class="loading-message">Loading your appointments...</p>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="cancelpage.js"></script>
+</body>
+</html>

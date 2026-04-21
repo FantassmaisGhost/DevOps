@@ -374,30 +374,40 @@ function renderDetails(container) {
 
 // ── Submit booking ───────────────────────────────────────────
 async function submitBooking() {
-  const firstName = document.getElementById('f-firstname').value.trim()
-  const lastName  = document.getElementById('f-lastname').value.trim()
-  const phone     = document.getElementById('f-phone').value.trim()
-  const idNumber  = document.getElementById('f-idnumber').value.trim()
-  const reason    = document.getElementById('f-reason').value.trim()
-  const notes     = document.getElementById('f-notes').value.trim()
-  const errEl     = document.getElementById('form-error')
+  const firstName = document.getElementById('f-firstname').value.trim();
+  const lastName  = document.getElementById('f-lastname').value.trim();
+  const phone     = document.getElementById('f-phone').value.trim();
+  const idNumber  = document.getElementById('f-idnumber').value.trim();
+  const reason    = document.getElementById('f-reason').value.trim();
+  const notes     = document.getElementById('f-notes').value.trim();
+  const errEl     = document.getElementById('form-error');
+  const submitBtn = document.getElementById('btn-submit');
 
   if (!firstName || !lastName || !phone) {
-    errEl.textContent = 'Please fill in your first name, last name and phone number.'
-    errEl.style.display = 'block'
-    return
+    errEl.textContent = 'Please fill in your first name, last name and phone number.';
+    errEl.style.display = 'block';
+    return;
   }
 
-  const submitBtn = document.getElementById('btn-submit')
-  submitBtn.disabled = true
-  submitBtn.textContent = 'Booking…'
-  errEl.style.display = 'none'
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+
+  if (!session) {
+    errEl.textContent = 'Please log in before booking an appointment.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Booking...';
+  errEl.style.display = 'none';
 
   const dateStr = [
     selectedDate.getFullYear(),
     String(selectedDate.getMonth() + 1).padStart(2, '0'),
     String(selectedDate.getDate()).padStart(2, '0'),
-  ].join('-')
+  ].join('-');
 
   const { data: { session } } = await sb.auth.getSession()
 
@@ -422,13 +432,13 @@ const userEmail = session.user.email   // ✅ THIS is what you need
     status:           'pending',
   }
 
-  const { error } = await sb.from('Appointments').insert([record])
+  const { error } = await sb.from('Appointments').insert([record]);
 
   if (error) {
     console.error('Booking error:', error)
   }
 
-  renderConfirmation(firstName, lastName, dateStr)
+  renderConfirmation(firstName, lastName, dateStr);
 }
 // ── Confirmation screen ──────────────────────────────────────
 function renderConfirmation(firstName, lastName, dateStr) {
