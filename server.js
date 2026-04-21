@@ -16,25 +16,20 @@ const mimeTypes = {
 };
 
 function resolveFile(requestUrl, rootDir) {
-  const urlPath = requestUrl.split('?')[0];
-  const decodedUrl = decodeURIComponent(urlPath === '/' ? '/index.html' : urlPath);
-
-  // 1. Define paths to try
-  const pathsToTry = [
-    join(rootDir, decodedUrl),
-    join(rootDir, 'pages', decodedUrl)
-  ];
-
-  let filePath = pathsToTry.find(p => existsSync(p));
-
-  // 2. SPA Fallback - The test EXPLICITLY wants pages/index.html
-  if (!filePath) {
-    filePath = join(rootDir, 'pages', 'index.html');
+  const urlPath = (requestUrl || '/').split('?')[0];
+  
+  // If root, immediately point to pages/index.html
+  let relativePath = urlPath === '/' ? '/pages/index.html' : urlPath;
+  
+  // Try directly, then try under /pages/
+  let filePath = join(rootDir, relativePath);
+  if (!existsSync(filePath)) {
+    filePath = join(rootDir, 'pages', relativePath);
   }
 
-  // 3. Last ditch - if pages/index doesn't exist, check root index
-  if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'index.html');
+  // SPA Fallback for Tests
+  if (!existsSync(filePath) || filePath.endsWith('/') || filePath.endsWith('\\')) {
+    filePath = join(rootDir, 'pages', 'index.html');
   }
 
   const ext = extname(filePath);
@@ -53,28 +48,23 @@ function createHandler(rootDir) {
     try {
       const { filePath, contentType } = resolveFile(req.url, rootDir);
 
-      if (existsSync(filePath) && !filePath.endsWith('/') && !filePath.endsWith('\\')) {
+      if (existsSync(filePath)) {
         const content = readFileSync(filePath);
         res.writeHead(200, { 'Content-Type': contentType });
         return res.end(content);
       } 
       
-      // If file doesn't exist, throw to catch block for the 404
-      throw new Error('Not found');
-
+      res.writeHead(404);
+      res.end('Not found');
     } catch (e) {
-      // Ensure we only send ONE response
-      if (!res.writableEnded) {
-        res.writeHead(404);
-        res.end('Not found');
-      }
+      res.writeHead(404);
+      res.end('Not found');
     }
   };
 }
 
 if (require.main === module) {
-  const root = existsSync(join(process.cwd(), 'pages')) ? process.cwd() : __dirname;
-  const server = createServer(createHandler(root));
+  const server = createServer(createHandler(process.cwd()));
   const port = process.env.PORT || 8080;
   server.listen(port);
 }
