@@ -62,7 +62,7 @@ jobs:
       contents: read
     environment:
       name: Production
-      url: https://meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net
+      url: https://meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net/pages/index.html
 
     steps:
       - name: Download artifact
