@@ -16,19 +16,22 @@ const mimeTypes = {
 };
 
 function resolveFile(requestUrl, rootDir) {
-  const urlPath = (requestUrl || '/').split('?')[0];
+  // 1. Split query params and then DECODE the URI to handle spaces/%20
+  const urlPath = decodeURIComponent((requestUrl || '/').split('?')[0]);
   
-  // If root, immediately point to pages/index.html
+  // 2. Determine relative path (Root becomes pages/index.html)
   let relativePath = urlPath === '/' ? '/pages/index.html' : urlPath;
   
-  // Try directly, then try under /pages/
-  let filePath = join(rootDir, relativePath);
-  if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'pages', relativePath);
-  }
+  // 3. Define priority: Try raw path, then try under pages/
+  const pathsToTry = [
+    join(rootDir, relativePath),
+    join(rootDir, 'pages', relativePath)
+  ];
+  
+  let filePath = pathsToTry.find(p => existsSync(p) && !p.endsWith('/') && !p.endsWith('\\'));
 
-  // SPA Fallback for Tests
-  if (!existsSync(filePath) || filePath.endsWith('/') || filePath.endsWith('\\')) {
+  // 4. SPA Fallback (Required by Test Suite)
+  if (!filePath) {
     filePath = join(rootDir, 'pages', 'index.html');
   }
 
@@ -57,8 +60,10 @@ function createHandler(rootDir) {
       res.writeHead(404);
       res.end('Not found');
     } catch (e) {
-      res.writeHead(404);
-      res.end('Not found');
+      if (!res.writableEnded) {
+        res.writeHead(404);
+        res.end('Not found');
+      }
     }
   };
 }
