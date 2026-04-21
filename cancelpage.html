@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Appointment Details</title>
+  <title>My Appointments</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="cancelpage.css" />
 </head>
@@ -12,42 +12,19 @@
     <header class="topbar">
       <h1 class="topbar-title">Health-Flow</h1>
       <nav class="topbar-right" aria-label="Page actions">
-        <button class="btn-back" type="button" onclick="window.location.href='/pages/dashboard.html'">
+        <button class="btn-back" type="button" onclick="window.location.href='dashboard.html'">
           Back to Dashboard
         </button>
       </nav>
     </header>
 
     <section aria-labelledby="page-heading">
-      <h2 id="page-heading" class="section-title">Viewing Appointment</h2>
+      <h2 id="page-heading" class="section-title">My Appointments</h2>
+      <p class="section-subtitle">View all your appointments and manage them here.</p>
 
-      <article class="appointment" aria-labelledby="appointment-heading">
-        <header class="appointment-header">
-          <h3 id="appointment-heading">Your appointment is booked as follows</h3>
-          <p id="statusPill" class="status-pill" aria-live="polite">loading</p>
-        </header>
-
-        <section class="details" aria-label="Appointment details">
-          <dl>
-            <dt>Date</dt>
-            <dd id="date">-</dd>
-
-            <dt>Time</dt>
-            <dd id="time">-</dd>
-
-            <dt>Clinic</dt>
-            <dd id="clinic">-</dd>
-
-            <dt>Reason</dt>
-            <dd id="reason">-</dd>
-          </dl>
-        </section>
-
-        <footer class="actions">
-          <button id="cancelBtn" class="btn-danger" type="button">Cancel Appointment</button>
-         <!--<button id="rescheduleBtn" class="btn-ghost" type="button">Reschedule</button>--> 
-        </footer>
-      </article>
+      <section id="appointmentsContainer" class="appointments-list" aria-live="polite">
+        <p class="loading-message">Loading your appointments...</p>
+      </section>
     </section>
   </main>
 

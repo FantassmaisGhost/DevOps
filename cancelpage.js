@@ -1,124 +1,185 @@
 import { supabase } from "./supabase.js";
 
-const params = new URLSearchParams(window.location.search);
-const appointmentId = params.get("id");
+const appointmentsContainer = document.getElementById("appointmentsContainer");
 
-const dateEl = document.getElementById("date");
-const timeEl = document.getElementById("time");
-const clinicEl = document.getElementById("clinic");
-const reasonEl = document.getElementById("reason");
-const statusPill = document.getElementById("statusPill");
-const cancelBtn = document.getElementById("cancelBtn");
-const rescheduleBtn = document.getElementById("rescheduleBtn");
-
-function disableActions() {
-  if (cancelBtn) cancelBtn.disabled = true;
-  if (rescheduleBtn) rescheduleBtn.disabled = true;
+function showMessage(message, className = "info-message") {
+  if (!appointmentsContainer) return;
+  appointmentsContainer.innerHTML = `<p class="${className}">${message}</p>`;
 }
 
-function showError(message) {
-  const appointmentCard = document.querySelector(".appointment");
-  if (!appointmentCard) return;
-
-  appointmentCard.innerHTML = `<p class="error-message">${message}</p>`;
+function formatDate(dateString) {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString("en-ZA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
-function setText(el, value) {
-  if (!el) return;
-  el.textContent = value || "-";
+function formatTime(timeString) {
+  if (!timeString) return "-";
+
+  const [hours, minutes] = timeString.split(":");
+  if (hours === undefined || minutes === undefined) return timeString;
+
+  const date = new Date();
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+
+  return date.toLocaleTimeString("en-ZA", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function applyStatus(status) {
-  if (!statusPill) return;
-
-  const normalizedStatus = (status || "waiting").toLowerCase();
+function normalizeStatus(status) {
+  const normalized = (status || "waiting").toLowerCase();
   const knownStatuses = ["scheduled", "completed", "cancelled", "waiting"];
-  const finalStatus = knownStatuses.includes(normalizedStatus) ? normalizedStatus : "waiting";
+  return knownStatuses.includes(normalized) ? normalized : "waiting";
+}
 
-  statusPill.textContent = finalStatus;
-  statusPill.classList.remove("scheduled", "completed", "cancelled", "waiting");
-  statusPill.classList.add(finalStatus);
+function getClinicNameMap(facilities) {
+  const map = new Map();
 
-  if (finalStatus === "cancelled" || finalStatus === "completed") {
-    if (cancelBtn) {
-      cancelBtn.disabled = true;
-      cancelBtn.textContent = finalStatus === "cancelled" ? "Cancelled" : "Unavailable";
+  facilities.forEach((facility) => {
+    const clinicId = facility?.ClinicID;
+    const clinicName = facility?.Name || "Unknown clinic";
+    if (clinicId) {
+      map.set(clinicId, clinicName);
     }
-  }
+  });
+
+  return map;
 }
 
-function getClinicId(appointment) {
-  return appointment?.ClinicID || appointment?.clinicid || appointment?.clinicId || null;
+function createAppointmentCard(appointment, clinicName) {
+  const article = document.createElement("article");
+  article.className = "appointment-card";
+
+  const status = normalizeStatus(appointment.status);
+  const isLocked = status === "cancelled" || status === "completed";
+
+  article.innerHTML = `
+    <header class="appointment-header">
+      <div>
+        <h3 class="appointment-title">Appointment</h3>
+        <p class="appointment-id">ID: ${appointment.id}</p>
+      </div>
+      <p class="status-pill ${status}">${status}</p>
+    </header>
+
+    <section class="details">
+      <dl>
+        <dt>Date</dt>
+        <dd>${formatDate(appointment.appointment_date)}</dd>
+
+        <dt>Time</dt>
+        <dd>${formatTime(appointment.appointment_time)}</dd>
+
+        <dt>Clinic</dt>
+        <dd>${clinicName || "Unknown clinic"}</dd>
+
+        <dt>Reason</dt>
+        <dd>${appointment.reason || "-"}</dd>
+      </dl>
+    </section>
+
+    <footer class="actions">
+      <button
+        class="btn-danger cancel-btn"
+        type="button"
+        data-id="${appointment.id}"
+        ${isLocked ? "disabled" : ""}
+      >
+        ${status === "cancelled" ? "Cancelled" : status === "completed" ? "Unavailable" : "Cancel Appointment"}
+      </button>
+    </footer>
+  `;
+
+  return article;
 }
 
-async function fetchClinicName(clinicId) {
-  if (!clinicId) return "Unknown clinic";
-
-  let { data, error } = await supabase
-    .from("Facilities")
-    .select("name, Name")
-    .eq("ClinicID", clinicId)
-    .maybeSingle();
+async function getLoggedInUser() {
+  const { data, error } = await supabase.auth.getUser();
 
   if (error) {
-    ({ data, error } = await supabase
-      .from("Facilities")
-      .select("name, Name")
-      .eq("clinicid", clinicId)
-      .maybeSingle());
+    console.error("Auth error:", error.message);
+    return null;
   }
 
-  if (error) {
-    console.error("Failed to load clinic details:", error.message);
-    return "Unknown clinic";
-  }
-
-  return data?.name || data?.Name || "Unknown clinic";
+  return data?.user || null;
 }
 
-async function loadAppointment() {
-  if (!appointmentId) {
-    showError("Invalid or missing appointment ID.");
-    disableActions();
-    return;
-  }
-
-  const { data: appointment, error: appointmentError } = await supabase
+async function fetchAppointmentsForUser(userId) {
+  const { data, error } = await supabase
     .from("Appointments")
     .select("*")
-    .eq("id", appointmentId)
-    .maybeSingle();
+    .eq("PatientID", userId)
+    .order("appointment_date", { ascending: true })
+    .order("appointment_time", { ascending: true });
 
-  if (appointmentError) {
-    showError(`Failed to load appointment: ${appointmentError.message}`);
-    disableActions();
-    return;
+  if (error) {
+    throw new Error(`Failed to load appointments: ${error.message}`);
   }
 
-  if (!appointment) {
-    showError("Appointment not found.");
-    disableActions();
-    return;
-  }
-
-  const clinicId = getClinicId(appointment);
-  const clinicName = await fetchClinicName(clinicId);
-
-  setText(dateEl, appointment.appointment_date);
-  setText(timeEl, appointment.appointment_time);
-  setText(clinicEl, clinicName);
-  setText(reasonEl, appointment.reason);
-  applyStatus(appointment.status);
+  return data || [];
 }
 
-async function cancelAppointment() {
-  if (!appointmentId || !cancelBtn) return;
+async function fetchFacilities() {
+  const { data, error } = await supabase
+    .from("Facilities")
+    .select("ClinicID, Name");
 
-  const confirmCancel = window.confirm("Are you sure you want to cancel this appointment?");
-  if (!confirmCancel) return;
+  if (error) {
+    console.error("Facilities fetch error:", error.message);
+    return [];
+  }
 
-  cancelBtn.disabled = true;
-  cancelBtn.textContent = "Cancelling...";
+  return data || [];
+}
+
+async function renderAppointments() {
+  try {
+    const user = await getLoggedInUser();
+
+    if (!user) {
+      showMessage("You must be logged in to view your appointments.", "error-message");
+      return;
+    }
+
+    const [appointments, facilities] = await Promise.all([
+      fetchAppointmentsForUser(user.id),
+      fetchFacilities(),
+    ]);
+
+    if (!appointments.length) {
+      showMessage("You do not have any appointments yet.", "info-message");
+      return;
+    }
+
+    const clinicMap = getClinicNameMap(facilities);
+
+    appointmentsContainer.innerHTML = "";
+
+    appointments.forEach((appointment) => {
+      const clinicName = clinicMap.get(appointment.ClinicID) || "Unknown clinic";
+      const card = createAppointmentCard(appointment, clinicName);
+      appointmentsContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error(error);
+    showMessage(error.message || "Something went wrong while loading appointments.", "error-message");
+  }
+}
+
+async function cancelAppointment(appointmentId, button) {
+  const confirmed = window.confirm("Are you sure you want to cancel this appointment?");
+  if (!confirmed) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Cancelling...";
 
   const { error } = await supabase
     .from("Appointments")
@@ -128,22 +189,22 @@ async function cancelAppointment() {
   if (error) {
     console.error("Cancel error:", error.message);
     alert(`Failed to cancel appointment: ${error.message}`);
-    cancelBtn.disabled = false;
-    cancelBtn.textContent = "Cancel Appointment";
+    button.disabled = false;
+    button.textContent = originalText;
     return;
   }
 
-  applyStatus("cancelled");
+  await renderAppointments();
 }
 
-if (cancelBtn) {
-  cancelBtn.addEventListener("click", cancelAppointment);
-}
+appointmentsContainer?.addEventListener("click", async (event) => {
+  const button = event.target.closest(".cancel-btn");
+  if (!button) return;
 
-if (rescheduleBtn) {
-  rescheduleBtn.addEventListener("click", () => {
-    alert("Reschedule flow is not connected yet.");
-  });
-}
+  const appointmentId = button.dataset.id;
+  if (!appointmentId) return;
 
-loadAppointment();
+  await cancelAppointment(appointmentId, button);
+});
+
+renderAppointments();
