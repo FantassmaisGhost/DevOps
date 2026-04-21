@@ -4,41 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Appointment Details</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="cancelpage.css" />
 </head>
 <body>
-  <main>
-    <header>
-      <h1>Viewing Appointment</h1>
+  <main class="main" id="main-content">
+    <header class="topbar">
+      <h1 class="topbar-title">Health-Flow</h1>
+      <nav class="topbar-right" aria-label="Page actions">
+        <button class="btn-back" type="button" onclick="window.location.href='/pages/dashboard.html'">
+          Back to Dashboard
+        </button>
+      </nav>
     </header>
 
-    <article class="appointment">
-      <header>
-        <h2>Your appointment is booked as follows</h2>
-        <p id="statusPill" class="status-pill"></p>
-      </header>
+    <section aria-labelledby="page-heading">
+      <h2 id="page-heading" class="section-title">Viewing Appointment</h2>
 
-      <section class="details">
-        <dl>
-          <dt>Date</dt>
-          <dd id="date">-</dd>
+      <article class="appointment" aria-labelledby="appointment-heading">
+        <header class="appointment-header">
+          <h3 id="appointment-heading">Your appointment is booked as follows</h3>
+          <p id="statusPill" class="status-pill" aria-live="polite">loading</p>
+        </header>
 
-          <dt>Time</dt>
-          <dd id="time">-</dd>
+        <section class="details" aria-label="Appointment details">
+          <dl>
+            <dt>Date</dt>
+            <dd id="date">-</dd>
 
-          <dt>Clinic</dt>
-          <dd id="clinic">-</dd>
+            <dt>Time</dt>
+            <dd id="time">-</dd>
 
-          <dt>Reason</dt>
-          <dd id="reason">-</dd>
-        </dl>
-      </section>
+            <dt>Clinic</dt>
+            <dd id="clinic">-</dd>
 
-      <footer class="actions">
-        <button id="cancelBtn" type="button">Cancel Appointment</button>
-        <button id="rescheduleBtn" type="button">Reschedule</button>
-      </footer>
-    </article>
+            <dt>Reason</dt>
+            <dd id="reason">-</dd>
+          </dl>
+        </section>
+
+        <footer class="actions">
+          <button id="cancelBtn" class="btn-danger" type="button">Cancel Appointment</button>
+          <button id="rescheduleBtn" class="btn-ghost" type="button">Reschedule</button>
+        </footer>
+      </article>
+    </section>
   </main>
 
   <script type="module" src="cancelpage.js"></script>

@@ -23,19 +23,57 @@ function showError(message) {
   appointmentCard.innerHTML = `<p class="error-message">${message}</p>`;
 }
 
+function setText(el, value) {
+  if (!el) return;
+  el.textContent = value || "-";
+}
+
 function applyStatus(status) {
-  const normalizedStatus = (status || "unknown").toLowerCase();
+  if (!statusPill) return;
 
-  statusPill.textContent = normalizedStatus;
-  statusPill.classList.remove("cancelled");
+  const normalizedStatus = (status || "waiting").toLowerCase();
+  const knownStatuses = ["scheduled", "completed", "cancelled", "waiting"];
+  const finalStatus = knownStatuses.includes(normalizedStatus) ? normalizedStatus : "waiting";
 
-  if (normalizedStatus === "cancelled") {
-    statusPill.classList.add("cancelled");
+  statusPill.textContent = finalStatus;
+  statusPill.classList.remove("scheduled", "completed", "cancelled", "waiting");
+  statusPill.classList.add(finalStatus);
+
+  if (finalStatus === "cancelled" || finalStatus === "completed") {
     if (cancelBtn) {
       cancelBtn.disabled = true;
-      cancelBtn.textContent = "Cancelled";
+      cancelBtn.textContent = finalStatus === "cancelled" ? "Cancelled" : "Unavailable";
     }
   }
+}
+
+function getClinicId(appointment) {
+  return appointment?.ClinicID || appointment?.clinicid || appointment?.clinicId || null;
+}
+
+async function fetchClinicName(clinicId) {
+  if (!clinicId) return "Unknown clinic";
+
+  let { data, error } = await supabase
+    .from("Facilities")
+    .select("name, Name")
+    .eq("ClinicID", clinicId)
+    .maybeSingle();
+
+  if (error) {
+    ({ data, error } = await supabase
+      .from("Facilities")
+      .select("name, Name")
+      .eq("clinicid", clinicId)
+      .maybeSingle());
+  }
+
+  if (error) {
+    console.error("Failed to load clinic details:", error.message);
+    return "Unknown clinic";
+  }
+
+  return data?.name || data?.Name || "Unknown clinic";
 }
 
 async function loadAppointment() {
@@ -63,36 +101,20 @@ async function loadAppointment() {
     return;
   }
 
-  let clinicName = "Unknown clinic";
+  const clinicId = getClinicId(appointment);
+  const clinicName = await fetchClinicName(clinicId);
 
-  if (appointment.clinicid) {
-    const { data: facility, error: facilityError } = await supabase
-      .from("Facilities")
-      .select("name")
-      .eq("clinicid", appointment.clinicid)
-      .maybeSingle();
-
-    if (facilityError) {
-      console.error("Failed to load clinic details:", facilityError.message);
-    } else if (facility?.name) {
-      clinicName = facility.name;
-    }
-  }
-
-  dateEl.textContent = appointment.appointment_date || "-";
-  timeEl.textContent = appointment.appointment_time || "-";
-  clinicEl.textContent = clinicName;
-  reasonEl.textContent = appointment.reason || "-";
+  setText(dateEl, appointment.appointment_date);
+  setText(timeEl, appointment.appointment_time);
+  setText(clinicEl, clinicName);
+  setText(reasonEl, appointment.reason);
   applyStatus(appointment.status);
 }
 
 async function cancelAppointment() {
   if (!appointmentId || !cancelBtn) return;
 
-  const confirmCancel = window.confirm(
-    "Are you sure you want to cancel this appointment?"
-  );
-
+  const confirmCancel = window.confirm("Are you sure you want to cancel this appointment?");
   if (!confirmCancel) return;
 
   cancelBtn.disabled = true;
@@ -116,6 +138,12 @@ async function cancelAppointment() {
 
 if (cancelBtn) {
   cancelBtn.addEventListener("click", cancelAppointment);
+}
+
+if (rescheduleBtn) {
+  rescheduleBtn.addEventListener("click", () => {
+    alert("Reschedule flow is not connected yet.");
+  });
 }
 
 loadAppointment();
