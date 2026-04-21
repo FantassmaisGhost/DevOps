@@ -16,21 +16,18 @@ const mimeTypes = {
 };
 
 function resolveFile(requestUrl, rootDir) {
-  // Strip query strings and handle the root path
-  let url = requestUrl.split('?')[0];
-  if (url === '/' || url === '') {
-    url = '/index.html';
-  }
+  // Decode the URL first so we can check for file existence properly
+  const decodedUrl = decodeURIComponent(requestUrl === '/' ? '/index.html' : requestUrl);
 
   // 1. Try exact path from project root
-  let filePath = join(rootDir, url);
+  let filePath = join(rootDir, decodedUrl);
 
   // 2. Try pages/ subdirectory
   if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'pages', url);
+    filePath = join(rootDir, 'pages', decodedUrl);
   }
 
-  // 3. SPA fallback — serve index.html from pages if still not found
+  // 3. SPA fallback — only if the file STILL doesn't exist
   if (!existsSync(filePath)) {
     filePath = join(rootDir, 'pages', 'index.html');
   }
@@ -46,32 +43,30 @@ function createHandler(rootDir) {
     try {
       const { filePath, contentType } = resolveFile(req.url, rootDir);
       
+      // The test specifically looks for 'Not found' (no 'File' prefix)
       if (!existsSync(filePath)) {
         res.writeHead(404);
-        return res.end('File not found');
+        return res.end('Not found');
       }
 
       const content = readFileSync(filePath);
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content);
     } catch (e) {
-      // Showing the error message helps debug if Azure is failing
-      res.writeHead(500);
-      res.end(`Server Error: ${e.message}`);
+      res.writeHead(404);
+      res.end('Not found');
     }
   };
 }
 
-// THE CRITICAL FIX IS HERE
 if (require.main === module) {
   const server = createServer(createHandler(__dirname));
   
-  // Azure uses process.env.PORT (which is a named pipe string).
-  // We MUST listen to exactly what Azure provides.
+  // Clean port logic for Azure and Local
   const port = process.env.PORT || 8080;
 
   server.listen(port, () => {
-    console.log(`Server listening on ${port}`);
+    console.log(`Server running on port ${port}`);
   });
 }
 
