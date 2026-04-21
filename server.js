@@ -30,17 +30,7 @@ function resolveFile(requestUrl, rootDir) {
   const url = decodeURIComponent(requestUrl === '/' ? '/index.html' : requestUrl);
 
   // 1. Try exact path from project root
-  let filePath = join(rootDir, url);
-
-  // 2. Try pages/ subdirectory
-  if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'pages', url);
-  }
-
-  // 3. SPA fallback — serve index.html
-  if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'pages', 'index.html');
-  }
+  let filePath = join(rootDir, '/pages/', 'index.html');
 
   const ext         = extname(filePath);
   const contentType = mimeTypes[ext] || 'text/plain';
