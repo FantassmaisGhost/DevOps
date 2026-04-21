@@ -1,7 +1,7 @@
 import { supabase } from "./supabase.js";
 
 const params = new URLSearchParams(window.location.search);
-const appointmentId = Number(params.get("id"));
+const appointmentId = params.get("id");
 
 const dateEl = document.getElementById("date");
 const timeEl = document.getElementById("time");
@@ -13,84 +13,55 @@ const cancelBtn = document.getElementById("cancelBtn");
 let currentAppointment = null;
 
 async function loadAppointment() {
-  if (!Number.isInteger(appointmentId)) {
+  if (!appointmentId) {
     showError("Invalid or missing appointment ID.");
     disableActions();
     return;
   }
 
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-
-  if (sessionError || !session) {
-    showError("Please log in to view this appointment.");
-    disableActions();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    window.location.href = "/pages/dashboard.html";
     return;
   }
 
-  const patientEmail = session.user.email;
-
-  const { data: appointment, error: appointmentError } = await supabase
+  const { data: appointment, error } = await supabase
     .from("Appointments")
-    .select("id, appointment_date, appointment_time, reason, status, ClinicID, clinicid, patient_email")
+    .select("id, patient_email, appointment_date, appointment_time, reason, status, ClinicID, Facilities(Name)")
     .eq("id", appointmentId)
-    .eq("patient_email", patientEmail)
+    .eq("patient_email", session.user.email)
     .maybeSingle();
 
-  if (appointmentError) {
-    showError(`Failed to load appointment: ${appointmentError.message}`);
+  if (error) {
+    showError(`Failed to load appointment: ${error.message}`);
     disableActions();
     return;
   }
 
   if (!appointment) {
-    showError("Appointment not found for your account.");
+    showError("Appointment not found for this account.");
     disableActions();
     return;
   }
 
   currentAppointment = appointment;
 
-  const clinicId = appointment.ClinicID ?? appointment.clinicid ?? null;
-  const clinicName = await loadClinicName(clinicId);
-
-  dateEl.textContent = formatDate(appointment.appointment_date);
-  timeEl.textContent = formatTime(appointment.appointment_time);
+  dateEl.textContent = appointment.appointment_date || "-";
+  timeEl.textContent = appointment.appointment_time || "-";
   reasonEl.textContent = appointment.reason || "-";
-  clinicEl.textContent = clinicName;
-  statusPill.textContent = appointment.status || "unknown";
-  statusPill.className = `status-pill ${normalizeStatus(appointment.status)}`;
+  clinicEl.textContent = appointment.Facilities?.Name || appointment.ClinicID || "Unknown clinic";
+  setStatus(appointment.status || "unknown");
 
-  if (normalizeStatus(appointment.status) === "cancelled") {
-    cancelBtn.textContent = "Appointment Cancelled";
+  const normalizedStatus = String(appointment.status || "").toLowerCase();
+  if (normalizedStatus === "cancelled" || normalizedStatus === "completed") {
     cancelBtn.disabled = true;
+    cancelBtn.textContent = normalizedStatus === "cancelled" ? "Already Cancelled" : "Cannot Cancel Completed Appointment";
   }
-}
-
-async function loadClinicName(clinicId) {
-  if (!clinicId) {
-    return "Unknown clinic";
-  }
-
-  const { data: facility, error } = await supabase
-    .from("Facilities")
-    .select("Name, name, ClinicID, clinicid")
-    .or(`ClinicID.eq.${clinicId},clinicid.eq.${clinicId}`)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Failed to load clinic details:", error.message);
-    return "Unknown clinic";
-  }
-
-  return facility?.Name || facility?.name || "Unknown clinic";
 }
 
 async function cancelAppointment() {
-  if (!currentAppointment) {
-    showError("Appointment details are not loaded yet.");
+  if (!appointmentId || !currentAppointment) {
+    showError("Appointment details are not available.");
     return;
   }
 
@@ -104,22 +75,33 @@ async function cancelAppointment() {
   const { error } = await supabase
     .from("Appointments")
     .update({ status: "cancelled" })
-    .eq("id", currentAppointment.id)
+    .eq("id", appointmentId)
     .eq("patient_email", currentAppointment.patient_email);
 
   if (error) {
-    console.error("Cancel failed:", error.message);
     cancelBtn.disabled = false;
     cancelBtn.textContent = "Cancel Appointment";
     showError(`Failed to cancel appointment: ${error.message}`);
     return;
   }
 
-  statusPill.textContent = "cancelled";
-  statusPill.className = "status-pill cancelled";
+  currentAppointment.status = "cancelled";
+  setStatus("cancelled");
   cancelBtn.textContent = "Appointment Cancelled";
   cancelBtn.disabled = true;
-  showSuccess("Appointment cancelled successfully.");
+
+  const appointmentCard = document.querySelector(".appointment");
+  if (appointmentCard && !appointmentCard.querySelector(".success-message")) {
+    const message = document.createElement("p");
+    message.className = "success-message";
+    message.textContent = "Appointment cancelled successfully.";
+    appointmentCard.appendChild(message);
+  }
+}
+
+function setStatus(status) {
+  statusPill.textContent = status;
+  statusPill.className = "status-pill " + String(status).toLowerCase();
 }
 
 function disableActions() {
@@ -128,72 +110,22 @@ function disableActions() {
   }
 }
 
-function showError(msg) {
-  renderMessage(msg, "error-message");
-}
-
-function showSuccess(msg) {
-  renderMessage(msg, "success-message");
-}
-
-function renderMessage(msg, className) {
+function showError(message) {
   const appointmentCard = document.querySelector(".appointment");
   if (!appointmentCard) {
     return;
   }
 
-  let messageEl = appointmentCard.querySelector(".page-message");
-  if (!messageEl) {
-    messageEl = document.createElement("p");
-    messageEl.className = `page-message ${className}`;
-    appointmentCard.appendChild(messageEl);
-  } else {
-    messageEl.className = `page-message ${className}`;
+  const existing = appointmentCard.querySelector(".error-message");
+  if (existing) {
+    existing.textContent = message;
+    return;
   }
 
-  messageEl.textContent = msg;
-}
-
-function normalizeStatus(status) {
-  return String(status || "").trim().toLowerCase() || "unknown";
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("en-ZA", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function formatTime(value) {
-  if (!value) {
-    return "-";
-  }
-
-  if (/^\d{2}:\d{2}/.test(value)) {
-    return value.slice(0, 5);
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleTimeString("en-ZA", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const error = document.createElement("p");
+  error.className = "error-message";
+  error.textContent = message;
+  appointmentCard.prepend(error);
 }
 
 if (cancelBtn) {

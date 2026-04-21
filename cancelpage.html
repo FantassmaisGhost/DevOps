@@ -1,51 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Appointment Details</title>
-  <link rel="stylesheet" href="cancelpage.css" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cancel Appointment</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0d0f; --surface: #16161a; --surface2: #1e1e24;
+  --border: rgba(255,255,255,0.08); --text: #f0f0f2; --muted: #8a8a9a;
+  --accent: #7c6af5; --danger: #f07070; --success: #5dd4b4; --radius: 16px;
+}
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(124,106,245,0.18), transparent 30%), var(--bg);
+  color: var(--text);
+  font-family: "Syne", sans-serif;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.appointment {
+  width: min(100%, 640px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+}
+.eyebrow {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+h1 {
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.detail {
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 14px;
+}
+.label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.value {
+  font-size: 16px;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  text-transform: capitalize;
+  font-size: 12px;
+}
+.status-pill.cancelled { background: rgba(240,112,112,0.2); color: var(--danger); }
+.status-pill.completed { background: rgba(93,212,180,0.2); color: var(--success); }
+.status-pill.scheduled { background: rgba(124,106,245,0.2); color: var(--accent); }
+.status-pill.waiting, .status-pill.unknown { background: rgba(255,255,255,0.08); color: var(--text); }
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+button, a {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  text-decoration: none;
+  font: inherit;
+}
+#cancelBtn {
+  background: rgba(240,112,112,0.14);
+  color: var(--danger);
+  cursor: pointer;
+}
+.back-link {
+  color: var(--muted);
+}
+.error-message {
+  margin-bottom: 16px;
+  color: var(--danger);
+}
+.success-message {
+  margin-top: 16px;
+  color: var(--success);
+}
+@media (max-width: 640px) {
+  .details { grid-template-columns: 1fr; }
+}
+</style>
 </head>
-
 <body>
+  <section class="appointment">
+    <div class="eyebrow">Appointment management</div>
+    <h1>Cancel Appointment</h1>
+    <p class="subtitle">Review the booking details below before confirming the cancellation.</p>
 
-  <main>
-    <header>
-      <h1>Viewing Appointment</h1>
-    </header>
+    <div class="details">
+      <div class="detail">
+        <span class="label">Date</span>
+        <div class="value" id="date">-</div>
+      </div>
+      <div class="detail">
+        <span class="label">Time</span>
+        <div class="value" id="time">-</div>
+      </div>
+      <div class="detail">
+        <span class="label">Clinic</span>
+        <div class="value" id="clinic">-</div>
+      </div>
+      <div class="detail">
+        <span class="label">Status</span>
+        <div class="value"><span id="statusPill" class="status-pill unknown">unknown</span></div>
+      </div>
+      <div class="detail" style="grid-column: 1 / -1;">
+        <span class="label">Reason</span>
+        <div class="value" id="reason">-</div>
+      </div>
+    </div>
 
-    <article class="appointment">
-      <header>
-        <h2>Your appointment is booked as follows</h2>
-        <p id="statusPill" class="status-pill"></p>
-      </header>
+    <div class="actions">
+      <button id="cancelBtn" type="button">Cancel Appointment</button>
+      <a class="back-link" href="./appointment_dash.html">Back to Appointments</a>
+    </div>
+  </section>
 
-      <section class="details">
-        <dl>
-          <dt>Date</dt>
-          <dd id="date"></dd>
-
-          <dt>Time</dt>
-          <dd id="time"></dd>
-
-          <dt>Clinic</dt>
-          <dd id="clinic"></dd>
-
-          <dt>Reason</dt>
-          <dd id="reason"></dd>
-        </dl>
-      </section>
-
-      <footer class="actions">
-        <button id="cancelBtn">Cancel Appointment</button>
-        <button id="rescheduleBtn">Reschedule</button>
-      </footer>
-    </article>
-  </main>
-
-  <script type="module" src="cancelpage.js"></script>
-
+  <script type="module" src="./cancelpage.js"></script>
 </body>
 </html>
