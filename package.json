@@ -17,6 +17,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+  "node": ">=18.0.0"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
     "serve": "^14.2.4"

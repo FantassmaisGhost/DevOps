@@ -409,35 +409,37 @@ async function submitBooking() {
     String(selectedDate.getDate()).padStart(2, '0'),
   ].join('-');
 
+  const { data: { session } } = await sb.auth.getSession()
+
+  if (!session) {
+    alert("You must be logged in to book.");
+    return;
+  }
+
+const userId = session.user.id
+const userEmail = session.user.email   // ✅ THIS is what you need
+
   const record = {
-    ClinicID: clinicID,
-    appointment_date: dateStr,
+    id:               crypto.randomUUID(),
+    ClinicID:         clinicID,
+    appointment_date: dateStr,                   // ✅ FIX 2: patient's chosen date
     appointment_time: selectedSlot,
-    patient_name: `${firstName} ${lastName}`,
-    patient_email: session.user.email,
-    patient_id: session.user.id,
-    patient_phone: phone,
-    patient_id_number: idNumber || null,
-    reason: reason || null,
-    notes: notes || null,
-    status: 'scheduled',
-  };
+    patient_name:     firstName + " " + lastName,
+    patient_email:    userEmail,
+    PatientID:       userId,
+    reason:           reason || null,
+    notes:            notes  || null,
+    status:           'pending',
+  }
 
   const { error } = await sb.from('Appointments').insert([record]);
 
   if (error) {
-    console.error('Booking error:', error);
-    errEl.textContent = `Failed to book appointment: ${error.message}`;
-    errEl.style.display = 'block';
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Confirm Booking';
-    return;
+    console.error('Booking error:', error)
   }
 
   renderConfirmation(firstName, lastName, dateStr);
 }
-
-
 // ── Confirmation screen ──────────────────────────────────────
 function renderConfirmation(firstName, lastName, dateStr) {
   const refCode = `BK-${Date.now().toString(36).toUpperCase().slice(-6)}`

@@ -70,8 +70,14 @@ function createHandler(rootDir) {
 
 // Only start listening when this file is run directly (not required by tests)
 if (require.main === module) {
-  createServer(createHandler(__dirname))
-    .listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  const server = createServer(createHandler(__dirname))
+  const port = process.env.PORT || process.env.IISNODE_VERSION ? null : 8080
+
+  if (process.env.PORT) {
+    server.listen(process.env.PORT)
+  } else {
+    server.listen(8080, () => console.log(`Server running on port 8080`))
+  }
 }
 
 module.exports = { resolveFile, createHandler, mimeTypes };
