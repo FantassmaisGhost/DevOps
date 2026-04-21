@@ -59,7 +59,7 @@ jobs:
       contents: read
     environment:
       name: Production
-      url: meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net
+      url: https://meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net
 
     steps:
       - name: Download artifact
@@ -70,14 +70,12 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id:       ${{ secrets.AZUREAPPSERVICE_CLIENTID_8BCB22CCD0114E80B8652B99C8C20BC8 }}      
+          client-id:       ${{ secrets.AZUREAPPSERVICE_CLIENTID_8BCB22CCD0114E80B8652B99C8C20BC8 }}
           tenant-id:       ${{ secrets.AZUREAPPSERVICE_TENANTID_224B1CD79C4D42D4A50EE4AEE898B401 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E3550A30C26043A186C5D00E53867AF1 }}
-
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name:  MedDev
-          slot-name: Production
-          package:   .
+          app-name: MedDev
+          package:  .
