@@ -70,14 +70,15 @@ function createHandler(rootDir) {
 
 // Only start listening when this file is run directly (not required by tests)
 if (require.main === module) {
-  const server = createServer(createHandler(__dirname))
-  const port = process.env.PORT || process.env.IISNODE_VERSION ? null : 8080
+  const server = createServer(createHandler(__dirname));
+  
+  // Azure needs to control this variable entirely.
+  // Do not use logic that might set this to null.
+  const port = process.env.PORT || 8080;
 
-  if (process.env.PORT) {
-    server.listen(process.env.PORT)
-  } else {
-    server.listen(8080, () => console.log(`Server running on port 8080`))
-  }
+  server.listen(port, () => {
+    console.log(`Server is running`);
+  });
 }
 
 module.exports = { resolveFile, createHandler, mimeTypes };
