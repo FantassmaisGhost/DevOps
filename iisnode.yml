@@ -1,5 +1,4 @@
-nodeProcessCommandLine: "C:\Program Files\nodejs\node.exe"
+nodeProcessCommandLine: "C:\Program Files (x86)\nodejs\20.20.0\node.exe"
 loggingEnabled: true
 logDirectory: iisnode
 debuggingEnabled: false
-
