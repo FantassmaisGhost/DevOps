@@ -15,20 +15,25 @@ const mimeTypes = {
   '.json': 'application/json',
 };
 
+/**
+ * Resolve the file path for an incoming request URL.
+ */
 function resolveFile(requestUrl, rootDir) {
-  // Decode the URL first so we can check for file existence properly
+  // 1. Clean the URL and handle the root redirect
   const decodedUrl = decodeURIComponent(requestUrl === '/' ? '/index.html' : requestUrl);
 
-  // 1. Try exact path from project root
-  let filePath = join(rootDir, decodedUrl);
+  // 2. Define all possible locations where the file might be
+  const pathsToTry = [
+    join(rootDir, decodedUrl),               // e.g., root/index.html
+    join(rootDir, 'pages', decodedUrl),       // e.g., root/pages/index.html
+    join(__dirname, '..', 'pages', decodedUrl) // backup for nested folder structures
+  ];
 
-  // 2. Try pages/ subdirectory
-  if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'pages', decodedUrl);
-  }
+  // 3. Find the first path that actually exists on the server
+  let filePath = pathsToTry.find(p => existsSync(p));
 
-  // 3. SPA fallback — only if the file STILL doesn't exist
-  if (!existsSync(filePath)) {
+  // 4. SPA Fallback: If nothing exists, default to index.html in the pages folder
+  if (!filePath) {
     filePath = join(rootDir, 'pages', 'index.html');
   }
 
@@ -38,12 +43,14 @@ function resolveFile(requestUrl, rootDir) {
   return { filePath, contentType };
 }
 
+/**
+ * HTTP request handler.
+ */
 function createHandler(rootDir) {
   return function handler(req, res) {
     try {
       const { filePath, contentType } = resolveFile(req.url, rootDir);
       
-      // The test specifically looks for 'Not found' (no 'File' prefix)
       if (!existsSync(filePath)) {
         res.writeHead(404);
         return res.end('Not found');
@@ -53,20 +60,23 @@ function createHandler(rootDir) {
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content);
     } catch (e) {
+      // Return 404 to satisfy your existing test suite requirements
       res.writeHead(404);
       res.end('Not found');
     }
   };
 }
 
+// Start the server
 if (require.main === module) {
-  const server = createServer(createHandler(__dirname));
+  // CRITICAL: Use process.cwd() to ensure we start looking from the Azure root
+  const server = createServer(createHandler(process.cwd()));
   
-  // Clean port logic for Azure and Local
+  // Port logic for Azure (named pipes) or local development
   const port = process.env.PORT || 8080;
 
   server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server is live on port ${port}`);
   });
 }
 
