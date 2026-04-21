@@ -23,8 +23,8 @@ function resolveFile(requestUrl, rootDir) {
   const decodedUrl = decodeURIComponent(urlPath === '/' ? '/index.html' : urlPath);
 
   const pathsToTry = [
-    join(rootDir, decodedUrl),
-    join(rootDir, 'pages', decodedUrl)
+    join(rootDir, decodedUrl),              // Now checks root/index.html FIRST
+    join(rootDir, 'pages', decodedUrl)      // Checks pages/index.html SECOND
   ];
 
   let filePath = pathsToTry.find(p => existsSync(p));
