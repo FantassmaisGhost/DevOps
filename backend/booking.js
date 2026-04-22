@@ -399,20 +399,7 @@ async function submitBooking() {
     selectedDate.getFullYear(),
     String(selectedDate.getMonth() + 1).padStart(2, '0'),
     String(selectedDate.getDate()).padStart(2, '0'),
-<<<<<<< HEAD
-  ].join('-')
-
-  const { data: { session } } = await sb.auth.getSession()
-
-  if (!session) {
-    alert("You must be logged in to book.");
-    submitBtn.disabled = false
-    submitBtn.textContent = 'Confirm Booking'
-    return;
-  }
-=======
   ].join('-');
->>>>>>> f1c5f8683bb46267880928448727d8730b35aa1c
 
   const userId = session.user.id
   const userEmail = session.user.email
@@ -442,7 +429,6 @@ async function submitBooking() {
 */
   //---------------------------------------------------------------------------------------------------
 
-<<<<<<< HEAD
   const record = {
   id:               appointmentId,
   ClinicID:         clinicID,
@@ -455,9 +441,6 @@ async function submitBooking() {
   notes:            notes  || null,
   status:           'waiting',
 }
-=======
-  const { error } = await sb.from('Appointments').insert([record]);
->>>>>>> f1c5f8683bb46267880928448727d8730b35aa1c
 
   // Insert the appointment
   const { error: insertError } = await sb.from('Appointments').insert([record])
@@ -471,7 +454,6 @@ async function submitBooking() {
     return
   }
 
-<<<<<<< HEAD
   // Create email content
   const emailHtml = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -526,9 +508,6 @@ async function submitBooking() {
 
   // Show confirmation
   renderConfirmation(firstName, lastName, dateStr, appointmentId)
-=======
-  renderConfirmation(firstName, lastName, dateStr);
->>>>>>> f1c5f8683bb46267880928448727d8730b35aa1c
 }
 
 // ── Confirmation screen (UPDATED with appointment ID) ─────────
