@@ -1,22 +1,14 @@
 /* ============================================================
    booking.js — Appointment Booking Page Logic
-   ============================================================
-
-   Flow:
-   1. Read ?clinicID=XXXXX&name=...&type=...&sector=...&city=...&province= from URL
-   2. Load operating_hours for that clinic from Supabase
-   3. Render a 3-step booking form:
-      Step 1 — Pick a date (calendar, greyed-out closed days)
-      Step 2 — Pick a time slot (generated from that day's open/close hours)
-      Step 3 — Enter patient details → confirm
-   4. On submit, write to appointments table in Supabase
    ============================================================ */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+import { sendEmailNotification, createDatabaseNotification } from './notificationService.js';
 
 const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+//const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── Days of week helpers ────────────────────────────────────
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
@@ -372,7 +364,7 @@ function renderDetails(container) {
   document.getElementById('btn-submit').addEventListener('click', submitBooking)
 }
 
-// ── Submit booking ───────────────────────────────────────────
+// ── Submit booking (UPDATED with notifications) ─────────────────
 async function submitBooking() {
   const firstName = document.getElementById('f-firstname').value.trim()
   const lastName  = document.getElementById('f-lastname').value.trim()
@@ -403,36 +395,123 @@ async function submitBooking() {
 
   if (!session) {
     alert("You must be logged in to book.");
+    submitBtn.disabled = false
+    submitBtn.textContent = 'Confirm Booking'
     return;
   }
 
-const userId = session.user.id
-const userEmail = session.user.email   // ✅ THIS is what you need
+  const userId = session.user.id
+  const userEmail = session.user.email
+  const appointmentId = crypto.randomUUID()
 
-  const record = {
-    id:               crypto.randomUUID(),
+  // Format date nicely for email
+  const formattedDate = selectedDate.toLocaleDateString('en-ZA', {
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric'
+  })
+
+  //--------------------------------------------------------------------------------------------------
+  /*const record = {
+    id:               appointmentId,
     ClinicID:         clinicID,
-    appointment_date: dateStr,                   // ✅ FIX 2: patient's chosen date
+    appointment_date: dateStr,
     appointment_time: selectedSlot,
     patient_name:     firstName + " " + lastName,
-    patient_email:    userEmail,
-    PatientID:       userId,
+    patient_email:    userEmail,                                          //THIS IS WHAT I CHANGED!!!!!!
+    PatientID:        userId,
     reason:           reason || null,
     notes:            notes  || null,
     status:           'pending',
   }
+*/
+  //---------------------------------------------------------------------------------------------------
 
-  const { error } = await sb.from('Appointments').insert([record])
+  const record = {
+  id:               appointmentId,
+  ClinicID:         clinicID,
+  appointment_date: dateStr,
+  appointment_time: selectedSlot,
+  patient_name:     firstName + " " + lastName,
+  patient_email:    userEmail,
+  PatientID:        userId,
+  reason:           reason || null,
+  notes:            notes  || null,
+  status:           'waiting',
+}
 
-  if (error) {
-    console.error('Booking error:', error)
+  // Insert the appointment
+  const { error: insertError } = await sb.from('Appointments').insert([record])
+
+  if (insertError) {
+    console.error('Booking error:', insertError)
+    errEl.textContent = 'Failed to book. Please try again.'
+    errEl.style.display = 'block'
+    submitBtn.disabled = false
+    submitBtn.textContent = 'Confirm Booking'
+    return
   }
 
-  renderConfirmation(firstName, lastName, dateStr)
+  // Create email content
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #00e5a0;">Appointment Confirmed ✓</h2>
+      <p>Dear <strong>${firstName} ${lastName}</strong>,</p>
+      <p>Your appointment has been successfully booked with <strong>${esc(clinicName)}</strong>.</p>
+      
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">Appointment Details:</h3>
+        <p><strong>Facility:</strong> ${esc(clinicName)}</p>
+        <p><strong>Date:</strong> ${formattedDate}</p>
+        <p><strong>Time:</strong> ${selectedSlot}</p>
+        <p><strong>Reason:</strong> ${reason || 'General consultation'}</p>
+      </div>
+      
+      <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0;">📋 Important Information:</h3>
+        <ul>
+          <li>Please arrive 10 minutes before your appointment time</li>
+          <li>Bring your ID document/passport</li>
+          <li>Bring any relevant medical records</li>
+          <li>If you need to cancel or reschedule, please contact the facility directly</li>
+        </ul>
+      </div>
+      
+      <p>Reference: <strong>BK-${appointmentId.slice(-6).toUpperCase()}</strong></p>
+      
+      <hr style="margin: 30px 0; border-color: #ddd;">
+      <p style="color: #666; font-size: 12px;">
+        This is an automated message from SA HealthMap. Please do not reply to this email.
+      </p>
+    </div>
+  `
+
+  // Send email notification
+  const emailSent = await sendEmailNotification(
+    userEmail,
+    `Appointment Confirmed - ${esc(clinicName)}`,
+    emailHtml
+  )
+
+  // Create in-app notification
+  const notificationMessage = `Appointment booked at ${esc(clinicName)} on ${formattedDate} at ${selectedSlot}`
+  await createDatabaseNotification(userId, appointmentId, notificationMessage, 'appointment')
+
+  if (!emailSent) {
+    console.warn('Email notification failed, but booking was successful')
+    errEl.textContent = 'Booking confirmed but email could not be sent. You can view your appointment details below.'
+    errEl.style.color = 'var(--accent)'
+    errEl.style.display = 'block'
+  }
+
+  // Show confirmation
+  renderConfirmation(firstName, lastName, dateStr, appointmentId)
 }
-// ── Confirmation screen ──────────────────────────────────────
-function renderConfirmation(firstName, lastName, dateStr) {
-  const refCode = `BK-${Date.now().toString(36).toUpperCase().slice(-6)}`
+
+// ── Confirmation screen (UPDATED with appointment ID) ─────────
+function renderConfirmation(firstName, lastName, dateStr, appointmentId) {
+  const refCode = `BK-${appointmentId.slice(-6).toUpperCase()}`
   const dateLabel = selectedDate.toLocaleDateString('en-ZA', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })
@@ -444,7 +523,7 @@ function renderConfirmation(firstName, lastName, dateStr) {
       <h2 class="confirm-title">Booking Confirmed!</h2>
       <p class="confirm-sub">
         Your appointment at <strong>${esc(clinicName)}</strong> has been booked.<br>
-        Please arrive 10 minutes early and bring your ID.
+        A confirmation email has been sent to your inbox.
       </p>
       <div class="confirm-ref">Ref: <span>${refCode}</span></div>
       <div class="summary-box" style="text-align:left; margin-bottom:24px;">
@@ -483,9 +562,6 @@ function renderError(title, msg) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────
-
-// Generate 30-min slots between opentime and closingtime
-// opentime like '08:00:00' or '08:00'
 function generateSlots(opentime, closingtime) {
   const [oh, om] = opentime.split(':').map(Number)
   const [ch, cm] = closingtime.split(':').map(Number)
@@ -501,13 +577,11 @@ function generateSlots(opentime, closingtime) {
   return slots
 }
 
-// Format '08:00:00' → '08:00'
 function fmtTime(t) {
   if (!t) return ''
   return t.slice(0, 5)
 }
 
-// Basic HTML escape
 function esc(str) {
   if (!str) return ''
   return String(str)
