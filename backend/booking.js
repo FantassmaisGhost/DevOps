@@ -409,13 +409,6 @@ async function submitBooking() {
     String(selectedDate.getDate()).padStart(2, '0'),
   ].join('-');
 
-  const { data: { session } } = await sb.auth.getSession()
-
-  if (!session) {
-    alert("You must be logged in to book.");
-    return;
-  }
-
 const userId = session.user.id
 const userEmail = session.user.email   // ✅ THIS is what you need
 
