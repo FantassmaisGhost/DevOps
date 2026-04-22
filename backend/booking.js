@@ -366,29 +366,40 @@ function renderDetails(container) {
 
 // ── Submit booking (UPDATED with notifications) ─────────────────
 async function submitBooking() {
-  const firstName = document.getElementById('f-firstname').value.trim()
-  const lastName  = document.getElementById('f-lastname').value.trim()
-  const phone     = document.getElementById('f-phone').value.trim()
-  const idNumber  = document.getElementById('f-idnumber').value.trim()
-  const reason    = document.getElementById('f-reason').value.trim()
-  const notes     = document.getElementById('f-notes').value.trim()
-  const errEl     = document.getElementById('form-error')
+  const firstName = document.getElementById('f-firstname').value.trim();
+  const lastName  = document.getElementById('f-lastname').value.trim();
+  const phone     = document.getElementById('f-phone').value.trim();
+  const idNumber  = document.getElementById('f-idnumber').value.trim();
+  const reason    = document.getElementById('f-reason').value.trim();
+  const notes     = document.getElementById('f-notes').value.trim();
+  const errEl     = document.getElementById('form-error');
+  const submitBtn = document.getElementById('btn-submit');
 
   if (!firstName || !lastName || !phone) {
-    errEl.textContent = 'Please fill in your first name, last name and phone number.'
-    errEl.style.display = 'block'
-    return
+    errEl.textContent = 'Please fill in your first name, last name and phone number.';
+    errEl.style.display = 'block';
+    return;
   }
 
-  const submitBtn = document.getElementById('btn-submit')
-  submitBtn.disabled = true
-  submitBtn.textContent = 'Booking…'
-  errEl.style.display = 'none'
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+
+  if (!session) {
+    errEl.textContent = 'Please log in before booking an appointment.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Booking...';
+  errEl.style.display = 'none';
 
   const dateStr = [
     selectedDate.getFullYear(),
     String(selectedDate.getMonth() + 1).padStart(2, '0'),
     String(selectedDate.getDate()).padStart(2, '0'),
+<<<<<<< HEAD
   ].join('-')
 
   const { data: { session } } = await sb.auth.getSession()
@@ -399,6 +410,9 @@ async function submitBooking() {
     submitBtn.textContent = 'Confirm Booking'
     return;
   }
+=======
+  ].join('-');
+>>>>>>> f1c5f8683bb46267880928448727d8730b35aa1c
 
   const userId = session.user.id
   const userEmail = session.user.email
@@ -428,6 +442,7 @@ async function submitBooking() {
 */
   //---------------------------------------------------------------------------------------------------
 
+<<<<<<< HEAD
   const record = {
   id:               appointmentId,
   ClinicID:         clinicID,
@@ -440,6 +455,9 @@ async function submitBooking() {
   notes:            notes  || null,
   status:           'waiting',
 }
+=======
+  const { error } = await sb.from('Appointments').insert([record]);
+>>>>>>> f1c5f8683bb46267880928448727d8730b35aa1c
 
   // Insert the appointment
   const { error: insertError } = await sb.from('Appointments').insert([record])
@@ -453,6 +471,7 @@ async function submitBooking() {
     return
   }
 
+<<<<<<< HEAD
   // Create email content
   const emailHtml = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -507,6 +526,9 @@ async function submitBooking() {
 
   // Show confirmation
   renderConfirmation(firstName, lastName, dateStr, appointmentId)
+=======
+  renderConfirmation(firstName, lastName, dateStr);
+>>>>>>> f1c5f8683bb46267880928448727d8730b35aa1c
 }
 
 // ── Confirmation screen (UPDATED with appointment ID) ─────────

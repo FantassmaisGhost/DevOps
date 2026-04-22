@@ -54,5 +54,16 @@ async function checkAndRedirect() {
     }
 }
 
+async function logout() {
+    clearInterval(checkInterval);
+    localStorage.removeItem('userRole');
+    await supabase.auth.signOut();
+    window.location.href = '/pages/index.html';
+}
+
+// Start checking
 checkAndRedirect();
 checkInterval = setInterval(checkAndRedirect, 5000);
+
+// Add logout button listener
+document.getElementById('logoutBtn')?.addEventListener('click', logout);
