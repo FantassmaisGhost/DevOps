@@ -44,7 +44,8 @@ function getClinicNameMap(facilities) {
 
   facilities.forEach((facility) => {
     const clinicId = facility?.ClinicID;
-    const clinicName = facility?.Name || "Unknown clinic";
+    const clinicName = facility?.Name;
+    console.log(`Mapping clinic ID ${clinicId} to name "${clinicName}"`);
     if (clinicId) {
       map.set(clinicId, clinicName);
     }
@@ -78,7 +79,7 @@ function createAppointmentCard(appointment, clinicName) {
         <dd>${formatTime(appointment.appointment_time)}</dd>
 
         <dt>Clinic</dt>
-        <dd>${clinicName || "Unknown clinic"}</dd>
+        <dd>${clinicName}</dd>
 
         <dt>Reason</dt>
         <dd>${appointment.reason || "-"}</dd>
