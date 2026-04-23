@@ -124,7 +124,7 @@ let sortCol = null;
 let sortAsc = true;
 
 const columnLabels = {
-  "Staff.FullName": "Doctor",
+  "Staff.full_name": "Doctor",
   "Facilities.Name": "Clinic",
   reason: "Reason",
   status: "Status",
@@ -161,11 +161,11 @@ async function loadData(email) {
   }
 
   document.getElementById("tableBody").innerHTML =
-    '<tr><td class="empty-state"><span class="spinner"></span>Loading your appointments...</td></tr>';
+    '<tr><td class="empty-state"><span class="spinner"></spa>Loading your appointments...</td></tr>';
 
   const { data, error } = await sb
     .from(TABLE_NAME)
-    .select("id, reason, status, appointment_date, appointment_time, ClinicID, Staff(FullName), Facilities(Name)")
+    .select("id, reason, status, appointment_date, appointment_time, ClinicID, Staff(full_name), Facilities(Name)")
     .eq(USER_COL, email)
     .order("appointment_date", { ascending: true })
     .order("appointment_time", { ascending: true });
@@ -179,7 +179,7 @@ async function loadData(email) {
   }
 
   allData = data || [];
-  columns = ["Staff.FullName", "Facilities.Name", "reason", "status", "ClinicID", "appointment_date", "appointment_time", "actions"];
+  columns = ["Staff.full_name", "Facilities.Name", "reason", "status", "ClinicID", "appointment_date", "appointment_time", "actions"];
 
   buildHead();
   updateStats();

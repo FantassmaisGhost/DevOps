@@ -19,9 +19,7 @@ const submitStaffReg = document.getElementById('submitStaffReg');
 function showMessage(text, type) {
     messageArticle.textContent = text;
     messageArticle.className = `message ${type}`;
-    setTimeout(() => {
-        messageArticle.style.display = 'none';
-    }, 5000);
+    messageArticle.style.display = 'block';
 }
 
 function setLoading(loading) {
@@ -125,7 +123,7 @@ async function handleEmailAuth() {
     }
 
     if (password.length < 6) {
-        showMessage('Password must be at least 6 characters', 'error');
+        showMessage('Password incorrect, please enter the correct password', 'error');
         return;
     }
 
@@ -227,6 +225,13 @@ emailInput.addEventListener('keypress', (e) => {
 });
 passwordInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleEmailAuth();
+});
+emailInput.addEventListener('input', () => {
+    messageArticle.style.display = 'none';
+});
+
+passwordInput.addEventListener('input', () => {
+    messageArticle.style.display = 'none';
 });
 
 checkSession();
