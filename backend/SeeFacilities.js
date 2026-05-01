@@ -30,6 +30,35 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// ========== STAFF ID GENERATION FUNCTION ==========
+async function generateStaffId(clinicId) {
+  // Find the highest staff number for this clinic
+  const { data } = await supabase
+    .from('staffs')
+    .select('staffid')
+    .eq('clinicid', clinicId)
+    .order('staffid', { ascending: false })
+    .limit(1);
+  
+  let nextNumber = 1;
+  
+  if (data && data.length > 0 && data[0].staffid) {
+    // Extract the number from STF-00001-001 (get part after last dash)
+    const lastId = data[0].staffid;
+    const parts = lastId.split('-');
+    if (parts.length === 3) {
+      const lastNumber = parseInt(parts[2], 10);
+      nextNumber = lastNumber + 1;
+    }
+  }
+  
+  // Format clinic ID with 5 digits, number with 3 digits
+  const paddedClinic = String(clinicId).padStart(5, '0');
+  const paddedNumber = String(nextNumber).padStart(3, '0');
+  
+  return `STF-${paddedClinic}-${paddedNumber}`;
+}
+
 // ========== STAFF MANAGEMENT FUNCTIONS ==========
 async function loadStaff() {
   const { data, error } = await supabase
@@ -79,6 +108,7 @@ async function renderStaffList() {
       <header>
         <strong>${escapeHtml(s.full_name)}</strong><br>
         <small style="color: #5a6280;">${escapeHtml(s.email)} • ${escapeHtml(s.occupation)}</small><br>
+        <small style="color: #5a6280;">Staff ID: ${escapeHtml(s.staffid || 'Not assigned')}</small><br>
         <small style="color: #5a6280;">Phone: ${escapeHtml(s.phone_number || 'N/A')}</small>
       </header>
       <button class="remove-staff-btn" data-email="${s.email}" data-name="${escapeHtml(s.full_name)}" 
@@ -117,6 +147,9 @@ async function loadPendingStaff() {
 }
 
 async function approveStaff(pending) {
+  // Generate the Staff ID before inserting
+  const newStaffId = await generateStaffId(pending.clinicid);
+  
   const { error: insertError } = await supabase
     .from('staffs')
     .insert([{
@@ -124,7 +157,8 @@ async function approveStaff(pending) {
       clinicid: pending.clinicid,
       full_name: pending.full_name,
       occupation: pending.occupation || 'Staff Member',
-      phone_number: pending.phone_number || null
+      phone_number: pending.phone_number || null,
+      staffid: newStaffId
     }]);
   
   if (insertError) {
@@ -137,7 +171,7 @@ async function approveStaff(pending) {
     .update({ status: 'approved' })
     .eq('email', pending.email);
   
-  showToast(`✅ ${pending.full_name} approved as staff!`, 'success');
+  showToast(`✅ ${pending.full_name} approved as staff! Staff ID: ${newStaffId}`, 'success');
   return true;
 }
 
