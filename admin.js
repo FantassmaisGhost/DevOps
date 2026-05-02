@@ -7,6 +7,7 @@ let selectedPatientId = null;
 document.addEventListener('DOMContentLoaded', () => {
   QueueStore.subscribe(render);
   render(QueueStore.getState());
+  QueueStore.loadQueueFromSupabase();
 
   // const s = QueueStore.getState();
   // if (s.totalToday === 0) seedDemo();

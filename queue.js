@@ -320,11 +320,41 @@ window.QueueStore = (() => {
     setState(() => fresh);
   }
 
+  async function loadQueueFromSupabase() {
+  const { data, error } = await supabase
+    .from("clinic_queue")
+    .select("*")
+    .eq("status", "waiting")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Failed to load queue from Supabase:", error);
+    return;
+  }
+
+  setState(s => ({
+    ...s,
+    queue: data.map((row, index) => ({
+      id: row.id,
+      num: index + 1,
+      name: row.patient_name,
+      dept: "GP",
+      priority: "normal",
+      addedAt: new Date(row.created_at).getTime(),
+      status: row.status,
+      doctorId: null,
+    })),
+    counter: data.length + 1,
+    totalToday: data.length,
+  }));
+}
+
   return {
     getState,
     setState,
     subscribe,
     addPatient,
+    loadQueueFromSupabase,
     assignToDoctor,
     callNextForDoctor,
     completeDoctor,
