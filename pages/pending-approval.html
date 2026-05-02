@@ -62,6 +62,22 @@
         small {
             font-size: 14px;
             display: block;
+            margin-bottom: 24px;
+        }
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover {
+            background: #b91c1c;
         }
     </style>
 </head>
@@ -75,6 +91,7 @@
         <section class="clinic-info" id="clinicInfo">Loading clinic information...</section>
         <small>You will receive staff access once an administrator approves your account.</small>
         <section class="spinner" id="spinner"></section>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
     </main>
 
     <script type="module" src="../backend/pending-approval.js"></script>

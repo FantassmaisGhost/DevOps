@@ -23,8 +23,9 @@ async function handleRedirect() {
         .eq('Email', email)
         .single();
 
+    // Check Staff table with Option B format
     const { data: staff } = await supabase
-        .from('staffs')
+        .from('Staff')
         .select('*')
         .eq('email', email)
         .single();
@@ -117,9 +118,11 @@ async function handleRedirect() {
         const message = document.getElementById('message');
         const errorMsg = document.getElementById('errorMsg');
         
-        spinner.style.display = 'none';
-        message.style.display = 'none';
-        errorMsg.innerHTML = `❌ Access Denied: You are not authorized as "${selectedRole}".<br>Redirecting to login page...`;
+        if (spinner) spinner.style.display = 'none';
+        if (message) message.style.display = 'none';
+        if (errorMsg) {
+            errorMsg.innerHTML = `❌ Access Denied: You are not authorized as "${selectedRole}".<br>Redirecting to login page...`;
+        }
         
         setTimeout(() => {
             localStorage.removeItem('userRole');

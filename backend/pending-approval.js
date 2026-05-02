@@ -14,7 +14,10 @@ async function checkAndRedirect() {
     // Restore role
     localStorage.setItem('userRole', 'pending');
     
-    document.getElementById('userEmail').textContent = session.user.email;
+    const userEmailElement = document.getElementById('userEmail');
+    if (userEmailElement) {
+        userEmailElement.textContent = session.user.email;
+    }
     
     // Get pending staff record
     const { data: pending } = await supabase
@@ -31,16 +34,19 @@ async function checkAndRedirect() {
             .eq('ClinicID', pending.clinicid)
             .single();
         
-        if (clinic) {
-            document.getElementById('clinicInfo').innerHTML = `🏥 Requested Clinic: ${clinic.Name}`;
-        } else {
-            document.getElementById('clinicInfo').innerHTML = `🏥 Clinic ID: ${pending.clinicid}`;
+        const clinicInfoElement = document.getElementById('clinicInfo');
+        if (clinicInfoElement) {
+            if (clinic) {
+                clinicInfoElement.innerHTML = `🏥 Requested Clinic: ${clinic.Name}`;
+            } else {
+                clinicInfoElement.innerHTML = `🏥 Clinic ID: ${pending.clinicid}`;
+            }
         }
     }
     
-    // Check if user is now approved staff
+    // Check if user is now approved staff (using Staff table)
     const { data: staff } = await supabase
-        .from('staffs')
+        .from('Staff')
         .select('*')
         .eq('email', session.user.email)
         .single();
@@ -50,9 +56,26 @@ async function checkAndRedirect() {
         localStorage.setItem('userRole', 'staff');
         window.location.href = '/pages/staff-dashboard.html';
     } else {
-        document.getElementById('spinner').style.display = 'none';
+        const spinnerElement = document.getElementById('spinner');
+        if (spinnerElement) {
+            spinnerElement.style.display = 'none';
+        }
     }
 }
 
+async function logout() {
+    clearInterval(checkInterval);
+    localStorage.removeItem('userRole');
+    await supabase.auth.signOut();
+    window.location.href = '/pages/index.html';
+}
+
+// Start checking
 checkAndRedirect();
 checkInterval = setInterval(checkAndRedirect, 5000);
+
+// Add logout button listener
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
+}

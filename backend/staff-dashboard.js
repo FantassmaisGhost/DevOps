@@ -22,8 +22,9 @@ async function loadStaffDashboard() {
     // Restore role
     localStorage.setItem('userRole', 'staff');
 
+    // Get staff member from Staff table using email
     const { data: staff, error } = await supabase
-        .from('staffs')
+        .from('Staff')
         .select('*')
         .eq('email', session.user.email)
         .single();
@@ -35,11 +36,11 @@ async function loadStaffDashboard() {
 
     document.getElementById('userEmail').textContent = session.user.email;
 
-    // Load appointments for this staff member using their staffid
+    // Load appointments for this staff member using their id (StaffID)
     const { data: appointments, error: appointmentsError } = await supabase
         .from('Appointments')
         .select('*')
-        .eq('StaffID', staff.staffid)
+        .eq('StaffID', staff.id)
         .order('appointment_date', { ascending: true })
         .order('appointment_time', { ascending: true });
 
@@ -54,14 +55,13 @@ async function loadStaffDashboard() {
     const todaysAppointments = appointments?.filter(a => a.appointment_date === today) || [];
     const waitingAppointments = todaysAppointments.filter(a => a.status === 'waiting');
     const completedAppointments = todaysAppointments.filter(a => a.status === 'completed');
-    const cancelledAppointments = todaysAppointments.filter(a => a.status === 'cancelled');
 
     const main = document.getElementById('dashboardContent');
     main.innerHTML = `
         <article class="welcome-card">
             <h2>Welcome, ${staff.full_name.split(' ')[0]}! 👋</h2>
             <p>You are logged in as a staff member at Clinic ${staff.clinicid}</p>
-            <p><strong>Staff ID:</strong> ${escapeHtml(staff.staffid || 'Not assigned')}</p>
+            <p><strong>Staff ID:</strong> ${escapeHtml(staff.id)}</p>
         </article>
 
         <section class="stats-grid">
@@ -83,7 +83,7 @@ async function loadStaffDashboard() {
             <h3>Your Profile</h3>
             <section class="info-row">
                 <strong class="info-label">Staff ID:</strong>
-                ${escapeHtml(staff.staffid || 'Not assigned')}
+                ${escapeHtml(staff.id)}
             </section>
             <section class="info-row">
                 <strong class="info-label">Full Name:</strong>
@@ -99,7 +99,7 @@ async function loadStaffDashboard() {
             </section>
             <section class="info-row">
                 <strong class="info-label">Phone:</strong>
-                ${escapeHtml(staff.phone_number || 'Not provided')}
+                ${escapeHtml(staff.contact || 'Not provided')}
             </section>
         </article>
 
@@ -201,7 +201,6 @@ async function updateAppointmentStatus(appointmentId, newStatus) {
     if (error) {
         alert('Failed to update appointment status: ' + error.message);
     } else {
-        // Refresh the dashboard to show updated status
         loadStaffDashboard();
     }
 }

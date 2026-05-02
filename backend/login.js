@@ -75,6 +75,7 @@ async function submitStaffRegistration() {
         .insert([{
             email: email,
             full_name: fullName,
+             occupation: occupation,
             clinicid: clinicId,
             status: 'pending'
         }]);
