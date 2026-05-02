@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   QueueStore.subscribe(render);
   render(QueueStore.getState());
 
-  const s = QueueStore.getState();
-  if (s.totalToday === 0) seedDemo();
+  // const s = QueueStore.getState();
+  // if (s.totalToday === 0) seedDemo();
 
   setInterval(updateElapsed, 1000);
   updateClock();
@@ -36,14 +36,22 @@ function seedDemo() {
   QueueStore.addPatient('Nomsa Zulu',         'GP',        'normal');
 }
 
-function handleAddPatient() {
-  const name     = document.getElementById('inp-name').value.trim();
-  const dept     = document.getElementById('inp-dept').value;
-  const priority = document.getElementById('inp-priority').value;
-  if (!name) { document.getElementById('inp-name').focus(); return; }
-  QueueStore.addPatient(name, dept, priority);
-  document.getElementById('inp-name').value = '';
-  document.getElementById('inp-name').focus();
+async function handleAddPatient() {
+  const name = document.getElementById("inp-name").value.trim();
+  const dept = document.getElementById("inp-dept").value;
+  const priority = document.getElementById("inp-priority").value;
+
+  if (!name) {
+    document.getElementById("inp-name").focus();
+    return;
+  }
+
+  const result = await QueueStore.addPatient(name, dept, priority);
+
+  if (!result) return;
+
+  document.getElementById("inp-name").value = "";
+  document.getElementById("inp-name").focus();
 }
 
 function handleAddDoctor() {
