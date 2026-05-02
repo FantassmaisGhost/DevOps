@@ -13,6 +13,9 @@ jobs:
   test:
     name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # Add this permission for commenting on PRs
 
     strategy:
       matrix:
