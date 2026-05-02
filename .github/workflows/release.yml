@@ -1,0 +1,200 @@
+# ============================================================
+# release.yml — Automated versioned releases
+#
+# Triggers automatically when a version tag (v*.*.*) is pushed,
+# which happens when you run:
+#   npm run release:patch → bumps 1.0.0 → 1.0.1
+#   npm run release:minor → bumps 1.0.0 → 1.1.0
+#   npm run release:major → bumps 1.0.0 → 2.0.0
+#
+# The workflow:
+#   1. Runs the full test suite (must pass to release)
+#   2. Builds the deployment artifact
+#   3. Creates a GitHub Release with auto-generated changelog
+#   4. Deploys to Azure Web App (Production)
+# ============================================================
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write  # needed to create GitHub Releases
+  id-token: write  # needed for Azure OIDC login
+  issues:  write   # needed to link release to issues
+
+jobs:
+  # ── 1. Test gate ──────────────────────────────────────────
+  test:
+    name: Test gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (must pass to proceed)
+        run: npm run test:ci
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.ref_name }}
+          path: coverage/
+          retention-days: 30
+
+  # ── 2. Build artifact ─────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: npm
+
+      - name: Install production dependencies only
+        run: npm ci --omit=dev
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Package application (exclude dev files)
+        run: |
+          mkdir -p dist
+          cp -r backend pages server.js web.config package.json iisnode.yml babel.config babel.config.js package-lock.json node_modules dist/
+          # node_modules included so Azure has dependencies without needing npm install
+          echo "Packaged version ${{ steps.get_version.outputs.version }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: meddev-${{ github.ref_name }}
+          path: dist/
+          retention-days: 30
+
+  # ── 3. GitHub Release ─────────────────────────────────────
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for changelog
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: meddev-${{ github.ref_name }}
+          path: dist/
+
+      - name: Zip release package
+        run: |
+          cd dist
+          zip -r ../meddev-${{ github.ref_name }}.zip .
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const tag = context.ref.replace('refs/tags/', '');
+            const version = tag.replace(/^v/, '');
+
+            // Auto-generate changelog from commits since last tag
+            const { execSync } = require('child_process');
+            let changelog = '';
+            try {
+              const prevTag = execSync('git describe --tags --abbrev=0 HEAD^').toString().trim();
+              const log = execSync(`git log ${prevTag}..HEAD --pretty=format:"- %s (%h)" --no-merges`).toString().trim();
+              changelog = log || '- Initial release';
+            } catch {
+              changelog = '- See commit history for changes.';
+            }
+
+            const body = [
+              `## MedDev ${tag}`,
+              '',
+              '### What\'s Changed',
+              changelog,
+              '',
+              '### Assets',
+              `- \`meddev-${tag}.zip\` — production build (run \`npm ci --omit=dev\` after extracting)`,
+              '',
+              '### Deploy',
+              '```bash',
+              `unzip meddev-${tag}.zip -d meddev`,
+              'cd meddev && node server.js',
+              '```',
+            ].join('\n');
+
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              tag_name:   tag,
+              name:       `MedDev ${tag}`,
+              body,
+              draft:      false,
+              prerelease: tag.includes('-'),
+            });
+
+            // Attach the zip
+            const zip = fs.readFileSync(`meddev-${tag}.zip`);
+            await github.rest.repos.uploadReleaseAsset({
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
+              release_id: release.data.id,
+              name:       `meddev-${tag}.zip`,
+              data:       zip,
+              headers:    { 'content-type': 'application/zip' },
+            });
+
+            core.info(`Release created: ${release.data.html_url}`);
+
+  # ── 4. Deploy to Azure ────────────────────────────────────
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: Production
+      url: https://meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net/pages/index.html
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: meddev-${{ github.ref_name }}
+          path: dist/
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id:       ${{ secrets.AZUREAPPSERVICE_CLIENTID_8BCB22CCD0114E80B8652B99C8C20BC8 }}
+          tenant-id:       ${{ secrets.AZUREAPPSERVICE_TENANTID_224B1CD79C4D42D4A50EE4AEE898B401 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E3550A30C26043A186C5D00E53867AF1 }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: MedDev
+          package:  dist/
