@@ -203,7 +203,11 @@ function selectPatient(id) {
 
 function assignPatient(patientId, doctorId) {
   if (!doctorId) return;
+
   QueueStore.assignToDoctor(doctorId, patientId);
+
+  selectedPatientId = null;
+  render(QueueStore.getState());
 }
 
 function removeDoc(doctorId) {
@@ -242,3 +246,8 @@ function formatWait(addedAt) {
 function escHtml(str) {
   return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+window.selectPatient = selectPatient;
+window.assignPatient = assignPatient;
+window.removeDoc = removeDoc;
+window.QueueStore = QueueStore;
