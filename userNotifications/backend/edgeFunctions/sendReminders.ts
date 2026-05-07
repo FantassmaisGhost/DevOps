@@ -32,12 +32,21 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Verify authorization
+  // Only allow POST
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+
+  // Check for our custom CRON_SECRET (not Supabase JWT)
   const authHeader = req.headers.get('Authorization');
   const expectedAuth = `Bearer ${Deno.env.get('CRON_SECRET')}`;
   
-  if (authHeader !== expectedAuth) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+  if (!authHeader || authHeader !== expectedAuth) {
+    console.log("Unauthorized - invalid CRON_SECRET");
+    return new Response(JSON.stringify({ error: "Unauthorized - Invalid secret" }), { 
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
