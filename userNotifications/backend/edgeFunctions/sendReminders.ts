@@ -13,23 +13,36 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js'
 
 const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
-// These are automatically available in Supabase Edge Functions!
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
+// CORS headers for all responses
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 Deno.serve(async (req) => {
-  // Verify the request is authorized
+  // Handle CORS preflight request (OPTIONS)
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: corsHeaders,
+      status: 200,
+    });
+  }
+
+  // Verify authorization
   const authHeader = req.headers.get('Authorization');
   const expectedAuth = `Bearer ${Deno.env.get('CRON_SECRET')}`;
   
   if (authHeader !== expectedAuth) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { 
       status: 401,
-      headers: { "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 
-  // Use anon key instead of service role (still works for reads/writes)
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   try {
@@ -51,7 +64,7 @@ Deno.serve(async (req) => {
       console.error("Error fetching appointments:", error);
       return new Response(JSON.stringify({ error: error.message }), { 
         status: 500,
-        headers: { "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -59,7 +72,7 @@ Deno.serve(async (req) => {
       console.log("No appointments found for tomorrow");
       return new Response(JSON.stringify({ message: "No reminders to send", sent: 0 }), { 
         status: 200,
-        headers: { "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -155,14 +168,14 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, sent: sentCount }), { 
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (error) {
     console.error("Error:", error);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });
