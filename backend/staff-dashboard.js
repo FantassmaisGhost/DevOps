@@ -95,7 +95,7 @@ async function loadStaffDashboard() {
             </section>
             <section class="info-row">
                 <strong class="info-label">Occupation:</strong>
-                ${escapeHtml(staff.occupation)}
+                ${escapeHtml(staff.Occupation)}
             </section>
             <section class="info-row">
                 <strong class="info-label">Phone:</strong>
@@ -107,11 +107,11 @@ async function loadStaffDashboard() {
             <h3>Clinic Information</h3>
             <section class="info-row">
                 <strong class="info-label">Clinic ID:</strong>
-                ${escapeHtml(staff.clinicid)}
+                ${escapeHtml(staff.ClinicID)}
             </section>
             <section class="info-row">
                 <strong class="info-label">Your Role:</strong>
-                ${escapeHtml(staff.occupation)}
+                ${escapeHtml(staff.Occupation)}
             </section>
         </article>
 
