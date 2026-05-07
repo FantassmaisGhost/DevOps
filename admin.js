@@ -4,28 +4,32 @@
 
 let selectedPatientId = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    QueueStore.subscribe(render);
-    render(QueueStore.getState());
-    QueueStore.loadQueueFromSupabase();
+document.addEventListener("DOMContentLoaded", async () => {
+  QueueStore.subscribe(render);
 
-//   const s = QueueStore.getState();
-//   if (s.totalToday === 0) seedDemo();
+  await QueueStore.loadDoctorsFromSupabase();
+  await QueueStore.loadQueueFromSupabase();
+
+  render(QueueStore.getState());
 
   setInterval(updateElapsed, 1000);
   updateClock();
   setInterval(updateClock, 1000);
 
-  document.getElementById('btn-add-patient').addEventListener('click', handleAddPatient);
-  document.getElementById('inp-name').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleAddPatient();
+  document.getElementById("btn-add-patient").addEventListener("click", handleAddPatient);
+
+  document.getElementById("inp-name").addEventListener("keydown", e => {
+    if (e.key === "Enter") handleAddPatient();
   });
-  document.getElementById('btn-add-doctor').addEventListener('click', handleAddDoctor);
-  document.getElementById('btn-reset').addEventListener('click', () => {
-    if (confirm('Reset all data for today?')) QueueStore.resetDay();
+
+  document.getElementById("btn-add-doctor").addEventListener("click", handleAddDoctor);
+
+  document.getElementById("btn-reset").addEventListener("click", () => {
+    if (confirm("Reset all data for today?")) QueueStore.resetDay();
   });
-  document.getElementById('btn-display').addEventListener('click', () => {
-    window.open('display.html', '_blank');
+
+  document.getElementById("btn-display").addEventListener("click", () => {
+    window.open("display.html", "_blank");
   });
 });
 
@@ -99,7 +103,9 @@ function renderQueue(s) {
       <div class="q-right" onclick="event.stopPropagation()">
         <select class="assign-select" onchange="assignPatient('${p.id}', this.value)">
           <option value="">Assign…</option>
-          ${s.doctors.filter(d => d.available).map(d =>
+          ${s.doctors
+            .filter(d => d.available && d.dept === p.dept)
+            .map(d =>
             `<option value="${d.id}">${d.name.split(' ').pop()} · ${d.room}</option>`
           ).join('')}
         </select>

@@ -10,14 +10,16 @@ window.QueueStore = (() => {
   const LISTENERS = [];
 
   // Change this to the real clinic_id from your clinic_queue table
-  const CLINIC_ID = 1;
+  const CLINIC_ID = '00001';
 
-  const DEFAULT_DOCTORS = [
-    { id: "d1", name: "Dr. Amara Osei", dept: "GP", available: true, room: "Room 1", currentPatient: null },
-    { id: "d2", name: "Dr. Priya Naidoo", dept: "Specialist", available: true, room: "Room 2", currentPatient: null },
-    { id: "d3", name: "Dr. Leon du Plessis", dept: "Emergency", available: true, room: "Room 3", currentPatient: null },
-    { id: "d4", name: "Dr. Siphiwe Khumalo", dept: "Lab", available: true, room: "Room 4", currentPatient: null },
-  ];
+  // const DEFAULT_DOCTORS = [
+  //   { id: "d1", name: "Dr. Amara Osei", dept: "GP", available: true, room: "Room 1", currentPatient: null },
+  //   { id: "d2", name: "Dr. Priya Naidoo", dept: "Specialist", available: true, room: "Room 2", currentPatient: null },
+  //   { id: "d3", name: "Dr. Leon du Plessis", dept: "Emergency", available: true, room: "Room 3", currentPatient: null },
+  //   { id: "d4", name: "Dr. Siphiwe Khumalo", dept: "Lab", available: true, room: "Room 4", currentPatient: null },
+  // ];
+
+  const DEFAULT_DOCTORS = [];
 
   const PRIORITY_ORDER = { urgent: 0, high: 1, normal: 2 };
 
@@ -232,6 +234,33 @@ window.QueueStore = (() => {
     });
   }
 
+  async function loadDoctorsFromSupabase() {
+  const { data, error } = await supabase
+    .from("Staff")
+    .select("*")
+    .eq("ClinicID", CLINIC_ID);
+
+  if (error) {
+    console.error("Failed to load doctors from Supabase:", error);
+    alert("Could not load doctors: " + error.message);
+    return;
+  }
+
+  const doctors = data.map(row => ({
+    id: row.StaffID,
+    name: row.Name || row.full_name || row.name || "Unknown doctor",
+    dept: row.Department || row.dept || row.Specialty || "GP",
+    room: row.Room || row.room || "Room ?",
+    available: true,
+    currentPatient: null,
+  }));
+
+  setState(s => ({
+    ...s,
+    doctors,
+  }));
+}
+
   function skipDoctor(doctorId) {
     return setState(s => {
       const doc = s.doctors.find(d => d.id === doctorId);
@@ -355,6 +384,7 @@ window.QueueStore = (() => {
     subscribe,
     addPatient,
     loadQueueFromSupabase,
+    loadDoctorsFromSupabase,
     assignToDoctor,
     callNextForDoctor,
     completeDoctor,
