@@ -16,7 +16,6 @@ const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
-// CORS headers for all responses
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -24,33 +23,24 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight request (OPTIONS)
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: corsHeaders,
-      status: 200,
-    });
+    return new Response("ok", { headers: corsHeaders, status: 200 });
   }
 
-  // Only allow POST
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
-  }
-
-  // Check for our custom CRON_SECRET (not Supabase JWT)
+  // Check authorization
   const authHeader = req.headers.get('Authorization');
   const expectedAuth = `Bearer ${Deno.env.get('CRON_SECRET')}`;
   
   if (!authHeader || authHeader !== expectedAuth) {
-    console.log("Unauthorized - invalid CRON_SECRET");
-    return new Response(JSON.stringify({ error: "Unauthorized - Invalid secret" }), { 
+    console.log("❌ Unauthorized attempt detected!");
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
+
+  console.log("✅ Authorized request received");
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -60,7 +50,7 @@ Deno.serve(async (req) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
     
-    console.log(`Checking for appointments on: ${tomorrowStr}`);
+    console.log(`📅 Checking for appointments on: ${tomorrowStr}`);
 
     // Get appointments for tomorrow without reminders sent
     const { data: appointments, error } = await supabase
@@ -70,7 +60,7 @@ Deno.serve(async (req) => {
       .eq("reminder_sent", false);
 
     if (error) {
-      console.error("Error fetching appointments:", error);
+      console.error("❌ Error fetching appointments:", error);
       return new Response(JSON.stringify({ error: error.message }), { 
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -78,18 +68,20 @@ Deno.serve(async (req) => {
     }
 
     if (!appointments || appointments.length === 0) {
-      console.log("No appointments found for tomorrow");
+      console.log("📭 No appointments found for tomorrow");
       return new Response(JSON.stringify({ message: "No reminders to send", sent: 0 }), { 
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    console.log(`Found ${appointments.length} appointments for tomorrow`);
+    console.log(`📋 Found ${appointments.length} appointments for tomorrow`);
     let sentCount = 0;
 
     for (const appointment of appointments) {
       try {
+        console.log(`📧 Processing appointment for: ${appointment.patient_email}`);
+        
         // Format date nicely
         const appointmentDate = new Date(appointment.appointment_date);
         const formattedDate = appointmentDate.toLocaleDateString('en-ZA', {
@@ -99,7 +91,7 @@ Deno.serve(async (req) => {
           year: 'numeric'
         });
 
-        // Send reminder email
+        // Send reminder email via Brevo
         const emailHtml = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #00e5a0;">Appointment Reminder ⏰</h2>
@@ -126,6 +118,8 @@ Deno.serve(async (req) => {
           </div>
         `;
 
+        console.log(`📤 Sending email to: ${appointment.patient_email}`);
+        
         const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
           method: "POST",
           headers: {
@@ -143,15 +137,21 @@ Deno.serve(async (req) => {
           }),
         });
 
+        const responseText = await brevoResponse.text();
+        console.log(`📬 Brevo response status: ${brevoResponse.status}`);
+        console.log(`📬 Brevo response body: ${responseText}`);
+
         if (!brevoResponse.ok) {
-          console.error(`Brevo failed for ${appointment.patient_email}`);
+          console.error(`❌ Brevo failed for ${appointment.patient_email}: ${responseText}`);
           continue;
         }
+
+        console.log(`✅ Email sent to ${appointment.patient_email}`);
 
         // Create in-app notification
         const notificationMessage = `Reminder: You have an appointment at ${appointment.ClinicID} tomorrow at ${appointment.appointment_time}`;
         
-        await supabase
+        const { error: notifError } = await supabase
           .from("notifications")
           .insert([{
             user_id: appointment.PatientID,
@@ -161,27 +161,40 @@ Deno.serve(async (req) => {
             is_read: false
           }]);
 
+        if (notifError) {
+          console.error(`❌ Failed to create notification: ${notifError.message}`);
+        } else {
+          console.log(`✅ In-app notification created`);
+        }
+
         // Mark reminder as sent
-        await supabase
+        const { error: updateError } = await supabase
           .from("Appointments")
           .update({ reminder_sent: true })
           .eq("id", appointment.id);
 
+        if (updateError) {
+          console.error(`❌ Failed to update reminder_sent: ${updateError.message}`);
+        } else {
+          console.log(`✅ reminder_sent marked as true`);
+        }
+
         sentCount++;
-        console.log(`Reminder sent to ${appointment.patient_email}`);
         
       } catch (err) {
-        console.error(`Failed for appointment ${appointment.id}:`, err);
+        console.error(`❌ Failed for appointment ${appointment.id}:`, err.message);
       }
     }
 
-    return new Response(JSON.stringify({ success: true, sent: sentCount }), { 
+    console.log(`🎉 Reminders sent: ${sentCount} out of ${appointments.length}`);
+    
+    return new Response(JSON.stringify({ success: true, sent: sentCount, total: appointments.length }), { 
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("❌ Unexpected error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
