@@ -19,7 +19,9 @@ const submitStaffReg = document.getElementById('submitStaffReg');
 function showMessage(text, type) {
     messageArticle.textContent = text;
     messageArticle.className = `message ${type}`;
-    messageArticle.style.display = 'block';
+    setTimeout(() => {
+        messageArticle.style.display = 'none';
+    }, 5000);
 }
 
 function setLoading(loading) {
@@ -73,6 +75,7 @@ async function submitStaffRegistration() {
         .insert([{
             email: email,
             full_name: fullName,
+             occupation: occupation,
             clinicid: clinicId,
             status: 'pending'
         }]);
@@ -123,7 +126,7 @@ async function handleEmailAuth() {
     }
 
     if (password.length < 6) {
-        showMessage('Password incorrect, please enter the correct password', 'error');
+        showMessage('Password must be at least 6 characters', 'error');
         return;
     }
 
@@ -225,13 +228,6 @@ emailInput.addEventListener('keypress', (e) => {
 });
 passwordInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleEmailAuth();
-});
-emailInput.addEventListener('input', () => {
-    messageArticle.style.display = 'none';
-});
-
-passwordInput.addEventListener('input', () => {
-    messageArticle.style.display = 'none';
 });
 
 checkSession();
