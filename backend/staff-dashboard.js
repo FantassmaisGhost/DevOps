@@ -60,7 +60,6 @@ async function loadStaffDashboard() {
     main.innerHTML = `
         <article class="welcome-card">
             <h2>Welcome, ${staff.full_name.split(' ')[0]}! 👋</h2>
-            <p>You are logged in as a staff member at Clinic ${staff.clinicid}</p>
             <p><strong>Staff ID:</strong> ${escapeHtml(staff.id)}</p>
         </article>
 
