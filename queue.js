@@ -1,23 +1,12 @@
 import { supabase } from "./supabase.js";
 
-/* ============================================================
-   Clinic Queue Management System — Shared Data Layer
-   Saves queue locally AND inserts patients into Supabase
-   ============================================================ */
 
 window.QueueStore = (() => {
   const STORAGE_KEY = "clinic_queue_v2";
   const LISTENERS = [];
 
-  // Change this to the real clinic_id from your clinic_queue table
-  const CLINIC_ID = '00001';
-
-  // const DEFAULT_DOCTORS = [
-  //   { id: "d1", name: "Dr. Amara Osei", dept: "GP", available: true, room: "Room 1", currentPatient: null },
-  //   { id: "d2", name: "Dr. Priya Naidoo", dept: "Specialist", available: true, room: "Room 2", currentPatient: null },
-  //   { id: "d3", name: "Dr. Leon du Plessis", dept: "Emergency", available: true, room: "Room 3", currentPatient: null },
-  //   { id: "d4", name: "Dr. Siphiwe Khumalo", dept: "Lab", available: true, room: "Room 4", currentPatient: null },
-  // ];
+ 
+  const CLINIC_ID = "00001";
 
   const DEFAULT_DOCTORS = [];
 
@@ -30,11 +19,24 @@ window.QueueStore = (() => {
     Lab: "Laboratory",
   };
 
+  function normalizeDept(value) {
+    const raw = String(value || "GP").trim().toLowerCase();
+
+    if (raw.includes("emergency")) return "Emergency";
+    if (raw.includes("special")) return "Specialist";
+    if (raw.includes("lab")) return "Lab";
+    if (raw.includes("general") || raw === "gp") return "GP";
+
+    return "GP";
+  }
+
   function getState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
-    } catch (e) {}
+    } catch (error) {
+      console.error("Could not read queue state from localStorage:", error);
+    }
 
     return {
       queue: [],
@@ -73,13 +75,14 @@ window.QueueStore = (() => {
 
   async function addPatient(name, dept, priority) {
     const id = Date.now();
+    const currentState = getState();
 
     const patient = {
       id,
-      num: getState().counter,
+      num: currentState.counter,
       name,
-      dept,
-      priority,
+      dept: normalizeDept(dept),
+      priority: priority || "normal",
       addedAt: Date.now(),
       status: "waiting",
       doctorId: null,
@@ -87,16 +90,14 @@ window.QueueStore = (() => {
 
     const { data, error } = await supabase
       .from("clinic_queue")
-      .insert([
-        {
-          id: patient.id,
-          clinic_id: CLINIC_ID,
-          patient_name: patient.name,
-          status: "waiting",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ])
+      .insert({
+        id: patient.id,
+        ClinicID: CLINIC_ID,
+        patient_name: patient.name,
+        status: "waiting",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .select()
       .single();
 
@@ -109,11 +110,7 @@ window.QueueStore = (() => {
     console.log("Inserted into clinic_queue:", data);
 
     return setState(s => {
-      const queue = [...s.queue, patient].sort(
-        (a, b) =>
-          PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority] ||
-          a.addedAt - b.addedAt
-      );
+      const queue = [...s.queue, patient].sort(sortPatients);
 
       return {
         ...s,
@@ -124,6 +121,13 @@ window.QueueStore = (() => {
     });
   }
 
+  function sortPatients(a, b) {
+    return (
+      (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2) ||
+      a.addedAt - b.addedAt
+    );
+  }
+
   function assignToDoctor(doctorId, patientId) {
     return setState(s => {
       const patient = s.queue.find(p => String(p.id) === String(patientId));
@@ -132,23 +136,25 @@ window.QueueStore = (() => {
       const queue = s.queue.filter(p => String(p.id) !== String(patientId));
 
       const doctors = s.doctors.map(d => {
-        if (d.id !== doctorId) return d;
+        if (String(d.id) !== String(doctorId)) return d;
+
         return {
           ...d,
           available: false,
-          currentPatient: { ...patient, serveStart: Date.now() },
+          currentPatient: {
+            ...patient,
+            status: "assigned",
+            serveStart: Date.now(),
+          },
         };
       });
 
       supabase
         .from("clinic_queue")
-        .update({
-          status: "serving",
-          updated_at: new Date().toISOString(),
-        })
+        .update({ status: "assigned", updated_at: new Date().toISOString() })
         .eq("id", patient.id)
         .then(({ error }) => {
-          if (error) console.error("Failed to update status to serving:", error);
+          if (error) console.error("Failed to update status to assigned:", error);
         });
 
       return { ...s, queue, doctors };
@@ -157,154 +163,215 @@ window.QueueStore = (() => {
 
   function callNextForDoctor(doctorId) {
     return setState(s => {
-      const doc = s.doctors.find(d => d.id === doctorId);
+      const doc = s.doctors.find(d => String(d.id) === String(doctorId));
       if (!doc || !doc.available) return s;
 
-      const match = s.queue.find(p => p.dept === doc.dept) || s.queue[0];
-      if (!match) return s;
+      let queue = [...s.queue];
+      let completed = [...s.completed];
+      let waitTimes = [...s.waitTimes];
+      const currentPatient = doc.currentPatient;
 
-      const queue = s.queue.filter(p => p.id !== match.id);
+      if (currentPatient) {
+        const duration = Math.max(1, Math.round((Date.now() - currentPatient.serveStart) / 60000));
+
+        completed = [
+          {
+            ...currentPatient,
+            duration,
+            doctorName: doc.name,
+            completedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+          ...completed,
+        ];
+
+        waitTimes.push(duration);
+
+        supabase
+          .from("clinic_queue")
+          .update({ status: "done", updated_at: new Date().toISOString() })
+          .eq("id", currentPatient.id)
+          .then(({ error }) => {
+            if (error) console.error("Failed to mark current patient as done:", error);
+          });
+      }
+
+      const nextPatient = queue.find(p => p.dept === doc.dept);
+
+      if (!nextPatient) {
+        const doctors = s.doctors.map(d =>
+          String(d.id) === String(doctorId)
+            ? { ...d, available: true, currentPatient: null }
+            : d
+        );
+
+        return { ...s, doctors, completed, waitTimes };
+      }
+
+      queue = queue.filter(p => String(p.id) !== String(nextPatient.id));
+
+      supabase
+        .from("clinic_queue")
+        .update({ status: "assigned", updated_at: new Date().toISOString() })
+        .eq("id", nextPatient.id)
+        .then(({ error }) => {
+          if (error) console.error("Failed to assign next patient:", error);
+        });
 
       const doctors = s.doctors.map(d =>
-        d.id === doctorId
+        String(d.id) === String(doctorId)
           ? {
               ...d,
               available: false,
-              currentPatient: { ...match, serveStart: Date.now() },
+              currentPatient: {
+                ...nextPatient,
+                status: "assigned",
+                serveStart: Date.now(),
+              },
             }
           : d
       );
 
-      supabase
-        .from("clinic_queue")
-        .update({
-          status: "serving",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", match.id)
-        .then(({ error }) => {
-          if (error) console.error("Failed to update status to serving:", error);
-        });
-
-      return { ...s, queue, doctors };
+      return { ...s, doctors, queue, completed, waitTimes };
     });
   }
 
   function completeDoctor(doctorId) {
     return setState(s => {
-      const doc = s.doctors.find(d => d.id === doctorId);
+      const doc = s.doctors.find(d => String(d.id) === String(doctorId));
       if (!doc || !doc.currentPatient) return s;
 
       const patient = doc.currentPatient;
-      const dur = Math.round((Date.now() - patient.serveStart) / 60000);
+      const duration = Math.max(1, Math.round((Date.now() - patient.serveStart) / 60000));
+
+      supabase
+        .from("clinic_queue")
+        .update({ status: "done", updated_at: new Date().toISOString() })
+        .eq("id", patient.id)
+        .then(({ error }) => {
+          if (error) console.error("Failed to mark patient as done:", error);
+        });
+
+      const doctors = s.doctors.map(d =>
+        String(d.id) === String(doctorId)
+          ? { ...d, available: true, currentPatient: null }
+          : d
+      );
 
       const completed = [
         {
           ...patient,
-          duration: dur,
-          completedAt: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          duration,
           doctorName: doc.name,
+          completedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
         ...s.completed,
-      ].slice(0, 50);
+      ];
 
-      const waitTimes = [...s.waitTimes, dur];
-
-      const doctors = s.doctors.map(d =>
-        d.id === doctorId
-          ? { ...d, available: true, currentPatient: null }
-          : d
-      );
-
-      supabase
-        .from("clinic_queue")
-        .update({
-          status: "done",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", patient.id)
-        .then(({ error }) => {
-          if (error) console.error("Failed to update status to done:", error);
-        });
-
-      return { ...s, doctors, completed, waitTimes };
+      return { ...s, doctors, completed, waitTimes: [...s.waitTimes, duration] };
     });
   }
 
   async function loadDoctorsFromSupabase() {
-  const { data, error } = await supabase
-    .from("Staff")
-    .select("*")
-    .eq("ClinicID", CLINIC_ID);
+    const { data, error } = await supabase
+      .from("Staff")
+      .select("*")
+      .eq("ClinicID", CLINIC_ID);
 
-  if (error) {
-    console.error("Failed to load doctors from Supabase:", error);
-    alert("Could not load doctors: " + error.message);
-    return;
+    if (error) {
+      console.error("Failed to load doctors from Supabase:", error);
+      alert("Could not load doctors. Check that your table is named Staff and has ClinicID = 00001. Error: " + error.message);
+      setState(s => ({ ...s, doctors: [] }));
+      return;
+    }
+
+    const doctors = (data || []).map(row => ({
+      id: row.StaffID || row.id || row.staff_id,
+      name: row.Name || row.full_name || row.name || row.StaffName || "Unknown doctor",
+      dept: normalizeDept(row.Department || row.dept || row.Specialty || row.specialty || row.Type || row.type),
+      room: row.Room || row.room || row.RoomNo || "Room ?",
+      available: true,
+      currentPatient: null,
+    })).filter(d => d.id);
+
+    setState(s => ({ ...s, doctors }));
   }
 
-  const doctors = data.map(row => ({
-    id: row.StaffID,
-    name: row.Name || row.full_name || row.name || "Unknown doctor",
-    dept: row.Department || row.dept || row.Specialty || "GP",
-    room: row.Room || row.room || "Room ?",
-    available: true,
-    currentPatient: null,
-  }));
+  async function loadQueueFromSupabase() {
+    const { data, error } = await supabase
+      .from("clinic_queue")
+      .select("*")
+      .eq("ClinicID", CLINIC_ID)
+      .eq("status", "waiting")
+      .order("created_at", { ascending: true });
 
-  setState(s => ({
-    ...s,
-    doctors,
-  }));
-}
+    if (error) {
+      console.error("Failed to load queue from Supabase:", error);
+      alert("Could not load queue: " + error.message);
+      return;
+    }
+
+    setState(s => ({
+      ...s,
+      queue: (data || []).map((row, index) => ({
+        id: row.id,
+        num: index + 1,
+        name: row.patient_name || "Unknown patient",
+        // clinic_queue does not currently have department/priority columns, so existing DB rows default to GP/normal.
+        dept: normalizeDept(row.dept || row.department || "GP"),
+        priority: row.priority || "normal",
+        addedAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+        status: row.status || "waiting",
+        doctorId: null,
+      })).sort(sortPatients),
+      counter: (data || []).length + 1,
+      totalToday: (data || []).length,
+    }));
+  }
 
   function skipDoctor(doctorId) {
     return setState(s => {
-      const doc = s.doctors.find(d => d.id === doctorId);
-      const patient = doc?.currentPatient;
+      const doc = s.doctors.find(d => String(d.id) === String(doctorId));
+      if (!doc || !doc.currentPatient) return s;
 
-      if (patient) {
-        supabase
-          .from("clinic_queue")
-          .update({
-            status: "skipped",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", patient.id)
-          .then(({ error }) => {
-            if (error) console.error("Failed to update status to skipped:", error);
-          });
-      }
+      const patient = doc.currentPatient;
+
+      supabase
+        .from("clinic_queue")
+        .update({ status: "waiting", updated_at: new Date().toISOString() })
+        .eq("id", patient.id)
+        .then(({ error }) => {
+          if (error) console.error("Failed to skip patient:", error);
+        });
+
+      const skippedPatient = {
+        ...patient,
+        status: "waiting",
+        serveStart: null,
+        addedAt: Date.now(),
+      };
 
       const doctors = s.doctors.map(d =>
-        d.id === doctorId
+        String(d.id) === String(doctorId)
           ? { ...d, available: true, currentPatient: null }
           : d
       );
 
-      return { ...s, doctors };
+      return { ...s, doctors, queue: [...s.queue, skippedPatient].sort(sortPatients) };
     });
   }
 
   function removeFromQueue(patientId) {
     supabase
       .from("clinic_queue")
-      .update({
-        status: "removed",
-        updated_at: new Date().toISOString(),
-      })
+      .update({ status: "removed", updated_at: new Date().toISOString() })
       .eq("id", patientId)
       .then(({ error }) => {
-        if (error) console.error("Failed to update status to removed:", error);
+        if (error) console.error("Failed to remove patient from Supabase:", error);
       });
 
     return setState(s => ({
       ...s,
       queue: s.queue.filter(p => String(p.id) !== String(patientId)),
-      totalToday: Math.max(0, s.totalToday - 1),
     }));
   }
 
@@ -316,7 +383,7 @@ window.QueueStore = (() => {
         {
           id: "doc_" + Date.now(),
           name,
-          dept,
+          dept: normalizeDept(dept),
           room,
           available: true,
           currentPatient: null,
@@ -328,7 +395,7 @@ window.QueueStore = (() => {
   function removeDoctor(doctorId) {
     return setState(s => ({
       ...s,
-      doctors: s.doctors.filter(d => d.id !== doctorId),
+      doctors: s.doctors.filter(d => String(d.id) !== String(doctorId)),
     }));
   }
 
@@ -336,7 +403,7 @@ window.QueueStore = (() => {
     return setState(s => ({
       ...s,
       doctors: s.doctors.map(d =>
-        d.id === doctorId
+        String(d.id) === String(doctorId)
           ? { ...d, available: d.currentPatient ? d.available : !d.available }
           : d
       ),
@@ -345,38 +412,16 @@ window.QueueStore = (() => {
 
   function resetDay() {
     localStorage.removeItem(STORAGE_KEY);
-    const fresh = getState();
-    setState(() => fresh);
+    setState(() => ({
+      queue: [],
+      completed: [],
+      doctors: [],
+      counter: 1,
+      totalToday: 0,
+      waitTimes: [],
+      lastUpdated: Date.now(),
+    }));
   }
-
-  async function loadQueueFromSupabase() {
-  const { data, error } = await supabase
-    .from("clinic_queue")
-    .select("*")
-    .eq("status", "waiting")
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("Failed to load queue from Supabase:", error);
-    return;
-  }
-
-  setState(s => ({
-    ...s,
-    queue: data.map((row, index) => ({
-      id: row.id,
-      num: index + 1,
-      name: row.patient_name,
-      dept: "GP",
-      priority: "normal",
-      addedAt: new Date(row.created_at).getTime(),
-      status: row.status,
-      doctorId: null,
-    })),
-    counter: data.length + 1,
-    totalToday: data.length,
-  }));
-}
 
   return {
     getState,
