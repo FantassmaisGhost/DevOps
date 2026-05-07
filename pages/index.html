@@ -241,6 +241,8 @@
             width: 90%;
             margin: auto;
             background: white;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         dialog::backdrop {
@@ -278,6 +280,37 @@
             color: #999;
             margin-top: 5px;
             display: block;
+        }
+
+        /* Clinic suggestions dropdown */
+        .suggestions-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-clinic-id {
+            font-size: 10px;
+            color: #999;
+            margin-left: 8px;
         }
     </style>
 </head>
@@ -350,6 +383,7 @@
         <article id="message" class="message"></article>
     </main>
 
+    <!-- Staff Registration Modal -->
     <dialog id="staffModal">
         <article>
             <h3>Staff Registration</h3>
@@ -378,13 +412,15 @@
             
             <section>
                 <label for="regPhone">Phone Number</label>
-                <input type="tel" id="regPhone" placeholder="Phone Number">
+                <input type="tel" id="regPhone" placeholder="082 123 4567">
+                <small id="phoneError" style="color: #c33; display: none;">Please enter a valid South African phone number (10 digits)</small>
             </section>
             
             <section>
                 <label for="regClinicName">Clinic Name</label>
-                <input type="text" id="regClinicName" placeholder="Enter Clinic Name">
-                <small>Enter the name of the clinic you work at</small>
+                <input type="text" id="regClinicName" placeholder="Start typing clinic name..." autocomplete="off">
+                <section id="clinicSuggestions" class="suggestions-container"></section>
+                <small id="clinicError" style="color: #c33; display: none;">Please select a clinic from the suggestions</small>
             </section>
             
             <footer>
