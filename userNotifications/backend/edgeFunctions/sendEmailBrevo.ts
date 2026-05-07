@@ -7,6 +7,7 @@
 
 //----------------------------------------------------------------------------------------------------
 
+// this is the path so you know where to put this edge function:
 // supabase/functions/send-email-brevo/index.ts
 
 const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
