@@ -4,6 +4,7 @@
 
 //I just named it as sendEmailBrevo.ts for github distinguishing purposes.
 
+
 //----------------------------------------------------------------------------------------------------
 
 // supabase/functions/send-email-brevo/index.ts
@@ -32,8 +33,8 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         sender: {
-          email: "2672572@students.wits.ac.za", // ⚠️ MUST be verified in Brevo
-          name: "SA HealthMap",
+          email: "2672572@students.wits.ac.za", // this is just the email account that is verifies by brevo (my student email. dont email me. im a busy guy😂)
+          name: "SA HealthMap", //we can always change this later, i wasnt sure yet what we would decide to call it.
         },
         to: [{ email }],
         subject,
