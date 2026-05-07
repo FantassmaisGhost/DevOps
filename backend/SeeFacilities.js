@@ -30,13 +30,42 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// ========== STAFF ID GENERATION FUNCTION (Option B) ==========
+async function generateStaffId(clinicId) {
+  // Find the highest staff number for this clinic from Staff table
+  const { data } = await supabase
+    .from('Staff')
+    .select('id')
+    .eq('ClinicID', clinicId)
+    .order('id', { ascending: false })
+    .limit(1);
+  
+  let nextNumber = 1;
+  
+  if (data && data.length > 0 && data[0].id) {
+    // Extract the number from STF-00004-001 (get part after last dash)
+    const lastId = data[0].id;
+    const parts = lastId.split('-');
+    if (parts.length === 3) {
+      const lastNumber = parseInt(parts[2], 10);
+      nextNumber = lastNumber + 1;
+    }
+  }
+  
+  // Format: STF-00004-001 (5 digits for clinic, 3 digits for number)
+  const paddedClinic = String(clinicId).padStart(5, '0');
+  const paddedNumber = String(nextNumber).padStart(3, '0');
+  
+  return `STF-${paddedClinic}-${paddedNumber}`;
+}
+
 // ========== STAFF MANAGEMENT FUNCTIONS ==========
 async function loadStaff() {
   const { data, error } = await supabase
-    .from('staffs')
+    .from('Staff')
     .select('*')
-    .eq('clinicid', CLINIC_ID)
-    .order('created_at', { ascending: false });
+    .eq('ClinicID', CLINIC_ID);
+  // Remove .order('created_at', { ascending: false })
   
   if (error) {
     console.error('Error loading staff:', error);
@@ -45,14 +74,13 @@ async function loadStaff() {
   return data || [];
 }
 
-async function removeStaff(email, name) {
+async function removeStaff(id, name) {
   if (!confirm(`Remove ${name} from staff? They will lose staff access.`)) return false;
   
   const { error } = await supabase
-    .from('staffs')
+    .from('Staff')
     .delete()
-    .eq('email', email)
-    .eq('clinicid', CLINIC_ID);
+    .eq('id', id);
   
   if (error) {
     showToast('Failed to remove staff', 'error');
@@ -79,9 +107,10 @@ async function renderStaffList() {
       <header>
         <strong>${escapeHtml(s.full_name)}</strong><br>
         <small style="color: #5a6280;">${escapeHtml(s.email)} • ${escapeHtml(s.occupation)}</small><br>
-        <small style="color: #5a6280;">Phone: ${escapeHtml(s.phone_number || 'N/A')}</small>
+        <small style="color: #5a6280;">Staff ID: ${escapeHtml(s.id)}</small><br>
+        <small style="color: #5a6280;">Phone: ${escapeHtml(s.contact || 'N/A')}</small>
       </header>
-      <button class="remove-staff-btn" data-email="${s.email}" data-name="${escapeHtml(s.full_name)}" 
+      <button class="remove-staff-btn" data-id="${s.id}" data-name="${escapeHtml(s.full_name)}" 
               class="btn-danger">
         Remove
       </button>
@@ -90,9 +119,9 @@ async function renderStaffList() {
   
   document.querySelectorAll('.remove-staff-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const email = btn.getAttribute('data-email');
+      const id = btn.getAttribute('data-id');
       const name = btn.getAttribute('data-name');
-      const success = await removeStaff(email, name);
+      const success = await removeStaff(id, name);
       if (success) {
         renderStaffList();
       }
@@ -117,14 +146,18 @@ async function loadPendingStaff() {
 }
 
 async function approveStaff(pending) {
+  // Generate the Staff ID before inserting
+  const newStaffId = await generateStaffId(pending.clinicid);
+  
   const { error: insertError } = await supabase
-    .from('staffs')
+    .from('Staff')
     .insert([{
+      id: newStaffId,
       email: pending.email,
-      clinicid: pending.clinicid,
+      ClinicID: pending.clinicid,
       full_name: pending.full_name,
-      occupation: pending.occupation || 'Staff Member',
-      phone_number: pending.phone_number || null
+      Occupation: pending.occupation || 'Staff Member',
+      contact: pending.phone_number || null
     }]);
   
   if (insertError) {
@@ -137,7 +170,7 @@ async function approveStaff(pending) {
     .update({ status: 'approved' })
     .eq('email', pending.email);
   
-  showToast(`✅ ${pending.full_name} approved as staff!`, 'success');
+  showToast(`✅ ${pending.full_name} approved as staff! Staff ID: ${newStaffId}`, 'success');
   return true;
 }
 
