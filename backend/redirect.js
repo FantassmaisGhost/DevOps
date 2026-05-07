@@ -23,7 +23,6 @@ async function handleRedirect() {
         .eq('Email', email)
         .single();
 
-    // Check Staff table with Option B format
     const { data: staff } = await supabase
         .from('Staff')
         .select('*')
@@ -42,9 +41,34 @@ async function handleRedirect() {
     else if (staff) actualRole = 'staff';
     else if (pending) actualRole = 'pending';
 
+    // Helper: create patient record if it doesn't exist
+    async function ensurePatientRecord() {
+        const { data: patient } = await supabase
+            .from('Patients')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (!patient) {
+            const { error: insertError } = await supabase
+                .from('Patients')
+                .insert([{
+                    id: userId,
+                    email: email,
+                    role: 'patient',
+                    full_name: userName,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }]);
+
+            if (insertError) {
+                console.error('Failed to create patient record:', insertError);
+            }
+        }
+    }
+
     // If no role was selected (direct access), use actual role
     if (!selectedRole) {
-        // Send to correct dashboard based on actual role
         if (actualRole === 'admin') {
             localStorage.setItem('userRole', 'admin');
             window.location.href = '/pages/admin-dashboard.html';
@@ -55,28 +79,36 @@ async function handleRedirect() {
             localStorage.setItem('userRole', 'pending');
             window.location.href = '/pages/pending-approval.html';
         } else {
-            // Create patient record if needed
-            const { data: patient } = await supabase
-                .from('Patients')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (!patient) {
-                await supabase
-                    .from('Patients')
-                    .insert([{
-                        id: userId,
-                        role: 'patient',
-                        full_name: userName,
-                        created_at: new Date(),
-                        updated_at: new Date()
-                    }]);
-            }
+            await ensurePatientRecord();
             localStorage.setItem('userRole', 'patient');
             window.location.href = '/pages/dashboard.html';
         }
         return;
+    }
+
+    // Handle new Google staff user who selected 'staff' but isn't registered yet
+    // They may have skipped the staff modal and gone straight to Google login
+    if (selectedRole === 'staff' && actualRole === 'patient') {
+        const { error: pendingInsertError } = await supabase
+            .from('pending_staff')
+            .insert([{
+                email: email,
+                full_name: userName,
+                status: 'pending'
+            }]);
+
+        if (!pendingInsertError) {
+            localStorage.setItem('userRole', 'pending');
+            window.location.href = '/pages/pending-approval.html';
+            return;
+        } else if (pendingInsertError.code === '23505') {
+            // Already exists as pending (race condition / duplicate login)
+            localStorage.setItem('userRole', 'pending');
+            window.location.href = '/pages/pending-approval.html';
+            return;
+        } else {
+            console.error('Failed to create pending_staff record:', pendingInsertError);
+        }
     }
 
     // VALIDATE: Check if selected role matches actual role
@@ -102,9 +134,10 @@ async function handleRedirect() {
         isValid = true;
         targetUrl = '/pages/dashboard.html';
         localStorage.setItem('userRole', 'patient');
+        await ensurePatientRecord();
     }
     else if (selectedRole === 'patient' && (actualRole === 'admin' || actualRole === 'staff' || actualRole === 'pending')) {
-        // Staff/Admin can also access patient dashboard if they want
+        // Staff/Admin can also access patient dashboard
         isValid = true;
         targetUrl = '/pages/dashboard.html';
         localStorage.setItem('userRole', 'patient');
@@ -113,7 +146,6 @@ async function handleRedirect() {
     if (isValid) {
         window.location.href = targetUrl;
     } else {
-        // Show error message for 3 seconds, then redirect to index
         const spinner = document.getElementById('spinner');
         const message = document.getElementById('message');
         const errorMsg = document.getElementById('errorMsg');
