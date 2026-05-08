@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        main {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            max-width: 400px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        p {
+            color: #666;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: #dc2626;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <section class="spinner" id="spinner"></section>
+        <p id="message">Redirecting you to your dashboard...</p>
+        <p id="errorMsg" class="error-message"></p>
+    </main>
+
+    <script type="module" src="../backend/redirect.js"></script>
+
+</body>
+</html>

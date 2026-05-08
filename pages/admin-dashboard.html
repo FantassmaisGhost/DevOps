@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Health-Flow</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0b0e14;
+            color: #dce2f0;
+        }
+        header {
+            background: #111520;
+            border-bottom: 1px solid #252b3d;
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 20px; color: #f5a623; }
+        .admin-badge {
+            background: #f5a623;
+            color: #0b0e14;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .logout-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        main { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px; 
+        }
+        article {
+            background: #111520;
+            border: 1px solid #252b3d;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        article h2 { 
+            color: #f5a623; 
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        article p {
+            color: #5a6280;
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            display: inline-block;
+            background: #f5a623;
+            color: #0b0e14;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .btn-primary:hover {
+            opacity: 0.85;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🏥 Health-Flow | Admin Portal</h1>
+        <section class="user-info">
+            <strong id="userEmail">Loading...</strong>
+            <strong class="admin-badge">ADMIN</strong>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </section>
+    </header>
+
+    <main>
+        <article>
+            <h2>🗺️ Clinic Map</h2>
+            <p>View all clinic locations on an interactive map.</p>
+            <a href="map.html" class="btn-primary">Open Map →</a>
+        </article>
+        <article>
+            <h2>⚙️ Settings</h2>
+            <p>Update system settings and preferences.</p>
+            <a href="settings.html" class="btn-primary">Manage Settings →</a>
+        </article>
+    </main>
+
+    <script type="module" src="../backend/admin-dashboard.js"></script>
+
+</body>
+</html>

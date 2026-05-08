@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Book Appointment — SA HealthMap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+  <style>
+    :root {
+      --bg:        #0b0e14;
+      --surface:   #111520;
+      --surface2:  #171c28;
+      --border:    #252b3d;
+      --accent:    #00e5a0;
+      --accent2:   #ff6b6b;
+      --accent3:   #60b4ff;
+      --text:      #dce2f0;
+      --text-muted:#5a6280;
+      --font-mono: 'Space Mono', monospace;
+      --font-disp: 'Syne', sans-serif;
+      --radius:    6px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-disp); font-weight: 800; font-size: 15px; }
+    .brand-icon { color: var(--accent); font-size: 18px; }
+    .btn-outline {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      text-decoration: none;
+      transition: color .15s, border-color .15s;
+    }
+    .btn-outline:hover { color: var(--text); border-color: var(--text-muted); }
+
+    /* ── PAGE LAYOUT ── */
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    /* ── CLINIC HEADER ── */
+    .clinic-header {
+      margin-bottom: 28px;
+    }
+    .clinic-header .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 16px;
+      transition: color .15s;
+    }
+    .clinic-header .back-link:hover { color: var(--accent); }
+    .clinic-name {
+      font-family: var(--font-disp);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .clinic-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+    .chip-hosp    { background: rgba(96,180,255,0.15); color: var(--accent3); }
+    .chip-clinic  { background: rgba(0,229,160,0.12);  color: var(--accent);  }
+    .chip-public  { background: rgba(0,229,160,0.12);  color: var(--accent);  }
+    .chip-private { background: rgba(255,107,107,0.12);color: var(--accent2); }
+    .chip-prov    { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+
+    /* ── SECTION LABELS ── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    /* ── HOURS PANEL ── */
+    .hours-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 28px;
+    }
+    .hours-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 20px;
+    }
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .hours-row:last-child { border-bottom: none; }
+    .hours-day { color: var(--text-muted); }
+    .hours-time { color: var(--text); }
+    .hours-closed { color: var(--accent2); }
+    .hours-loading { font-size: 11px; color: var(--text-muted); text-align: center; padding: 8px 0; }
+
+    /* ── BOOKING FORM ── */
+    .booking-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .booking-steps {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .step-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .step-tab.done   { color: var(--text-muted); }
+
+    .booking-body { padding: 20px; }
+
+    /* Date picker */
+    .date-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .day-header {
+      text-align: center;
+      font-size: 9px;
+      color: var(--text-muted);
+      padding: 4px 0;
+      letter-spacing: 0.06em;
+    }
+    .date-btn {
+      aspect-ratio: 1;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .date-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .date-btn.selected { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 700; }
+    .date-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+    .date-btn.closed { opacity: 0.2; cursor: not-allowed; }
+    .date-btn.today { border-color: var(--accent3); color: var(--accent3); }
+    .date-btn.today.selected { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-nav-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .cal-nav-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .cal-month-label { font-family: var(--font-disp); font-size: 14px; font-weight: 700; }
+
+    /* Time slots */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .slot-btn {
+      padding: 10px 4px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+      text-align: center;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .slot-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .slot-btn.selected { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 700; }
+    .slots-closed {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    .slots-loading { text-align: center; padding: 20px; color: var(--text-muted); font-size: 11px; }
+
+    /* Patient details */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .form-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Summary box */
+    .summary-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .summary-box .summary-title {
+      font-family: var(--font-disp);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-key { color: var(--text-muted); }
+    .summary-val { color: var(--text); }
+
+    /* Step navigation */
+    .step-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-back {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+    .btn-back:hover { color: var(--text); border-color: var(--text-muted); }
+    .btn-next {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: var(--bg);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 10px 22px;
+      cursor: pointer;
+      transition: opacity .15s;
+      letter-spacing: 0.05em;
+    }
+    .btn-next:hover:not(:disabled) { opacity: 0.85; }
+    .btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-next.danger { background: var(--accent2); }
+
+    /* ── CONFIRMATION ── */
+    .confirmation {
+      text-align: center;
+      padding: 32px 20px;
+    }
+    .confirm-icon { font-size: 48px; margin-bottom: 16px; }
+    .confirm-title {
+      font-family: var(--font-disp);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .confirm-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+    .confirm-ref {
+      font-size: 11px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 16px;
+      display: inline-block;
+      margin-bottom: 24px;
+      letter-spacing: 0.1em;
+    }
+    .confirm-ref span { color: var(--accent); }
+
+    /* ── ERROR STATE ── */
+    .error-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .error-state h2 { font-family: var(--font-disp); font-size: 18px; margin-bottom: 8px; }
+    .error-state p { font-size: 12px; color: var(--text-muted); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 500px) {
+      .slots-grid { grid-template-columns: repeat(3, 1fr); }
+      .form-row { grid-template-columns: 1fr; }
+      .hours-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <span class="brand">
+      <span class="brand-icon" aria-hidden="true">✚</span>
+      <strong class="brand-name">SA HealthMap</strong>
+    </span>
+    <a href="directory.html" class="btn-outline">← Back to Map</a>
+  </header>
+
+  <main class="page" id="app">
+    <!-- Dynamically rendered by booking.js -->
+    <div style="text-align:center; padding: 80px 20px; color: var(--text-muted); font-size: 12px;">
+      Loading facility…
+    </div>
+  </main>
+
+  <script type="module" src="../backend/booking.js"></script>
+</body>
+</html>

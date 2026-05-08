@@ -1,0 +1,9 @@
+node_modules
+"node_modules/" 
+".env" 
+".vscode/" 
+"__tests__/" 
+"coverage/" 
+"*.log" 
+".DS_Store" 
+"Thumbs.db" 
