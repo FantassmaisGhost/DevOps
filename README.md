@@ -34,3 +34,17 @@ async function viewClinicDetail(clinicId)
 
 // Filter clinics by search term and province
 function filterClinics()
+
+[Clinic List View]
+┌─────────────────────────────────────┐
+│ 🔍 Search by clinic name...         │
+├─────────────────────────────────────┤
+│ 🌍 All Provinces (10 clinics) ▼     │
+├─────────────────────────────────────┤
+│ ┌─────────────────────────────────┐ │
+│ │ 🏥 Aberdeen Hospital            │ │
+│ │ 📍 Eastern Cape | 🏥 Hospital   │ │
+│ │ 🏢 public                       │ │
+│ │ [View Details →]                │ │
+│ └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
