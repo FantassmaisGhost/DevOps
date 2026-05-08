@@ -458,3 +458,14 @@ This README is specifically tailored to the three user stories you've implemente
 │                                     │
 │ [📅 Book Appointment] [⭐ Write Review]│
 └─────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ 🏥 Soweto Community Clinic              [📅 Scheduled]     │
+│                                                             │
+│ 📅 2026-05-15                                              │
+│ ⏰ 09:30 AM                                                │
+│ 🎫 Queue Position: 3                                       │
+│ 📍 Gauteng                                                 │
+│                                                             │
+│ [Reschedule] [Cancel]                                      │
+└─────────────────────────────────────────────────────────────┘
