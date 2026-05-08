@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Community Clinic System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; padding: 20px; background: #f0f2f5; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-top: 0; margin-bottom: 20px; text-align: center; }
+        .nav { display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid #ecf0f1; padding-bottom: 12px; }
+        .nav-btn { padding: 10px 24px; background: none; border: none; cursor: pointer; font-size: 16px; border-radius: 8px; transition: all 0.2s; }
+        .nav-btn.active { background: #3498db; color: white; }
+        .nav-btn:hover:not(.active) { background: #ecf0f1; }
+        .clinic-card { border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 16px; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: white; }
+        .clinic-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #3498db; }
+        .clinic-card h3 { margin: 0 0 10px 0; color: #2c3e50; }
+        .clinic-card p { margin: 5px 0; color: #666; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219a52; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-secondary:hover { background: #7f8c8d; }
+        .btn-review { background: #9b59b6; color: white; }
+        .btn-review:hover { background: #8e44ad; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .detail-section { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .detail-section h3 { margin-top: 0; color: #2c3e50; font-size: 18px; }
+        .booking-card { border-left: 4px solid #3498db; background: white; padding: 16px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .booking-card.completed { border-left-color: #27ae60; }
+        .booking-card.cancelled { border-left-color: #e74c3c; }
+        .booking-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-scheduled { background: #3498db; color: white; }
+        .status-completed { background: #27ae60; color: white; }
+        .status-cancelled { background: #e74c3c; color: white; }
+        .filter-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-btn { padding: 6px 16px; background: #ecf0f1; border: none; border-radius: 20px; cursor: pointer; }
+        .filter-btn.active { background: #3498db; color: white; }
+        .search-box { margin-bottom: 20px; }
+        .search-box input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .province-filter { margin-bottom: 20px; }
+        .province-filter select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal-content { background: white; margin: 10% auto; padding: 30px; width: 90%; max-width: 500px; border-radius: 16px; position: relative; }
+        .close { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #999; }
+        .close:hover { color: #333; }
+        .star { font-size: 32px; cursor: pointer; transition: transform 0.1s; display: inline-block; }
+        .star:hover { transform: scale(1.1); }
+        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 15px 0; font-family: inherit; resize: vertical; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        .error { background: #ffe6e6; color: #c0392b; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .info { background: #e6f3ff; color: #2980b9; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .clinics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .loading { text-align: center; padding: 40px; color: #666; font-size: 18px; }
+        .edit-form { background: #fff9e6; padding: 20px; border-radius: 12px; margin-top: 20px; border: 1px solid #f39c12; }
+        .admin-badge { background: #f39c12; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; display: inline-block; margin-left: 10px; }
+        .header-with-edit { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        @media (max-width: 768px) { .clinics-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🏥 Community Clinic System</h1>
+    <div class="nav">
+        <button class="nav-btn active" id="clinicsBtn">🏥 Find Clinics</button>
+        <button class="nav-btn" id="bookingsBtn">📅 My Bookings</button>
+    </div>
+    <div id="content">
+        <div class="loading">🔄 Loading clinics...</div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div id="reviewModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeReviewModal()">&times;</span>
+        <h3>⭐ Rate this Clinic</h3>
+        <p id="reviewClinicName"></p>
+        <div id="starContainer" style="text-align: center; margin: 20px 0;">
+            <span class="star" data-rating="1">☆</span>
+            <span class="star" data-rating="2">☆</span>
+            <span class="star" data-rating="3">☆</span>
+            <span class="star" data-rating="4">☆</span>
+            <span class="star" data-rating="5">☆</span>
+        </div>
+        <textarea id="reviewComment" rows="4" placeholder="Share your experience at this clinic..."></textarea>
+        <button class="btn btn-review" id="submitReviewBtn" style="width: 100%;">Submit Review</button>
+    </div>
+</div>
+
+<script>
+// Supabase configuration
+const MY_SUPABASE_URL = 'https://ixikhufrylaugpdxokwu.supabase.co';
+const MY_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ';
+
+// Create Supabase client
+const mySupabase = window.supabase.createClient(MY_SUPABASE_URL, MY_SUPABASE_KEY);
+
+// Global variables
+let allClinics = [];
+let currentClinicId = null;
+let selectedRating = 0;
+let currentFilter = 'all';
+let allBookings = [];
+
+// ========== ADMIN CHECK FUNCTION ==========
+async function isAdmin() {
+    try {
+        const { data: { user } } = await mySupabase.auth.getUser();
+        if (!user) return false;
+        
+        // Check if user has admin role in the users table
+        const { data: userData } = await mySupabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        
+        return userData?.role === 'admin';
+    } catch (err) {
+        console.log('Admin check failed:', err);
+        return false;
+    }
+}
+
+// ========== CLINIC LIST ==========
+async function loadClinics() {
+    console.log('loadClinics() started');
+    const contentDiv = document.getElementById('content');
+    contentDiv.innerHTML = '<div class="loading">🔄 Loading clinics from database...</div>';
+    
+    try {
+        const { data, error } = await mySupabase
+            .from('Facilities')
+            .select('*')
+            .order('Name');
+        
+        if (error) {
+            contentDiv.innerHTML = `<div class="error">❌ Database Error: ${error.message}</div>`;
+            return;
+        }
+        
+        allClinics = data || [];
+        
+        if (allClinics.length === 0) {
+            contentDiv.innerHTML = '<div class="info">📭 No clinics found in database.</div>';
+            return;
+        }
+        
+        const provinces = [...new Set(allClinics.map(c => c.Province).filter(p => p))];
+        
+        const html = `
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Search by clinic name..." onkeyup="filterClinics()">
+            </div>
+            <div class="province-filter">
+                <select id="provinceFilter" onchange="filterClinics()">
+                    <option value="">🌍 All Provinces (${allClinics.length} clinics)</option>
+                    ${provinces.map(p => `<option value="${p}">📍 ${p}</option>`).join('')}
+                </select>
+            </div>
+            <div class="clinics-grid" id="clinicsGrid"></div>
+        `;
+        
+        contentDiv.innerHTML = html;
+        filterClinics();
+        
+    } catch (err) {
+        contentDiv.innerHTML = `<div class="error">💥 Error: ${err.message}</div>`;
+    }
+}
+
+function filterClinics() {
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const province = document.getElementById('provinceFilter')?.value || '';
+    
+    let filtered = allClinics;
+    if (searchTerm) filtered = filtered.filter(c => c.Name?.toLowerCase().includes(searchTerm));
+    if (province) filtered = filtered.filter(c => c.Province === province);
+    
+    const grid = document.getElementById('clinicsGrid');
+    if (!grid) return;
+    
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div class="info">🔍 No clinics match your search.</div>';
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(clinic => `
+        <div class="clinic-card" onclick="viewClinicDetail('${clinic.ClinicID}')">
+            <h3>🏥 ${clinic.Name || 'Unnamed Clinic'}</h3>
+            <p>📍 ${clinic.Province || 'Unknown'} | 🏥 ${clinic.Type || 'Clinic'}</p>
+            <p>🏢 ${clinic.Sector || 'N/A'}</p>
+            <button class="btn btn-primary" style="margin-top: 10px;">View Details →</button>
+        </div>
+    `).join('');
+}
+
+// ========== CLINIC DETAILS (WITH EDIT BUTTON) ==========
+async function viewClinicDetail(clinicId) {
+    const contentDiv = document.getElementById('content');
+    contentDiv.innerHTML = '<div class="loading">🔍 Loading clinic details...</div>';
+    
+    try {
+        const { data: clinic, error } = await mySupabase
+            .from('Facilities')
+            .select('*')
+            .eq('ClinicID', clinicId)
+            .single();
+        
+        if (error) {
+            contentDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            return;
+        }
+        
+        // Check if user is admin
+        const admin = await isAdmin();
+        
+        // Get operating hours
+        let hoursHtml = '';
+        const { data: hours } = await mySupabase
+            .from('Operating_Hours')
+            .select('*')
+            .eq('clinicid', clinicId);
+        
+        if (hours && hours.length > 0) {
+            hoursHtml = `<div class="detail-section"><h3>🕒 Operating Hours</h3>${hours.map(h => `<p><strong>${h.day}:</strong> ${h.opentime || '--'} - ${h.closingtime || '--'}</p>`).join('')}</div>`;
+        }
+        
+        // Get reviews
+        let ratingHtml = '<div class="detail-section"><h3>⭐ Patient Reviews</h3><p>No reviews yet. Be the first!</p></div>';
+        const { data: reviews } = await mySupabase
+            .from('clinic_reviews')
+            .select('rating, comment, created_at')
+            .eq('clinic_id', clinicId);
+        
+        if (reviews && reviews.length > 0) {
+            const sum = reviews.reduce((a, b) => a + b.rating, 0);
+            const avg = (sum / reviews.length).toFixed(1);
+            ratingHtml = `<div class="detail-section"><h3>⭐ Patient Reviews</h3><p><strong>Average: ${avg}/5</strong> (${reviews.length} reviews)</p>${reviews.slice(0, 5).map(r => `<div style="border-top:1px solid #eee; padding:10px 0;"><div>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>${r.comment ? `<p style="margin:5px 0 0 0; color:#555;">${r.comment}</p>` : ''}<small style="color:#999;">${new Date(r.created_at).toLocaleDateString()}</small></div>`).join('')}</div>`;
+        }
+        
+        const html = `
+            <button class="btn btn-secondary" onclick="loadClinics()" style="margin-bottom: 20px;">← Back to Clinics</button>
+            <div style="background: white; border-radius: 12px;">
+                <div class="header-with-edit">
+                    <h2 style="margin: 0;">🏥 ${clinic.Name}</h2>
+                    ${admin ? `<button class="btn btn-warning" onclick="showEditForm('${clinic.ClinicID}')">✏️ Edit Clinic Info</button>` : ''}
+                </div>
+                ${admin ? '<span class="admin-badge">👑 Admin Mode - You can edit clinic information</span>' : ''}
+                <div class="detail-section"><h3>📍 Location</h3><p><strong>Type:</strong> ${clinic.Type || 'N/A'}</p><p><strong>Subtype:</strong> ${clinic.Subtype || 'N/A'}</p><p><strong>Sector:</strong> ${clinic.Sector || 'N/A'}</p><p><strong>Province:</strong> ${clinic.Province || 'N/A'}</p>${clinic.district ? `<p><strong>District:</strong> ${clinic.district}</p>` : ''}</div>
+                ${hoursHtml}
+                <div class="detail-section" id="contactSection">
+                    <h3>📞 Contact Information</h3>
+                    <p><strong>Phone:</strong> ${clinic.phone || 'Not available'}</p>
+                    <p><strong>Email:</strong> ${clinic.email || 'Not available'}</p>
+                    ${clinic.address ? `<p><strong>Address:</strong> ${clinic.address}${clinic.suburb ? `, ${clinic.suburb}` : ''}${clinic.city ? `, ${clinic.city}` : ''}${clinic.postal_code ? `, ${clinic.postal_code}` : ''}</p>` : ''}
+                </div>
+                ${ratingHtml}
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-success" onclick="alert('Booking feature coming soon!')" style="flex: 1;">📅 Book Appointment</button>
+                    <button class="btn btn-review" onclick="openReviewModal('${clinic.ClinicID}', '${clinic.Name.replace(/'/g, "\\'")}')" style="flex: 1;">⭐ Write a Review</button>
+                </div>
+            </div>
+        `;
+        contentDiv.innerHTML = html;
+        
+    } catch (err) {
+        contentDiv.innerHTML = `<div class="error">💥 Error: ${err.message}</div>`;
+    }
+}
+
+// ========== ADMIN: EDIT CLINIC FORM ==========
+async function showEditForm(clinicId) {
+    const admin = await isAdmin();
+    if (!admin) {
+        alert('Admin access required. Only administrators can edit clinic information.');
+        return;
+    }
+    
+    const { data: clinic, error } = await mySupabase
+        .from('Facilities')
+        .select('*')
+        .eq('ClinicID', clinicId)
+        .single();
+    
+    if (error) {
+        alert('Error loading clinic data');
+        return;
+    }
+    
+    // Remove existing form if any
+    const existingForm = document.getElementById('editForm');
+    if (existingForm) existingForm.remove();
+    
+    const formHtml = `
+        <div class="edit-form" id="editForm">
+            <h3>✏️ Edit Clinic Information</h3>
+            
+            <label>📞 Phone Number:</label>
+            <input type="text" id="editPhone" value="${clinic.phone || ''}" placeholder="e.g., 012 345 6789">
+            
+            <label>📧 Email Address:</label>
+            <input type="email" id="editEmail" value="${clinic.email || ''}" placeholder="e.g., clinic@example.com">
+            
+            <label>📍 Street Address:</label>
+            <textarea id="editAddress" rows="2" placeholder="Street address">${clinic.address || ''}</textarea>
+            
+            <label>🏘️ Suburb/Town:</label>
+            <input type="text" id="editSuburb" value="${clinic.suburb || ''}">
+            
+            <label>🏙️ City:</label>
+            <input type="text" id="editCity" value="${clinic.city || ''}">
+            
+            <label>📮 Postal Code:</label>
+            <input type="text" id="editPostalCode" value="${clinic.postal_code || ''}">
+            
+            <label>🏥 Facility Type:</label>
+            <select id="editType">
+                <option value="Clinic" ${clinic.Type === 'Clinic' ? 'selected' : ''}>Clinic</option>
+                <option value="Hospital" ${clinic.Type === 'Hospital' ? 'selected' : ''}>Hospital</option>
+                <option value="Community Health Centre" ${clinic.Type === 'Community Health Centre' ? 'selected' : ''}>Community Health Centre</option>
+                <option value="Primary Health Care" ${clinic.Type === 'Primary Health Care' ? 'selected' : ''}>Primary Health Care</option>
+            </select>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-success" onclick="saveClinicUpdates('${clinicId}')">💾 Save Changes</button>
+                <button class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    // Insert after the contact section
+    const contactSection = document.getElementById('contactSection');
+    if (contactSection) {
+        contactSection.insertAdjacentHTML('afterend', formHtml);
+    } else {
+        const detailDiv = document.querySelector('#content > div:last-child > div:last-child');
+        if (detailDiv) detailDiv.insertAdjacentHTML('beforeend', formHtml);
+    }
+}
+
+// ========== ADMIN: SAVE CLINIC UPDATES ==========
+async function saveClinicUpdates(clinicId) {
+    const updates = {
+        phone: document.getElementById('editPhone')?.value || null,
+        email: document.getElementById('editEmail')?.value || null,
+        address: document.getElementById('editAddress')?.value || null,
+        suburb: document.getElementById('editSuburb')?.value || null,
+        city: document.getElementById('editCity')?.value || null,
+        postal_code: document.getElementById('editPostalCode')?.value || null,
+        Type: document.getElementById('editType')?.value || null,
+        updated_at: new Date().toISOString()
+    };
+    
+    const { error } = await mySupabase
+        .from('Facilities')
+        .update(updates)
+        .eq('ClinicID', clinicId);
+    
+    if (error) {
+        alert('Error saving: ' + error.message);
+    } else {
+        alert('✅ Clinic information updated successfully!');
+        cancelEdit();
+        viewClinicDetail(clinicId); // Refresh the view
+    }
+}
+
+function cancelEdit() {
+    const editForm = document.getElementById('editForm');
+    if (editForm) editForm.remove();
+}
+
+// ========== BOOKING HISTORY ==========
+async function loadBookings() {
+    const contentDiv = document.getElementById('content');
+    contentDiv.innerHTML = '<div class="loading">📅 Loading your bookings...</div>';
+    
+    try {
+        const { data: { user } } = await mySupabase.auth.getUser();
+        
+        if (!user) {
+            contentDiv.innerHTML = `<div class="info">🔐 Please log in to view your bookings.<br><br>⚠️ You need to create an account first.</div><button class="btn btn-primary" onclick="loadClinics()" style="margin-top: 15px;">← Browse Clinics</button>`;
+            return;
+        }
+        
+        const { data, error } = await mySupabase
+            .from('Appointments')
+            .select('*, Facilities!ClinicID(Name, Province)')
+            .eq('PatientID', user.id)
+            .order('appointment_date', { ascending: false });
+        
+        if (error) {
+            contentDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            return;
+        }
+        
+        if (!data || data.length === 0) {
+            contentDiv.innerHTML = `<div class="info">📭 You have no bookings yet.</div><button class="btn btn-primary" onclick="loadClinics()">Browse Clinics to Book</button>`;
+            return;
+        }
+        
+        allBookings = data;
+        const html = `<h2>📅 My Appointments</h2><div class="filter-group"><button class="filter-btn active" onclick="setBookingFilter('all')">All</button><button class="filter-btn" onclick="setBookingFilter('upcoming')">Upcoming</button><button class="filter-btn" onclick="setBookingFilter('completed')">Completed</button><button class="filter-btn" onclick="setBookingFilter('cancelled')">Cancelled</button></div><div id="bookingsList"></div>`;
+        contentDiv.innerHTML = html;
+        displayBookings();
+        
+    } catch (err) {
+        contentDiv.innerHTML = `<div class="error">💥 Error: ${err.message}</div>`;
+    }
+}
+
+function displayBookings() {
+    let filtered = allBookings;
+    const now = new Date();
+    if (currentFilter === 'upcoming') {
+        filtered = filtered.filter(b => b.appointment_date && new Date(b.appointment_date) > now && b.status !== 'cancelled');
+    } else if (currentFilter === 'completed') {
+        filtered = filtered.filter(b => b.status === 'completed');
+    } else if (currentFilter === 'cancelled') {
+        filtered = filtered.filter(b => b.status === 'cancelled');
+    }
+    
+    const container = document.getElementById('bookingsList');
+    if (!container) return;
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="info">No appointments in this category.</div>';
+        return;
+    }
+    
+    container.innerHTML = filtered.map(apt => `<div class="booking-card ${apt.status === 'cancelled' ? 'cancelled' : (apt.status === 'completed' ? 'completed' : 'scheduled')}"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="margin:0;">🏥 ${apt.Facilities?.Name || 'Unknown'}</h3><span class="booking-status status-${apt.status || 'scheduled'}">${apt.status || 'scheduled'}</span></div>${apt.appointment_date ? `<p>📅 ${new Date(apt.appointment_date).toLocaleDateString()}</p>` : ''}${apt.appointment_time ? `<p>⏰ ${apt.appointment_time}</p>` : ''}<p>📍 ${apt.Facilities?.Province || 'N/A'}</p></div>`).join('');
+}
+
+function setBookingFilter(filter) {
+    currentFilter = filter;
+    displayBookings();
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.toLowerCase() === filter || (filter === 'all' && btn.textContent === 'All')) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+// ========== REVIEWS ==========
+function openReviewModal(clinicId, clinicName) {
+    currentClinicId = clinicId;
+    selectedRating = 0;
+    document.getElementById('reviewClinicName').innerHTML = `<strong>${clinicName}</strong>`;
+    document.getElementById('reviewComment').value = '';
+    
+    const stars = document.querySelectorAll('#starContainer .star');
+    stars.forEach(star => {
+        star.innerHTML = '☆';
+    });
+    
+    document.getElementById('reviewModal').style.display = 'block';
+}
+
+// Setup star rating
+const starContainerElement = document.getElementById('starContainer');
+if (starContainerElement) {
+    starContainerElement.addEventListener('click', function(e) {
+        const star = e.target.closest('.star');
+        if (star) {
+            selectedRating = parseInt(star.dataset.rating);
+            const stars = document.querySelectorAll('#starContainer .star');
+            stars.forEach((s, i) => {
+                s.innerHTML = i < selectedRating ? '★' : '☆';
+            });
+        }
+    });
+}
+
+async function submitReview() {
+    if (selectedRating === 0) {
+        alert('Please select a rating');
+        return;
+    }
+    
+    const comment = document.getElementById('reviewComment').value;
+    const { data: { user } } = await mySupabase.auth.getUser();
+    
+    if (!user) {
+        alert('Please login to submit a review');
+        return;
+    }
+    
+    const { error } = await mySupabase
+        .from('clinic_reviews')
+        .upsert({
+            clinic_id: currentClinicId,
+            patient_id: user.id,
+            rating: selectedRating,
+            comment: comment,
+            created_at: new Date().toISOString()
+        });
+    
+    if (error) {
+        alert('Error: ' + error.message);
+    } else {
+        alert('Thank you for your review!');
+        closeReviewModal();
+        viewClinicDetail(currentClinicId);
+    }
+}
+
+function closeReviewModal() {
+    document.getElementById('reviewModal').style.display = 'none';
+    currentClinicId = null;
+    selectedRating = 0;
+}
+
+// ========== SETUP BUTTONS AND START ==========
+document.getElementById('clinicsBtn').onclick = function() {
+    document.getElementById('clinicsBtn').classList.add('active');
+    document.getElementById('bookingsBtn').classList.remove('active');
+    loadClinics();
+};
+
+document.getElementById('bookingsBtn').onclick = function() {
+    document.getElementById('bookingsBtn').classList.add('active');
+    document.getElementById('clinicsBtn').classList.remove('active');
+    loadBookings();
+};
+
+document.getElementById('submitReviewBtn').onclick = submitReview;
+
+// Make functions global for onclick handlers
+window.filterClinics = filterClinics;
+window.viewClinicDetail = viewClinicDetail;
+window.loadClinics = loadClinics;
+window.loadBookings = loadBookings;
+window.openReviewModal = openReviewModal;
+window.closeReviewModal = closeReviewModal;
+window.setBookingFilter = setBookingFilter;
+window.showEditForm = showEditForm;
+window.saveClinicUpdates = saveClinicUpdates;
+window.cancelEdit = cancelEdit;
+
+// Start the app
+console.log('Starting app...');
+loadClinics();
+</script>
+</body>
+</html>
