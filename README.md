@@ -63,3 +63,68 @@ A web-based appointment and queue management system for community clinics in Sou
 git clone https://github.com/FantassmaisGhost/DevOps.git
 cd DevOps
 git checkout Queue
+
+
+📊 Database Schema
+Core Tables
+Table	Purpose
+Appointments	Stores all patient appointments and queue status
+Facilities	Clinic information from SA health registry
+Staff	Staff/Doctor information
+Users	Authentication and user roles
+Patients	Patient demographics
+Status Values
+waiting - Patient in queue
+
+in_consultation - Currently being seen
+
+complete - Consultation finished
+
+cancelled - Appointment cancelled
+
+scheduled - Future appointment
+
+no_show - Patient didn't show up
+
+📡 API Endpoints
+Method	Endpoint	Description
+GET	/api/health	Health check
+GET	/api/reports/summary/:clinicId	Queue summary stats
+GET	/api/reports/wait-times	Wait time analytics
+POST	/api/send-reminder	Send SMS reminder
+
+
+📝 License
+This project is developed for academic purposes as part of the COMS3009A course.
+
+🙏 Acknowledgments
+South African National Department of Health for facility data
+
+📸 Screenshots
+Staff Dashboard
+https://via.placeholder.com/800x400?text=Staff+Dashboard
+
+Patient View
+https://via.placeholder.com/800x400?text=Patient+Queue+View
+
+Analytics Dashboard
+https://via.placeholder.com/800x400?text=Analytics+Reports
+
+🐛 Known Issues
+Node modules cache files may trigger GitHub size warnings
+
+Future date appointments are view-only (cannot start consultation)
+
+🔮 Future Enhancements
+Mobile app for patients
+
+Email notifications
+
+Integration with electronic health records
+
+Machine learning for wait time prediction
+
+Made with ❤️ for South African community clinics
+
+text
+
