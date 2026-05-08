@@ -48,3 +48,27 @@ function filterClinics()
 │ │ [View Details →]                │ │
 │ └─────────────────────────────────┘ │
 └─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ ← Back to Clinics                   │
+│                                     │
+│ 🏥 Aberdeen Hospital                │
+│                                     │
+│ 📍 Location                         │
+│ • Type: District Hospital          │
+│ • Sector: public                    │
+│ • Province: Eastern Cape            │
+│                                     │
+│ 🕒 Operating Hours                  │
+│ • Monday: 08:00 - 16:00            │
+│ • Tuesday: 08:00 - 16:00           │
+│                                     │
+│ 📞 Contact Information              │
+│ • Phone: 049 843 0012              │
+│ • Email: info@aberdeenhospital.co.za│
+│                                     │
+│ ⭐ Patient Reviews                  │
+│ • Average: 4.5/5 (12 reviews)      │
+│                                     │
+│ [📅 Book Appointment] [⭐ Write Review]│
+└─────────────────────────────────────┘
