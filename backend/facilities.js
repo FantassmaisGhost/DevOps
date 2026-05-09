@@ -15,7 +15,7 @@
             Facility_t (type), Ownership, Lat, Long, LL_source
    ============================================================= */
 
-const SA_FACILITIES = [
+export const SA_FACILITIES = [
   { name: 'Aberdeen Hospital', type: 'hospital', subtype: 'District Hospital', sector: 'public', province: 'Eastern Cape', clinicID: '00001', lat: -32.4862, lng: 24.0609 },
   { name: 'Aberdeen Satellite Clinic', type: 'clinic', subtype: 'Satellite Clinic', sector: 'public', province: 'Eastern Cape', clinicID: '00002', lat: -32.475, lng: 24.052 },
   { name: 'AD Keet Clinic', type: 'clinic', subtype: 'Clinic', sector: 'public', province: 'Eastern Cape', clinicID: '00003', lat: -34.0602, lng: 24.9183 },
@@ -4321,5 +4321,5 @@ const SA_FACILITIES = [
   { name: 'Zypher Fontein Health Post', type: 'health_post', subtype: 'Health Post', sector: 'public', province: 'Western Cape', clinicID: '04303', lat: 0.0, lng: 0.0 }
 ];
 
-const PROVINCES   = [...new Set(SA_FACILITIES.map(f => f.province))].sort();
-const TOTAL_COUNT = SA_FACILITIES.length;
+export const PROVINCES   = [...new Set(SA_FACILITIES.map(f => f.province))].sort();
+export const TOTAL_COUNT = SA_FACILITIES.length;
