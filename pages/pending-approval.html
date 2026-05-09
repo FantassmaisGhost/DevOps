@@ -1,100 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pending Approval | Health-Flow</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        main {
-            background: white;
-            border-radius: 24px;
-            padding: 48px;
-            text-align: center;
-            max-width: 500px;
-        }
-        .icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        h1 {
-            color: #1e3c72;
-            margin-bottom: 16px;
-        }
-        p {
-            color: #666;
-            margin-bottom: 24px;
-            line-height: 1.6;
-        }
-        .email {
-            background: #f5f5f5;
-            padding: 12px;
-            border-radius: 12px;
-            font-family: monospace;
-            margin: 20px 0;
-        }
-        .clinic-info {
-            background: #e5f3ff;
-            padding: 12px;
-            border-radius: 12px;
-            margin: 20px 0;
-            font-size: 14px;
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #e0e0e0;
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        small {
-            font-size: 14px;
-            display: block;
-            margin-bottom: 24px;
-        }
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            transition: background 0.2s;
-        }
-        .logout-btn:hover {
-            background: #b91c1c;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pending Approval | Health-Flow</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+
+    .pending-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .pending-top {
+      padding: 36px 32px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pending-icon {
+      width: 64px; height: 64px;
+      background: rgba(245,166,35,0.1);
+      border: 1px solid rgba(245,166,35,0.25);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 18px;
+    }
+    .pending-title {
+      font-family: var(--font-disp);
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .pending-sub { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+    .pending-body { padding: 20px 28px 24px; }
+
+    .info-block {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      margin-bottom: 10px;
+      color: var(--text-muted);
+      text-align: left;
+    }
+    .info-block strong { display: block; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .info-block span { color: var(--text); }
+
+    .spinner-wrap {
+      margin: 16px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .pending-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+  </style>
 </head>
 <body>
 
-    <main>
-        <p class="icon">⏳</p>
-        <h1>Pending Approval</h1>
-        <p>Your staff account has been registered and is waiting for administrator approval.</p>
-        <section class="email" id="userEmail">Loading...</section>
-        <section class="clinic-info" id="clinicInfo">Loading clinic information...</section>
-        <small>You will receive staff access once an administrator approves your account.</small>
-        <section class="spinner" id="spinner"></section>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
-    </main>
+  <div class="pending-card">
+    <div class="pending-top">
+      <div class="pending-icon">⏳</div>
+      <div class="pending-title">Pending Approval</div>
+      <div class="pending-sub">Your staff account has been registered and is waiting for administrator approval.</div>
+    </div>
+    <div class="pending-body">
+      <div class="info-block">
+        <strong>Registered email</strong>
+        <span id="userEmail">Loading…</span>
+      </div>
+      <div class="info-block" id="clinicInfo">
+        <strong>Clinic</strong>
+        <span>Loading clinic information…</span>
+      </div>
 
-    <script type="module" src="../backend/pending-approval.js"></script>
+      <div class="spinner-wrap">
+        <div class="spinner"></div>
+        Waiting for admin approval
+      </div>
 
+      <p class="pending-note">You will receive staff access once an administrator approves your account.</p>
+      <button class="btn btn-ghost btn-full" id="logoutBtn">Sign out</button>
+    </div>
+  </div>
+
+  <script type="module" src="../backend/pending-approval.js"></script>
 </body>
 </html>

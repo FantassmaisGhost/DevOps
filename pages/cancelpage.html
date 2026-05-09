@@ -3,30 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Appointments</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="cancelpage.css" />
+  <title>My Appointments | Health-Flow</title>
+  <link rel="stylesheet" href="shared.css" />
   <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+  <style>
+    .appt-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .appt-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .appt-card:hover { border-color: var(--text-muted); }
+
+    .appt-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .appt-num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .appt-body {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0;
+    }
+    .appt-field {
+      padding: 12px 16px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .appt-field:last-child { border-right: none; }
+    .appt-field-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .appt-field-value { font-size: 12px; color: var(--text); }
+
+    .appt-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .loading-message, .info-message, .error-message {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .error-message { color: var(--accent2); border-color: rgba(255,107,107,0.3); background: rgba(255,107,107,0.06); }
+  </style>
 </head>
 <body>
-  <main class="main" id="main-content">
-    <header class="topbar">
-      <h1 class="topbar-title">Health-Flow</h1>
-      <nav class="topbar-right" aria-label="Page actions">
-        <button class="btn-back" type="button" onclick="window.location.href='dashboard.html'">
-          Back to Dashboard
-        </button>
-      </nav>
-    </header>
 
-    <section aria-labelledby="page-heading">
-      <h2 id="page-heading" class="section-title">My Appointments</h2>
-      <p class="section-subtitle">View all your appointments and manage them here.</p>
+  <header class="topbar">
+    <span class="brand">
+      <span class="brand-icon">✚</span>
+      <strong class="brand-name">Health-Flow</strong>
+    </span>
+    <div class="topbar-right">
+      <button class="btn btn-outline" onclick="window.location.href='dashboard.html'">← Dashboard</button>
+    </div>
+  </header>
 
-      <section id="appointmentsContainer" class="appointments-list" aria-live="polite">
-        <p class="loading-message">Loading your appointments...</p>
-      </section>
-    </section>
+  <main class="page-wide" id="main-content">
+    <div class="section-label" style="margin-bottom:6px;">My Appointments</div>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:20px;">View all your appointments and manage them here.</p>
+
+    <div id="appointmentsContainer" class="appt-list" aria-live="polite">
+      <p class="loading-message"><span class="spinner"></span>Loading your appointments…</p>
+    </div>
   </main>
 
   <script type="module" src="cancelpage.js"></script>
