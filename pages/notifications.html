@@ -9,12 +9,13 @@
   <style>
     .notif-list {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border-md);
       border-radius: var(--radius-md);
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
     .notif-item {
-      padding: 16px 18px;
+      padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
       transition: background 0.12s;
@@ -22,86 +23,85 @@
     }
     .notif-item:last-child { border-bottom: none; }
     .notif-item:hover { background: var(--surface2); }
-    .notif-item.unread { background: rgba(0,229,160,0.04); border-left: 2px solid var(--accent); }
+    .notif-item.unread {
+      background: var(--teal-light);
+      border-left: 3px solid var(--teal);
+    }
+    .notif-item.unread:hover { background: #D4EDE9; }
 
     .notif-head {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-      flex-wrap: wrap;
+      gap: 10px; margin-bottom: 6px; flex-wrap: wrap;
     }
     .notif-type {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      padding: 2px 8px;
-      border-radius: 3px;
-      background: var(--surface2);
-      color: var(--text-muted);
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.09em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: var(--radius-xs);
+      background: var(--surface2); color: var(--ink-3);
     }
-    .notif-type.appointment { color: var(--accent); background: rgba(0,229,160,0.1); }
-    .notif-time { font-size: 10px; color: var(--text-muted); }
-    .notif-msg { font-size: 12px; line-height: 1.55; margin-bottom: 8px; }
+    .notif-type.appointment { color: var(--teal); background: var(--teal-light); }
+    .notif-time { font-size: 10px; color: var(--ink-3); font-family: var(--font-mono); }
+    .notif-msg { font-size: 13px; line-height: 1.55; margin-bottom: 8px; color: var(--ink); }
     .notif-actions { display: flex; gap: 14px; }
     .notif-action-btn {
       background: none; border: none;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: color 0.15s;
-      padding: 0;
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--ink-3); cursor: pointer;
+      transition: color 0.15s; padding: 0;
     }
-    .notif-action-btn:hover { color: var(--accent); }
-    .notif-action-btn.del:hover { color: var(--accent2); }
+    .notif-action-btn:hover { color: var(--teal); }
+    .notif-action-btn.del:hover { color: var(--rust); }
 
     .filters { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
     .filter-btn {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      padding: 5px 12px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.15s;
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border-md);
+      background: var(--surface); color: var(--ink-3);
+      cursor: pointer; transition: all 0.15s;
     }
-    .filter-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-    .filter-btn:hover:not(.active) { border-color: var(--text-muted); color: var(--text); }
+    .filter-btn.active {
+      background: var(--obsidian);
+      color: #F7F4EE;
+      border-color: var(--obsidian);
+    }
+    .filter-btn:hover:not(.active) { border-color: var(--teal); color: var(--teal); }
 
     .unread-badge {
-      background: var(--accent);
-      color: var(--bg);
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 999px;
-      margin-left: 8px;
-      display: none;
+      background: var(--teal); color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 999px;
+      margin-left: 8px; display: none;
     }
 
     .page-head {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
     }
     .page-title {
       font-family: var(--font-disp);
-      font-size: 22px;
-      font-weight: 800;
+      font-size: 22px; font-weight: 700;
       letter-spacing: -0.02em;
-      display: flex;
-      align-items: center;
+      color: var(--ink);
+      display: flex; align-items: center;
     }
+
+    .empty-state {
+      padding: 56px 20px;
+      text-align: center;
+      color: var(--ink-3);
+      font-size: 13px;
+      font-style: italic;
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.35; }
+
+    .loading-state { text-align: center; padding: 56px 20px; color: var(--ink-3); }
   </style>
 </head>
 <body>
@@ -133,7 +133,10 @@
     </div>
 
     <div id="notificationsContainer">
-      <div class="loading-state"><div class="spinner"></div><div style="margin-top:10px;font-size:12px;">Loading notifications…</div></div>
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div style="margin-top:10px;font-size:13px;">Loading notifications…</div>
+      </div>
     </div>
   </main>
 
@@ -154,7 +157,7 @@
     async function loadNotifications() {
       if (!currentUser) return;
       const c = document.getElementById('notificationsContainer');
-      c.innerHTML = '<div class="loading-state"><div class="spinner"></div><div style="margin-top:10px;font-size:12px;">Loading…</div></div>';
+      c.innerHTML = '<div class="loading-state"><div class="spinner"></div><div style="margin-top:10px;font-size:13px;">Loading…</div></div>';
       allNotifications = await getUserNotifications(currentUser.id);
       await updateUnreadCount(); renderNotifications();
     }
@@ -189,7 +192,7 @@
       if (currentFilter === 'unread')      filtered = allNotifications.filter(n => !n.is_read);
       if (currentFilter === 'appointment') filtered = allNotifications.filter(n => n.type === 'appointment');
       if (!filtered.length) {
-        const msg = currentFilter === 'unread' ? 'No unread notifications' : currentFilter === 'appointment' ? 'No appointment notifications' : 'No notifications';
+        const msg = currentFilter === 'unread' ? 'No unread notifications' : currentFilter === 'appointment' ? 'No appointment notifications' : 'No notifications yet';
         c.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div>${msg}</div>`;
         return;
       }

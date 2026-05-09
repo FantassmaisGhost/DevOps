@@ -8,58 +8,65 @@
   <style>
     .hours-table {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border-md);
       border-radius: var(--radius-md);
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
     .hours-table table { width: 100%; border-collapse: collapse; }
     .hours-table th {
-      background: var(--surface2);
-      padding: 10px 16px;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
+      background: var(--obsidian);
+      padding: 12px 18px;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(247,244,238,0.55);
       text-align: left;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1.5px solid rgba(247,244,238,0.08);
     }
     .hours-table td {
-      padding: 10px 16px;
+      padding: 12px 18px;
       border-bottom: 1px solid var(--border);
-      font-size: 12px;
+      font-size: 13px;
       vertical-align: middle;
     }
     .hours-table tr:last-child td { border-bottom: none; }
     .hours-table tr:hover td { background: var(--surface2); }
-    .day-label { font-weight: 700; color: var(--text); }
+    .day-label { font-weight: 700; color: var(--ink); font-family: var(--font-body); }
 
     input[type="time"] {
       background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
+      border: 1.5px solid var(--border-md);
+      border-radius: var(--radius-sm);
+      color: var(--ink);
       font-family: var(--font-mono);
       font-size: 12px;
-      padding: 6px 10px;
+      padding: 7px 10px;
       outline: none;
-      transition: border-color 0.15s;
-      color-scheme: dark;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      color-scheme: light;
     }
-    input[type="time"]:focus { border-color: var(--accent); }
+    input[type="time"]:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(0,137,123,0.12);
+    }
 
     input[type="checkbox"] {
-      width: 16px; height: 16px;
-      accent-color: var(--accent);
+      width: 17px; height: 17px;
+      accent-color: var(--teal);
       cursor: pointer;
     }
 
     .form-actions {
       display: flex;
       justify-content: flex-end;
-      padding: 14px 16px;
+      padding: 14px 18px;
       border-top: 1px solid var(--border);
       background: var(--surface2);
+    }
+
+    .page-intro {
+      font-size: 12px; color: var(--ink-3);
+      margin-bottom: 24px; line-height: 1.6;
     }
   </style>
 </head>
@@ -78,7 +85,7 @@
 
   <main class="page">
     <div class="section-label" style="margin-bottom:6px;">Operating Hours Management</div>
-    <p style="font-size:11px;color:var(--text-muted);margin-bottom:20px;">Edit clinic opening and closing times for each day of the week.</p>
+    <p class="page-intro">Edit clinic opening and closing times for each day of the week.</p>
 
     <form id="hoursForm">
       <div class="hours-table">
@@ -86,8 +93,8 @@
           <thead>
             <tr>
               <th>Day</th>
-              <th>Open time</th>
-              <th>Close time</th>
+              <th>Open Time</th>
+              <th>Close Time</th>
               <th>Open?</th>
             </tr>
           </thead>
