@@ -1,9 +1,5 @@
 // notificationService.js
-import { createClient } from 'https://esm.sh/@supabase/supabase-js'
-
-const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+import { supabase, supabaseAnonKey } from './supabase.js';
 
 export class NotificationService {
   static async sendEmailNotification(email, subject, htmlContent) {
@@ -13,18 +9,12 @@ export class NotificationService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`
         },
         body: JSON.stringify({ email, subject, html: htmlContent })
       });
-      console.log("Email response status:", response.status);
-      const result = await response.json();
-      console.log("Email API response:", result);
-      if (!response.ok) {
-        console.error("Email failed:", result.error);
-        return false;
-      }
+      if (!response.ok) return false;
       return true;
     } catch (error) {
       console.error("Error sending email:", error);
@@ -34,7 +24,7 @@ export class NotificationService {
 
   static async createDatabaseNotification(userId, appointmentId, message, type = 'appointment') {
     try {
-      const { error } = await sb.from("notifications").insert([{
+      const { error } = await supabase.from("notifications").insert([{
         user_id: userId,
         appointment_id: appointmentId,
         message: message,
@@ -54,7 +44,7 @@ export class NotificationService {
 
   static async getUserNotifications(userId) {
     try {
-      const { data, error } = await sb.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false });
       if (error) {
         console.error("Error loading notifications:", error);
         return [];
@@ -68,7 +58,7 @@ export class NotificationService {
 
   static async markNotificationAsRead(notificationId) {
     try {
-      const { error } = await sb.from("notifications").update({ is_read: true }).eq("id", notificationId);
+      const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
       if (error) {
         console.error("Error marking notification as read:", error);
         return false;
@@ -82,7 +72,7 @@ export class NotificationService {
 
   static async markAllNotificationsAsRead(userId) {
     try {
-      const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
+      const { error } = await supabase.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
       if (error) {
         console.error("Error marking all notifications as read:", error);
         return false;
@@ -96,7 +86,7 @@ export class NotificationService {
 
   static async deleteNotification(notificationId) {
     try {
-      const { error } = await sb.from("notifications").delete().eq("id", notificationId);
+      const { error } = await supabase.from("notifications").delete().eq("id", notificationId);
       if (error) {
         console.error("Error deleting notification:", error);
         return false;
@@ -110,7 +100,7 @@ export class NotificationService {
 
   static async getUnreadCount(userId) {
     try {
-      const { count, error } = await sb.from("notifications").select("*", { count: 'exact', head: true }).eq("user_id", userId).eq("is_read", false);
+      const { count, error } = await supabase.from("notifications").select("*", { count: 'exact', head: true }).eq("user_id", userId).eq("is_read", false);
       if (error) {
         console.error("Error getting unread count:", error);
         return 0;
@@ -122,3 +112,12 @@ export class NotificationService {
     }
   }
 }
+
+// ===== Named exports for backward compatibility =====
+export const sendEmailNotification = NotificationService.sendEmailNotification;
+export const createDatabaseNotification = NotificationService.createDatabaseNotification;
+export const getUserNotifications = NotificationService.getUserNotifications;
+export const markNotificationAsRead = NotificationService.markNotificationAsRead;
+export const markAllNotificationsAsRead = NotificationService.markAllNotificationsAsRead;
+export const deleteNotification = NotificationService.deleteNotification;
+export const getUnreadCount = NotificationService.getUnreadCount;

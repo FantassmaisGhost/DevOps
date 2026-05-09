@@ -1,10 +1,9 @@
 // booking.js
 import { createClient } from 'https://esm.sh/@supabase/supabase-js'
-import { NotificationService } from './notificationService.js';
-import { Utils } from './utils.js';
+import { NotificationService} from '../backend/notificationService.js';
+import { Utils } from '../utils.js';
+import { supabase } from '../supabase.js';
 
-const SUPABASE_URL = "https://ixikhufrylaugpdxokwu.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -24,7 +23,7 @@ export class BookingController {
     this.selectedDate = null;
     this.selectedSlot = null;
     this.currentStep = 1;
-    this.sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    this.sb = supabase;
     this.app = document.getElementById('app');
   }
 

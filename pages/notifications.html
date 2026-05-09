@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notifications | Health-Flow</title>
   <link rel="stylesheet" href="shared.css" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
   <style>
     .notif-list {
       background: var(--surface);
@@ -141,100 +140,104 @@
   </main>
 
   <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js';
-    import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, getUnreadCount } from '../backend/notificationService.js';
+  import { supabase } from '../backend/supabase.js';
+  import { 
+    getUserNotifications, 
+    getUnreadCount, 
+    markNotificationAsRead, 
+    markAllNotificationsAsRead, 
+    deleteNotification 
+  } from '../backend/notificationService.js';
 
-    const sb = createClient("https://ixikhufrylaugpdxokwu.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ");
+  let currentUser = null, allNotifications = [], currentFilter = 'all';
 
-    let currentUser = null, allNotifications = [], currentFilter = 'all';
+  async function checkAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return null; }
+    currentUser = session.user; return currentUser;
+  }
 
-    async function checkAuth() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return null; }
-      currentUser = session.user; return currentUser;
+  async function loadNotifications() {
+    if (!currentUser) return;
+    const c = document.getElementById('notificationsContainer');
+    c.innerHTML = '<div class="loading-state"><div class="spinner"></div><div style="margin-top:10px;font-size:13px;">Loading…</div></div>';
+    allNotifications = await getUserNotifications(currentUser.id);
+    await updateUnreadCount(); renderNotifications();
+  }
+
+  async function updateUnreadCount() {
+    if (!currentUser) return;
+    const count = await getUnreadCount(currentUser.id);
+    const badge = document.getElementById('unreadBadge');
+    const btn   = document.getElementById('markAllReadBtn');
+    if (count > 0) { badge.textContent = count; badge.style.display='inline-block'; btn.style.display='inline-flex'; }
+    else { badge.style.display='none'; btn.style.display='none'; }
+  }
+
+  function formatTime(ds) {
+    const d = new Date(ds), now = new Date();
+    const dm = Math.floor((now-d)/60000), dh = Math.floor(dm/60), dd = Math.floor(dh/24);
+    if (dm < 1) return 'Just now';
+    if (dm < 60) return `${dm}m ago`;
+    if (dh < 24) return `${dh}h ago`;
+    if (dd < 7)  return `${dd}d ago`;
+    return d.toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+  }
+
+  function renderNotifications() {
+    const c = document.getElementById('notificationsContainer');
+    let filtered = allNotifications;
+    if (currentFilter === 'unread')      filtered = allNotifications.filter(n => !n.is_read);
+    if (currentFilter === 'appointment') filtered = allNotifications.filter(n => n.type === 'appointment');
+    if (!filtered.length) {
+      const msg = currentFilter === 'unread' ? 'No unread notifications' : currentFilter === 'appointment' ? 'No appointment notifications' : 'No notifications yet';
+      c.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div>${msg}</div>`;
+      return;
     }
+    c.innerHTML = `<div class="notif-list">${filtered.map(n => `
+      <div class="notif-item ${!n.is_read?'unread':''}" data-id="${n.id}">
+        <div class="notif-head">
+          <span class="notif-type ${n.type}">${n.type||'general'}</span>
+          <span class="notif-time">${formatTime(n.created_at)}</span>
+        </div>
+        <div class="notif-msg">${escHtml(n.message)}</div>
+        <div class="notif-actions">
+          ${!n.is_read ? `<button class="notif-action-btn mark-read" data-id="${n.id}">✓ Mark as read</button>` : ''}
+          <button class="notif-action-btn del delete" data-id="${n.id}">✕ Delete</button>
+        </div>
+      </div>`).join('')}</div>`;
 
-    async function loadNotifications() {
-      if (!currentUser) return;
-      const c = document.getElementById('notificationsContainer');
-      c.innerHTML = '<div class="loading-state"><div class="spinner"></div><div style="margin-top:10px;font-size:13px;">Loading…</div></div>';
-      allNotifications = await getUserNotifications(currentUser.id);
-      await updateUnreadCount(); renderNotifications();
-    }
-
-    async function updateUnreadCount() {
-      if (!currentUser) return;
-      const count = await getUnreadCount(currentUser.id);
-      const badge = document.getElementById('unreadBadge');
-      const btn   = document.getElementById('markAllReadBtn');
-      if (count > 0) { badge.textContent = count; badge.style.display='inline-block'; btn.style.display='inline-flex'; }
-      else { badge.style.display='none'; btn.style.display='none'; }
-    }
-
-    function formatTime(ds) {
-      const d = new Date(ds), now = new Date();
-      const dm = Math.floor((now-d)/60000), dh = Math.floor(dm/60), dd = Math.floor(dh/24);
-      if (dm < 1) return 'Just now';
-      if (dm < 60) return `${dm}m ago`;
-      if (dh < 24) return `${dh}h ago`;
-      if (dd < 7)  return `${dd}d ago`;
-      return d.toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});
-    }
-
-    function escHtml(s) {
-      if (!s) return '';
-      const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
-    }
-
-    function renderNotifications() {
-      const c = document.getElementById('notificationsContainer');
-      let filtered = allNotifications;
-      if (currentFilter === 'unread')      filtered = allNotifications.filter(n => !n.is_read);
-      if (currentFilter === 'appointment') filtered = allNotifications.filter(n => n.type === 'appointment');
-      if (!filtered.length) {
-        const msg = currentFilter === 'unread' ? 'No unread notifications' : currentFilter === 'appointment' ? 'No appointment notifications' : 'No notifications yet';
-        c.innerHTML = `<div class="empty-state"><div class="empty-icon">🔔</div>${msg}</div>`;
-        return;
-      }
-      c.innerHTML = `<div class="notif-list">${filtered.map(n => `
-        <div class="notif-item ${!n.is_read?'unread':''}" data-id="${n.id}">
-          <div class="notif-head">
-            <span class="notif-type ${n.type}">${n.type||'general'}</span>
-            <span class="notif-time">${formatTime(n.created_at)}</span>
-          </div>
-          <div class="notif-msg">${escHtml(n.message)}</div>
-          <div class="notif-actions">
-            ${!n.is_read ? `<button class="notif-action-btn mark-read" data-id="${n.id}">✓ Mark as read</button>` : ''}
-            <button class="notif-action-btn del delete" data-id="${n.id}">✕ Delete</button>
-          </div>
-        </div>`).join('')}</div>`;
-
-      c.querySelectorAll('.mark-read').forEach(btn => btn.addEventListener('click', async e => {
-        e.stopPropagation(); await markNotificationAsRead(btn.dataset.id); await loadNotifications();
-      }));
-      c.querySelectorAll('.delete').forEach(btn => btn.addEventListener('click', async e => {
-        e.stopPropagation(); if (confirm('Delete this notification?')) { await deleteNotification(btn.dataset.id); await loadNotifications(); }
-      }));
-      c.querySelectorAll('.notif-item').forEach(item => item.addEventListener('click', async e => {
-        if (e.target.classList.contains('notif-action-btn')) return;
-        const n = allNotifications.find(x => x.id === item.dataset.id);
-        if (n && !n.is_read) { await markNotificationAsRead(item.dataset.id); await loadNotifications(); }
-      }));
-    }
-
-    document.getElementById('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); window.location.href='index.html'; });
-    document.getElementById('markAllReadBtn').addEventListener('click', async () => {
-      if (currentUser && confirm('Mark all as read?')) { await markAllNotificationsAsRead(currentUser.id); await loadNotifications(); }
-    });
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentFilter = btn.dataset.filter;
-      renderNotifications();
+    c.querySelectorAll('.mark-read').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation(); await markNotificationAsRead(btn.dataset.id); await loadNotifications();
     }));
+    c.querySelectorAll('.delete').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation(); if (confirm('Delete this notification?')) { await deleteNotification(btn.dataset.id); await loadNotifications(); }
+    }));
+    c.querySelectorAll('.notif-item').forEach(item => item.addEventListener('click', async e => {
+      if (e.target.classList.contains('notif-action-btn')) return;
+      const n = allNotifications.find(x => x.id === item.dataset.id);
+      if (n && !n.is_read) { await markNotificationAsRead(item.dataset.id); await loadNotifications(); }
+    }));
+  }
 
-    async function init() { await checkAuth(); if (currentUser) await loadNotifications(); }
-    init();
-  </script>
+  document.getElementById('logoutBtn').addEventListener('click', async () => { await supabase.auth.signOut(); window.location.href='index.html'; });
+  document.getElementById('markAllReadBtn').addEventListener('click', async () => {
+    if (currentUser && confirm('Mark all as read?')) { await markAllNotificationsAsRead(currentUser.id); await loadNotifications(); }
+  });
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderNotifications();
+  }));
+
+  async function init() { await checkAuth(); if (currentUser) await loadNotifications(); }
+  init();
+</script>
 </body>
 </html>

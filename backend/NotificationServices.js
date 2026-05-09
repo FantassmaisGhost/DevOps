@@ -1,4 +1,4 @@
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+import { supabase } from './supabase.js';
 
 class NotificationServices {
   static async sendEmailNotification(email, subject, htmlContent) {
@@ -15,7 +15,7 @@ class NotificationServices {
   }
 
   static async createDatabaseNotification(userId, appointmentId, message, type = 'appointment') {
-    const { error } = await sb.from("notifications").insert([{
+    const { error } = await supabase.from("notifications").insert([{
       user_id: userId,
       appointment_id: appointmentId,
       message: message,
@@ -26,27 +26,27 @@ class NotificationServices {
   }
 
   static async getUserNotifications(userId) {
-    const { data, error } = await sb.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false });
     return data || [];
   }
 
   static async markNotificationAsRead(notificationId) {
-    const { error } = await sb.from("notifications").update({ is_read: true }).eq("id", notificationId);
+    const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
     return !error;
   }
 
   static async markAllNotificationsAsRead(userId) {
-    const { error } = await sb.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
+    const { error } = await supabase.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
     return !error;
   }
 
   static async deleteNotification(notificationId) {
-    const { error } = await sb.from("notifications").delete().eq("id", notificationId);
+    const { error } = await supabase.from("notifications").delete().eq("id", notificationId);
     return !error;
   }
 
   static async getUnreadCount(userId) {
-    const { count, error } = await sb.from("notifications").select("*", { count: 'exact', head: true }).eq("user_id", userId).eq("is_read", false);
+    const { count, error } = await supabase.from("notifications").select("*", { count: 'exact', head: true }).eq("user_id", userId).eq("is_read", false);
     return count || 0;
   }
 }
