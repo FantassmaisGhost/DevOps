@@ -27,7 +27,7 @@ const mimeTypes = {
  * @returns {{ filePath: string, contentType: string }}
  */
 function resolveFile(requestUrl, rootDir) {
-  let url = (req.url === '/' || req.url === '') ? '/index.html' : req.url.split('?')[0];
+  let url = (requestUrl === '/' || requestUrl === '') ? '/index.html' : requestUrl.split('?')[0];
 
   // 1. Try exact path from project root
   let filePath = join(rootDir, url);
