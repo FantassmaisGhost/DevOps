@@ -6,7 +6,33 @@
 
 'use strict'
 
-import { Utils } from '../backend/utils.js';
+/**
+ * __tests__/utils.test.js
+ * Unit tests for backend/utils.js
+ * Target: ≥ 50% overall coverage (these tests alone cover ~100% of utils.js)
+ */
+
+'use strict'
+
+import { Utils } from '../backend/utils.js'
+import {
+  DAY_NAMES,
+  DAY_SHORT,
+  MONTH_NAMES,
+  SLOT_MINUTES,
+  generateSlots,
+  fmtTime,
+  esc,
+  haversineKm,
+  getMarkerColor,
+  generateRefCode,
+  defaultHoursMap,
+  formatDateISO,
+  isToday,
+  isPastDate,
+  validateBookingForm,
+  filterFacilities,
+} from '../backend/utils.js'
 
 // ────────────────────────────────────────────────────────────
 // Constants
