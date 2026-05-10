@@ -114,16 +114,17 @@ describe('createHandler', () => {
   let server
   let baseUrl
 
-  beforeAll(() => new Promise(resolve => {
+  beforeAll((done) => {
     const handler = createHandler(tmpDir)
     server = http.createServer(handler)
     server.listen(0, '127.0.0.1', () => {
       baseUrl = `http://127.0.0.1:${server.address().port}`
-      resolve()
+      done()
     })
-  }))
-
-  afterAll(() => new Promise(r => server.close(r)))
+  })
+afterAll(() => {
+  return new Promise(r => server.close(r))
+})
 
   function get(urlPath) {
     return new Promise((resolve, reject) => {
