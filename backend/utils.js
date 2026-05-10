@@ -1,9 +1,9 @@
 // utils.js
 export class Utils {
-  public static DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  public static DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-  public static MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  public static SLOT_MINUTES = 30;
+  export static DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  export static DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  export static MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  export static SLOT_MINUTES = 30;
 
   static generateSlots(opentime, closingtime, intervalMinutes = this.SLOT_MINUTES) {
     if (!opentime || !closingtime) return [];
