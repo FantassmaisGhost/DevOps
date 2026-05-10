@@ -23,7 +23,7 @@ const {
   isPastDate,
   validateBookingForm,
   filterFacilities,
-} = require('../backend/utils')
+} = require('../backend/Util')
 
 // ────────────────────────────────────────────────────────────
 // Constants
