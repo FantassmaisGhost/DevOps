@@ -199,7 +199,8 @@ async function getPlaceDetails(placeId) {
                     'rating',
                     'userRatingCount',
                     'googleMapsUri',
-                    'businessStatus'
+                    'businessStatus',
+                    'reviews'
                 ].join(',')
             }
         });
@@ -235,6 +236,95 @@ async function fetchGooglePlacesInfo(clinicName, province) {
 }
 
 /**
+ * Render combined Google + Supabase reviews in one unified section
+ */
+function renderCombinedReviews(placesData, supabaseReviews) {
+    let html = '';
+
+    // --- Google rating summary ---
+    if (placesData && placesData.rating) {
+        const stars = '★'.repeat(Math.round(placesData.rating)) + '☆'.repeat(5 - Math.round(placesData.rating));
+        html += `<div class="google-rating">
+            <span class="g-score">${placesData.rating}</span>
+            <span class="g-stars">${stars}</span>
+            <span class="g-count">${placesData.userRatingCount ? placesData.userRatingCount.toLocaleString() + ' Google reviews' : ''}</span>
+        </div>`;
+    }
+
+    // --- Supabase patient reviews summary ---
+    if (supabaseReviews && supabaseReviews.length > 0) {
+        const avg = (supabaseReviews.reduce((a, b) => a + b.rating, 0) / supabaseReviews.length).toFixed(1);
+        html += `<div style="background:#f0faf4; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:14px;">
+            🩺 <strong>Patient rating: ${avg}/5</strong> (${supabaseReviews.length} patient review${supabaseReviews.length !== 1 ? 's' : ''})
+        </div>`;
+    }
+
+    // --- Source tabs ---
+    const hasGoogle = placesData && placesData.reviews && placesData.reviews.length > 0;
+    const hasPatient = supabaseReviews && supabaseReviews.length > 0;
+
+    if (!hasGoogle && !hasPatient) {
+        return html + `<p style="color:#999;">No reviews yet. Be the first to write one!</p>`;
+    }
+
+    if (hasGoogle || hasPatient) {
+        html += `<div class="source-tabs">
+            ${hasPatient ? `<button class="source-tab active" onclick="switchReviewTab('patient')" id="tabPatient">🩺 Patient Reviews (${supabaseReviews.length})</button>` : ''}
+            ${hasGoogle ? `<button class="source-tab ${!hasPatient ? 'active' : ''}" onclick="switchReviewTab('google')" id="tabGoogle">🌐 Google Reviews (${placesData.reviews.length})</button>` : ''}
+        </div>`;
+
+        // Patient reviews panel
+        if (hasPatient) {
+            html += `<div id="panelPatient">
+                ${supabaseReviews.slice(0, 5).map(r => `
+                    <div style="border-top:1px solid #eee; padding:10px 0;">
+                        <div style="color:#f39c12;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+                        ${r.comment ? `<p style="margin:6px 0 0 0; color:#444;">${r.comment}</p>` : ''}
+                        <small style="color:#999;">🩺 Patient · ${new Date(r.created_at).toLocaleDateString()}</small>
+                    </div>`).join('')}
+            </div>`;
+        }
+
+        // Google reviews panel
+        if (hasGoogle) {
+            html += `<div id="panelGoogle" style="display:${hasPatient ? 'none' : 'block'};">
+                <div class="places-badge" style="margin-bottom:10px;">🌐 Live from Google Places</div>
+                ${placesData.reviews.slice(0, 5).map(r => `
+                    <div style="border-top:1px solid #eee; padding:10px 0;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                            <strong style="font-size:14px;">${r.authorAttribution?.displayName || 'Google User'}</strong>
+                            <span style="color:#f39c12;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                        </div>
+                        ${r.text?.text ? `<p style="margin:4px 0; color:#444; font-size:13px;">${r.text.text.slice(0, 300)}${r.text.text.length > 300 ? '...' : ''}</p>` : ''}
+                        <small style="color:#999;">🌐 Google · ${r.relativePublishTimeDescription || ''}</small>
+                    </div>`).join('')}
+            </div>`;
+        }
+    }
+
+    return html;
+}
+
+window.switchReviewTab = function(tab) {
+    const patientPanel = document.getElementById('panelPatient');
+    const googlePanel = document.getElementById('panelGoogle');
+    const tabPatient = document.getElementById('tabPatient');
+    const tabGoogle = document.getElementById('tabGoogle');
+
+    if (tab === 'patient') {
+        if (patientPanel) patientPanel.style.display = 'block';
+        if (googlePanel) googlePanel.style.display = 'none';
+        if (tabPatient) tabPatient.classList.add('active');
+        if (tabGoogle) tabGoogle.classList.remove('active');
+    } else {
+        if (patientPanel) patientPanel.style.display = 'none';
+        if (googlePanel) googlePanel.style.display = 'block';
+        if (tabPatient) tabPatient.classList.remove('active');
+        if (tabGoogle) tabGoogle.classList.add('active');
+    }
+};
+
+/**
  * Render the Google Places contact section HTML
  */
 function renderGoogleContact(placesData) {
@@ -257,15 +347,7 @@ function renderGoogleContact(placesData) {
         html += `<div style="background:#ffe0e0; color:#c0392b; padding:8px 12px; border-radius:8px; margin-bottom:10px; font-size:13px;">⚠️ ${businessStatus.replace(/_/g,' ')}</div>`;
     }
 
-    // Google rating
-    if (rating) {
-        const stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
-        html += `<div class="google-rating">
-            <span class="g-score">${rating}</span>
-            <span class="g-stars">${stars}</span>
-            <span class="g-count">${ratingCount ? ratingCount.toLocaleString() + ' Google reviews' : ''}</span>
-        </div>`;
-    }
+
 
     // Contact rows
     if (phone) {
@@ -448,22 +530,8 @@ async function viewClinicDetail(clinicId) {
         const admin = await isAdmin();
 
         // Get reviews from Supabase
-        let ratingHtml = '<div class="detail-section"><h3>⭐ Patient Reviews</h3><p>No reviews yet. Be the first!</p></div>';
         const { data: reviews } = await mySupabase
             .from('clinic_reviews').select('rating, comment, created_at').eq('clinic_id', clinicId);
-
-        if (reviews && reviews.length > 0) {
-            const avg = (reviews.reduce((a, b) => a + b.rating, 0) / reviews.length).toFixed(1);
-            ratingHtml = `<div class="detail-section"><h3>⭐ Patient Reviews</h3>
-                <p><strong>Average: ${avg}/5</strong> (${reviews.length} reviews)</p>
-                ${reviews.slice(0, 5).map(r => `
-                    <div style="border-top:1px solid #eee; padding:10px 0;">
-                        <div>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
-                        ${r.comment ? `<p style="margin:5px 0 0 0; color:#555;">${r.comment}</p>` : ''}
-                        <small style="color:#999;">${new Date(r.created_at).toLocaleDateString()}</small>
-                    </div>`).join('')}
-            </div>`;
-        }
 
         // Build main layout — contact section shows loading spinner while Google Places loads
         const html = `
@@ -498,7 +566,11 @@ async function viewClinicDetail(clinicId) {
                     </div>
                 </div>
 
-                ${ratingHtml}
+                <!-- Reviews section (loads async with Google + Supabase combined) -->
+                <div class="detail-section" id="reviewsSection">
+                    <h3>⭐ Reviews</h3>
+                    <div class="places-loading">🔄 Loading reviews...</div>
+                </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button class="btn btn-review" onclick="openReviewModal('${clinic.ClinicID}', '${clinic.Name.replace(/'/g, "\\'")}')" style="flex: 1;">⭐ Write a Review</button>
@@ -509,7 +581,7 @@ async function viewClinicDetail(clinicId) {
         contentDiv.innerHTML = html;
 
         // Now fetch Google Places data asynchronously and inject into page
-        loadGooglePlacesForClinic(clinic);
+        loadGooglePlacesForClinic(clinic, reviews);
 
     } catch (err) {
         contentDiv.innerHTML = `<div class="error">💥 Error: ${err.message}</div>`;
@@ -519,8 +591,14 @@ async function viewClinicDetail(clinicId) {
 /**
  * Async: fetch Google Places data and inject into already-rendered page sections
  */
-async function loadGooglePlacesForClinic(clinic) {
+async function loadGooglePlacesForClinic(clinic, supabaseReviews) {
     const placesData = await fetchGooglePlacesInfo(clinic.Name, clinic.Province);
+
+    // Update combined reviews section
+    const reviewsSection = document.getElementById('reviewsSection');
+    if (reviewsSection) {
+        reviewsSection.innerHTML = `<h3>⭐ Reviews</h3>${renderCombinedReviews(placesData, supabaseReviews)}`;
+    }
 
     // Update contact section
     const contactSection = document.getElementById('googleContactSection');
