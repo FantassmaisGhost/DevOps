@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Community Clinic System</title>
+    <link rel="stylesheet" href="clinic_app.css">
+</head>
+<body>
+<div class="container">
+    <h1>🏥 Community Clinic System</h1>
+    <div class="nav">
+        <button class="nav-btn active" id="clinicsBtn">🏥 Find Clinics</button>
+        <button class="nav-btn" id="bookingsBtn">📅 My Bookings</button>
+    </div>
+    <div id="content">
+        <div class="loading">🔄 Loading clinics...</div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div id="reviewModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeModalBtn">&times;</span>
+        <h3>⭐ Rate this Clinic</h3>
+        <p id="reviewClinicName"></p>
+        <div id="starContainer" style="text-align: center; margin: 20px 0;">
+            <span class="star" data-rating="1">☆</span>
+            <span class="star" data-rating="2">☆</span>
+            <span class="star" data-rating="3">☆</span>
+            <span class="star" data-rating="4">☆</span>
+            <span class="star" data-rating="5">☆</span>
+        </div>
+        <textarea id="reviewComment" rows="4" placeholder="Share your experience at this clinic..."></textarea>
+        <button class="btn btn-review" id="submitReviewBtn" style="width: 100%;">Submit Review</button>
+    </div>
+</div>
+
+<script type="module" src="../backend/clinic_app.js"></script>
+</body>
+</html>
