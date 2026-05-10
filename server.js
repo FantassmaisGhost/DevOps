@@ -54,18 +54,20 @@ function resolveFile(requestUrl, rootDir) {
  * @param {string} rootDir
  * @returns {function(req, res): void}
  */
-function createHandler(rootDir) {
-  return function handler(req, res) {
-    const { filePath, contentType } = resolveFile(req.url, rootDir);
+const createHandler = (rootDir) => {
+  return (req, res) => {
     try {
-      const content = readFileSync(filePath);
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(content);
-    } catch (e) {
-      res.writeHead(404);
-      res.end('Not found');
+      const { filePath, contentType } = resolveFile(req.url, rootDir)
+      const data = fs.readFileSync(filePath, 'utf-8')
+      
+      res.writeHead(200, { 'Content-Type': contentType })
+      res.end(data)
+    } catch (err) {
+      // Handle any read errors (file not found, permission denied, etc.)
+      res.writeHead(404, { 'Content-Type': 'text/plain' })
+      res.end('Not found')
     }
-  };
+  }
 }
 
 // Only start listening when this file is run directly (not required by tests)
