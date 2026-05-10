@@ -27,7 +27,8 @@ const mimeTypes = {
  * @returns {{ filePath: string, contentType: string }}
  */
 function resolveFile(requestUrl, rootDir) {
-  let url = (requestUrl === '/' || requestUrl === '') ? '/index.html' : requestUrl.split('?')[0];
+  const decodedUrl = decodeURIComponent(requestUrl);
+  let url = (decodedUrl === '/' || decodedUrl === '') ? '/index.html' : decodedUrl.split('?')[0];
 
   // 1. Try exact path from project root
   let filePath = join(rootDir, url);
@@ -58,7 +59,7 @@ const createHandler = (rootDir) => {
   return (req, res) => {
     try {
       const { filePath, contentType } = resolveFile(req.url, rootDir)
-      const data = fs.readFileSync(filePath, 'utf-8')
+      const data = readFileSync(filePath, 'utf-8')
       
       res.writeHead(200, { 'Content-Type': contentType })
       res.end(data)
