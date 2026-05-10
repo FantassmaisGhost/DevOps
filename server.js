@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const path = require('path')
+const http = require('http')
 
 // MIME types mapping
 const mimeTypes = {
@@ -72,5 +73,15 @@ function createHandler(rootDir) {
     }
   }
 }
+
+// Start the server
+const port = process.env.PORT || 8080
+const rootDir = __dirname
+const handler = createHandler(rootDir)
+const server = http.createServer(handler)
+
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`)
+})
 
 module.exports = { resolveFile, createHandler, mimeTypes }
