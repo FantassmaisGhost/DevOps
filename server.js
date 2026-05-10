@@ -1,86 +1,76 @@
-'use strict';
+'use strict'
 
-const { createServer } = require('http');
-const { readFileSync, existsSync } = require('fs');
-const { join, extname } = require('path');
+const fs = require('fs')
+const path = require('path')
 
-const PORT = process.env.PORT || 8080;
-
+// MIME types mapping
 const mimeTypes = {
   '.html': 'text/html',
-  '.css':  'text/css',
-  '.js':   'application/javascript',
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
-  '.svg':  'image/svg+xml',
-  '.ico':  'image/x-icon',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
   '.json': 'application/json',
-};
-
-// Simple static file server with SPA fallback for index.html
-/**
- * Resolve the file path for an incoming request URL.
- * Exported for testability.
- *
- * @param {string} requestUrl  - raw req.url
- * @param {string} rootDir     - project root directory
- * @returns {{ filePath: string, contentType: string }}
- */
-function resolveFile(requestUrl, rootDir) {
-  const decodedUrl = decodeURIComponent(requestUrl);
-  let url = (decodedUrl === '/' || decodedUrl === '') ? '/index.html' : decodedUrl.split('?')[0];
-
-  // 1. Try exact path from project root
-  let filePath = join(rootDir, url);
-
-  // 2. Try pages/ subdirectory
-  if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'pages', url);
-  }
-
-  // 3. SPA fallback — serve index.html
-  if (!existsSync(filePath)) {
-    filePath = join(rootDir, 'pages', 'index.html');
-  }
-
-  const ext         = extname(filePath);
-  const contentType = mimeTypes[ext] || 'text/plain';
-
-  return { filePath, contentType };
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml'
 }
 
 /**
- * HTTP request handler. Exported for testability.
- *
- * @param {string} rootDir
- * @returns {function(req, res): void}
+ * Resolves a URL path to a file path and content type
+ * @param {string} urlPath - The request URL path
+ * @param {string} rootDir - The root directory to serve from
+ * @returns {object} { filePath, contentType }
  */
-const createHandler = (rootDir) => {
+function resolveFile(urlPath, rootDir) {
+  // Decode URL-encoded paths
+  const decodedPath = decodeURIComponent(urlPath)
+  
+  // Check if file exists in root directory first
+  const rootFilePath = path.join(rootDir, decodedPath)
+  if (fs.existsSync(rootFilePath) && fs.statSync(rootFilePath).isFile()) {
+    const ext = path.extname(rootFilePath)
+    const contentType = mimeTypes[ext] || 'text/plain'
+    return { filePath: rootFilePath, contentType }
+  }
+  
+  // Check in pages directory
+  const pagesPath = path.join(rootDir, 'pages')
+  
+  // Handle root path
+  if (decodedPath === '/') {
+    const filePath = path.join(pagesPath, 'index.html')
+    return { filePath, contentType: 'text/html' }
+  }
+  
+  // Try the requested file in pages
+  const requestedFile = path.join(pagesPath, decodedPath.startsWith('/') ? decodedPath.slice(1) : decodedPath)
+  if (fs.existsSync(requestedFile) && fs.statSync(requestedFile).isFile()) {
+    const ext = path.extname(requestedFile)
+    const contentType = mimeTypes[ext] || 'text/plain'
+    return { filePath: requestedFile, contentType }
+  }
+  
+  // SPA fallback to index.html
+  const indexPath = path.join(pagesPath, 'index.html')
+  return { filePath: indexPath, contentType: 'text/html' }
+}
+
+/**
+ * Creates an HTTP request handler
+ * @param {string} rootDir - The root directory to serve files from
+ * @returns {function} HTTP request handler
+ */
+function createHandler(rootDir) {
   return (req, res) => {
     try {
       const { filePath, contentType } = resolveFile(req.url, rootDir)
-      const data = fs.readFileSync(filePath, 'utf-8')
+      const fileContent = fs.readFileSync(filePath, 'utf-8')
       
       res.writeHead(200, { 'Content-Type': contentType })
-      res.end(data)
+      res.end(fileContent)
     } catch (err) {
-      // Handle any read errors (file not found, permission denied, etc.)
       res.writeHead(404, { 'Content-Type': 'text/plain' })
       res.end('Not found')
     }
   }
 }
 
-// Only start listening when this file is run directly (not required by tests)
-if (require.main === module) {
-  const server = createServer(createHandler(__dirname))
-  const port = process.env.PORT || process.env.IISNODE_VERSION ? null : 8080
-
-  if (process.env.PORT) {
-    server.listen(process.env.PORT)
-  } else {
-    server.listen(8080, () => console.log(`Server running on port 8080`))
-  }
-}
-
-module.exports = { resolveFile, createHandler, mimeTypes };
+module.exports = { resolveFile, createHandler, mimeTypes }
