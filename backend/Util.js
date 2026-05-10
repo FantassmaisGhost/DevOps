@@ -96,21 +96,21 @@ class Util {
 }
 
 // Export constants as named exports for test compatibility
-export const DAY_NAMES = Utils.DAY_NAMES;
-export const DAY_SHORT = Utils.DAY_SHORT;
-export const MONTH_NAMES = Utils.MONTH_NAMES;
-export const SLOT_MINUTES = Utils.SLOT_MINUTES;
+export const DAY_NAMES = Util.DAY_NAMES;
+export const DAY_SHORT = Util.DAY_SHORT;
+export const MONTH_NAMES = Util.MONTH_NAMES;
+export const SLOT_MINUTES = Util.SLOT_MINUTES;
 
-// Export functions as named exports
-export const generateSlots = Utils.generateSlots;
-export const fmtTime = Utils.fmtTime;
-export const esc = Utils.esc;
-export const haversineKm = Utils.haversineKm;
-export const getMarkerColor = Utils.getMarkerColor;
-export const generateRefCode = Utils.generateRefCode;
-export const defaultHoursMap = Utils.defaultHoursMap;
-export const formatDateISO = Utils.formatDateISO;
-export const isToday = Utils.isToday;
-export const isPastDate = Utils.isPastDate;
-export const validateBookingForm = Utils.validateBookingForm;
-export const filterFacilities = Utils.filterFacilities;
+// Export functions as named exports with proper binding
+export const generateSlots = Util.generateSlots.bind(Util);
+export const fmtTime = Util.fmtTime.bind(Util);
+export const esc = Util.esc.bind(Util);
+export const haversineKm = Util.haversineKm.bind(Util);
+export const getMarkerColor = Util.getMarkerColor.bind(Util);
+export const generateRefCode = Util.generateRefCode.bind(Util);
+export const defaultHoursMap = Util.defaultHoursMap.bind(Util);
+export const formatDateISO = Util.formatDateISO.bind(Util);
+export const isToday = Util.isToday.bind(Util);
+export const isPastDate = Util.isPastDate.bind(Util);
+export const validateBookingForm = Util.validateBookingForm.bind(Util);
+export const filterFacilities = Util.filterFacilities.bind(Util);

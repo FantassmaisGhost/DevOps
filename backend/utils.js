@@ -108,16 +108,16 @@ export const DAY_SHORT = Utils.DAY_SHORT;
 export const MONTH_NAMES = Utils.MONTH_NAMES;
 export const SLOT_MINUTES = Utils.SLOT_MINUTES;
 
-// Export functions as named exports
-export const generateSlots = Utils.generateSlots;
-export const fmtTime = Utils.fmtTime;
-export const esc = Utils.esc;
-export const haversineKm = Utils.haversineKm;
-export const getMarkerColor = Utils.getMarkerColor;
-export const generateRefCode = Utils.generateRefCode;
-export const defaultHoursMap = Utils.defaultHoursMap;
-export const formatDateISO = Utils.formatDateISO;
-export const isToday = Utils.isToday;
-export const isPastDate = Utils.isPastDate;
-export const validateBookingForm = Utils.validateBookingForm;
-export const filterFacilities = Utils.filterFacilities;
+// Export functions as named exports with proper binding
+export const generateSlots = Utils.generateSlots.bind(Utils);
+export const fmtTime = Utils.fmtTime.bind(Utils);
+export const esc = Utils.esc.bind(Utils);
+export const haversineKm = Utils.haversineKm.bind(Utils);
+export const getMarkerColor = Utils.getMarkerColor.bind(Utils);
+export const generateRefCode = Utils.generateRefCode.bind(Utils);
+export const defaultHoursMap = Utils.defaultHoursMap.bind(Utils);
+export const formatDateISO = Utils.formatDateISO.bind(Utils);
+export const isToday = Utils.isToday.bind(Utils);
+export const isPastDate = Utils.isPastDate.bind(Utils);
+export const validateBookingForm = Utils.validateBookingForm.bind(Utils);
+export const filterFacilities = Utils.filterFacilities.bind(Utils);
