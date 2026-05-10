@@ -6,24 +6,7 @@
 
 'use strict'
 
-const {
-  DAY_NAMES,
-  DAY_SHORT,
-  MONTH_NAMES,
-  SLOT_MINUTES,
-  generateSlots,
-  fmtTime,
-  esc,
-  haversineKm,
-  getMarkerColor,
-  generateRefCode,
-  defaultHoursMap,
-  formatDateISO,
-  isToday,
-  isPastDate,
-  validateBookingForm,
-  filterFacilities,
-} = require('../backend/Util')
+import { Utils } from '../backend/utils.js';
 
 // ────────────────────────────────────────────────────────────
 // Constants
