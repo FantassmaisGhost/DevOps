@@ -58,29 +58,18 @@ function resolveFile(requestUrl, rootDir) {
 const createHandler = (rootDir) => {
   return (req, res) => {
     try {
-      // TEMP DEBUG — remove after fix
-      if (req.url === '/' || req.url === '' || req.url === '/server.js') {
-        const info = {
-          rawUrl: req.url,
-          rootDir,
-          indexExists: existsSync(join(rootDir, 'pages', 'index.html')),
-          pagesDirExists: existsSync(join(rootDir, 'pages')),
-        };
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(info, null, 2));
-        return;
-      }
-
-      const { filePath, contentType } = resolveFile(req.url, rootDir);
-      const data = readFileSync(filePath, 'utf-8');
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(data);
+      const { filePath, contentType } = resolveFile(req.url, rootDir)
+      const data = fs.readFileSync(filePath, 'utf-8')
+      
+      res.writeHead(200, { 'Content-Type': contentType })
+      res.end(data)
     } catch (err) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Not found');
+      // Handle any read errors (file not found, permission denied, etc.)
+      res.writeHead(404, { 'Content-Type': 'text/plain' })
+      res.end('Not found')
     }
-  };
-};
+  }
+}
 
 // Only start listening when this file is run directly (not required by tests)
 if (require.main === module) {
