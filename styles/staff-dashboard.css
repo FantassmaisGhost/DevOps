@@ -216,6 +216,73 @@
     border-color: #ff6b6b;
     box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15);
 }
+
+
+/* =========================
+   NOTE BUTTON
+========================= */
+
+.note-btn {
+    background: transparent;
+    border: 1px solid #3b82f6;
+    color: #8bb8ff;
+
+    padding: 7px 12px;
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    transition: all 0.2s ease;
+
+    white-space: nowrap;
+}
+
+.note-btn:hover {
+    background: rgba(59, 130, 246, 0.12);
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+}
+
+/* =========================
+   NOTE TEXTAREA
+========================= */
+
+.note-textarea {
+    width: 100%;
+
+    min-height: 130px;
+
+    resize: vertical;
+
+    background: #0b0e14;
+    border: 1px solid #252b3d;
+
+    color: #e0e4f0;
+
+    border-radius: 10px;
+
+    padding: 12px;
+
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+
+    transition: all 0.2s ease;
+}
+
+.note-textarea:focus {
+    outline: none;
+
+    border-color: #00e5a0;
+
+    box-shadow: 0 0 0 3px rgba(0, 229, 160, 0.15);
+}
 /* =========================
    EMPTY STATE
 ========================= */

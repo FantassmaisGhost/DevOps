@@ -104,7 +104,7 @@ async function loadStaffDashboard() {
 
     const todaysAppointments = appointments?.filter(a => a.appointment_date === today) || [];
     const waitingAppointments = todaysAppointments.filter(a => a.status === 'waiting');
-    const completedAppointments = todaysAppointments.filter(a => a.status === 'completed');
+    const completedAppointments = todaysAppointments.filter(a => a.status === 'complete');
 
     const main = document.getElementById('dashboardContent');
 
@@ -197,6 +197,7 @@ async function loadStaffDashboard() {
                             <th>Patient</th>
                             <th>Time</th>
                             <th>Reason</th>
+                            <th>Notes</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -223,7 +224,7 @@ async function loadStaffDashboard() {
                                 `;
                             }
 
-                            else if (status === 'completed') {
+                            else if (status === 'complete') {
                                 statusBadge = '<span class="status-badge status-completed">COMPLETED</span>';
                                 actionButtons = '<span style="color:#5a6280;">-</span>';
                             }
@@ -254,6 +255,17 @@ async function loadStaffDashboard() {
                                     <td>${escapeHtml(apt.patient_name)}</td>
                                     <td>${escapeHtml(apt.appointment_time?.slice(0, 5)) || 'N/A'}</td>
                                     <td>${escapeHtml(apt.reason || 'N/A')}</td>
+
+                                    <td>
+                                        <button
+                                            class="note-btn"
+                                            data-id="${apt.id}"
+                                            data-note="${escapeHtml(apt.notes || '')}"
+                                        >
+                                            ${apt.notes ? 'View/Edit Note' : 'Add Note'}
+                                        </button>
+                                    </td>
+
                                     <td>${statusBadge}</td>
                                     <td>${actionButtons}</td>
                                 </tr>
@@ -290,6 +302,15 @@ async function loadStaffDashboard() {
                 btn.getAttribute('data-patient'),
                 btn.getAttribute('data-date'),
                 btn.getAttribute('data-time')
+            );
+        });
+    });
+
+    document.querySelectorAll('.note-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            openNoteModal(
+                btn.getAttribute('data-id'),
+                btn.getAttribute('data-note')
             );
         });
     });
@@ -341,7 +362,7 @@ async function openRescheduleModal(appointmentId, patientName, currentDate, curr
                     <input
                         type="time"
                         id="newTime"
-                        min="09:00"
+                        min="08:00"
                         max="17:00"
                         value="${currentTime}"
                     />
@@ -397,8 +418,8 @@ async function openRescheduleModal(appointmentId, patientName, currentDate, curr
 
         if (hasError) return;
 
-        if (newTime < '09:00' || newTime > '17:00') {
-            showFieldError('newTime', 'Time must be between 09:00 and 17:00.');
+        if (newTime < '08:00' || newTime > '17:00') {
+            showFieldError('newTime', 'Time must be between 08:00 and 17:00.');
             return;
         }
 
@@ -439,7 +460,7 @@ async function openRescheduleModal(appointmentId, patientName, currentDate, curr
         });
 
         if (isUnavailable) {
-            showFieldError('newDate', 'This date is unavailable.');
+            showFieldError('newDate', 'This date or time is unavailable.');
             showFieldError('newTime', 'Choose another available slot.');
             return;
         }
@@ -463,6 +484,87 @@ async function openRescheduleModal(appointmentId, patientName, currentDate, curr
         modal.remove();
 
         showToast('Appointment rescheduled successfully!');
+        loadStaffDashboard();
+    });
+}
+
+// ─── Note modal ───────────────────────────────────────────────────────────────
+
+function openNoteModal(appointmentId, currentNote) {
+    document.getElementById('noteModal')?.remove();
+
+    const modal = document.createElement('dialog');
+    modal.id = 'noteModal';
+
+    modal.innerHTML = `
+        <article class="modal-box">
+            <h3>Edit Appointment Note</h3>
+
+            <p style="color:#a0a8c0; font-size:13px;">
+                Add or update notes for this appointment.
+            </p>
+
+            <section class="modal-form">
+                <section class="form-group">
+                    <label for="appointmentNote">Note</label>
+
+                    <textarea
+                        id="appointmentNote"
+                        class="note-textarea"
+                        rows="6"
+                        placeholder="Write appointment notes here..."
+                    >${escapeHtml(currentNote || '')}</textarea>
+
+                    <small class="field-error" id="appointmentNoteError"></small>
+                </section>
+            </section>
+
+            <footer class="modal-actions">
+                <button class="btn-secondary" id="cancelNoteBtn">
+                    Cancel
+                </button>
+
+                <button class="reschedule-btn" id="saveNoteBtn">
+                    Save Note
+                </button>
+            </footer>
+        </article>
+    `;
+
+    document.body.appendChild(modal);
+    modal.showModal();
+
+    document.getElementById('cancelNoteBtn').addEventListener('click', () => {
+        modal.close();
+        modal.remove();
+    });
+
+    modal.addEventListener('click', e => {
+        if (e.target === modal) {
+            modal.close();
+            modal.remove();
+        }
+    });
+
+    document.getElementById('saveNoteBtn').addEventListener('click', async () => {
+        clearFieldErrors();
+
+        const newNote = document.getElementById('appointmentNote').value.trim();
+
+        const { error } = await supabase
+            .from('Appointments')
+            .update({ notes: newNote })
+            .eq('id', appointmentId);
+
+        if (error) {
+            showFieldError('appointmentNote', 'Failed to save note: ' + error.message);
+            return;
+        }
+
+        modal.close();
+        modal.remove();
+
+        showToast('Note saved successfully!');
         loadStaffDashboard();
     });
 }
