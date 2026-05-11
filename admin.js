@@ -1,4 +1,5 @@
 
+
 let selectedPatientId = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
