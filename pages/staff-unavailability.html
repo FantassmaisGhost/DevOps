@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="../styles/global.css">
+    <link rel="stylesheet" href="../styles/staff-unavailability.css" />
+    <title>Set Availability</title>
+    <style>
+        .availability-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .back-btn {
+            background: none;
+            border: 1px solid #252b3d;
+            color: #a0a8c0;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .back-btn:hover { background: #252b3d; }
+
+        .form-card {
+            background: #151929;
+            border: 1px solid #252b3d;
+            border-radius: 10px;
+            padding: 22px;
+            margin-bottom: 24px;
+        }
+
+        .form-card h3 {
+            margin: 0 0 18px 0;
+            font-size: 16px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            color: #a0a8c0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            background: #0b0e14;
+            border: 1px solid #252b3d;
+            color: #e0e4f0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00e5a0;
+        }
+
+        .submit-btn {
+            background: #00e5a0;
+            color: #0b0e14;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 4px;
+        }
+        .submit-btn:hover { background: #00c988; }
+
+        .unavail-list {
+            background: #151929;
+            border: 1px solid #252b3d;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .unavail-list h3 {
+            margin: 0;
+            padding: 16px 20px;
+            font-size: 16px;
+            border-bottom: 1px solid #252b3d;
+        }
+
+        .unavail-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid #252b3d;
+        }
+        .unavail-item:last-child { border-bottom: none; }
+
+        .unavail-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .unavail-date {
+            font-weight: 600;
+            font-size: 14px;
+            color: #e0e4f0;
+        }
+
+        .unavail-time {
+            font-size: 13px;
+            color: #a0a8c0;
+        }
+
+        .delete-btn {
+            background: none;
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            border-radius: 6px;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .delete-btn:hover { background: #ff6b6b; color: white; }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: #5a6280;
+            font-size: 14px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #00e5a0;
+            color: #0b0e14;
+            padding: 12px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .toast.error { background: #ff6b6b; color: white; }
+        .toast.show  { opacity: 1; }
+
+        .hint {
+            font-size: 12px;
+            color: #5a6280;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">🏥 ClinicApp</div>
+        <div class="nav-actions">
+            <span id="userEmail" style="color:#a0a8c0; font-size:14px;"></span>
+            <button class="btn-secondary" id="logoutBtn">Logout</button>
+        </div>
+    </nav>
+
+    <main class="availability-container">
+        <div class="page-header">
+            <button class="back-btn" onclick="window.location.href='/pages/staff-dashboard.html'">← Back</button>
+            <h1 style="font-size:22px; margin:0;">📅 Manage Unavailability</h1>
+        </div>
+
+        <p class="page-subtext">
+            Mark dates and times when you are <strong>not available</strong>. Patients won't be able to book you during these periods.
+        </p>
+
+        <div class="form-card">
+            <h3>➕ Add Unavailable Period</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="inputDate" />
+                </div>
+                <div class="form-group">
+                    <label>Start Time</label>
+                    <input type="time" id="inputStart" />
+                </div>
+                <div class="form-group">
+                    <label>End Time</label>
+                    <input type="time" id="inputEnd" />
+                </div>
+            </div>
+            <p class="hint">Leave start and end time empty to mark the entire day as unavailable.</p>
+            <button class="submit-btn" id="addBtn">Save Unavailable Period</button>
+        </div>
+
+        <!-- Existing unavailability list -->
+        <div class="unavail-list">
+            <h3>🗓 Your Unavailable Periods</h3>
+            <div id="unavailList">
+                <div class="empty-state">Loading...</div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="/backend/staff-unavailability.js"></script>
+</body>
+</html>

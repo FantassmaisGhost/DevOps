@@ -1,0 +1,228 @@
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-waiting {
+    background: #f5a623;
+    color: #0b0e14;
+}
+
+.status-completed {
+    background: #00e5a0;
+    color: #0b0e14;
+}
+
+.status-cancelled {
+    background: #ff6b6b;
+    color: white;
+}
+
+/* =========================
+   ACTION BUTTONS
+========================= */
+
+.complete-btn,
+.cancel-btn,
+.reschedule-btn {
+    display: inline-block;
+    min-width: 100px;
+    padding: 9px 16px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+/* COMPLETE BUTTON */
+
+.complete-btn {
+    background: linear-gradient(135deg, #00e5a0, #00c988);
+    color: #0b0e14;
+    margin-right: 8px;
+}
+
+.complete-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 229, 160, 0.32);
+    background: linear-gradient(135deg, #19efaf, #00c988);
+}
+
+.complete-btn:active {
+    transform: translateY(0);
+}
+
+/* CANCEL BUTTON */
+
+.cancel-btn {
+    background: linear-gradient(135deg, #ff6b6b, #e05252);
+    color: white;
+}
+
+.cancel-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(255, 107, 107, 0.32);
+    background: linear-gradient(135deg, #ff8080, #e05252);
+}
+
+.cancel-btn:active {
+    transform: translateY(0);
+}
+
+/* RESCHEDULE BUTTON */
+
+.reschedule-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.reschedule-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
+    background: linear-gradient(135deg, #4f8cff, #2563eb);
+}
+
+.reschedule-btn:active {
+    transform: translateY(0);
+}
+
+/* =========================
+   TABLE STYLING
+========================= */
+
+.appointments-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.appointments-table th {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid #252b3d;
+    color: #a0a8c0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.appointments-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #252b3d;
+    font-size: 14px;
+}
+
+.appointments-table tr:hover {
+    background: rgba(255,255,255,0.02);
+}
+
+.appointments-table td:last-child {
+    white-space: nowrap;
+}
+
+/* =========================
+   QUICK ACTION CARD
+========================= */
+
+.quick-action-card p {
+    margin-top: 10px;
+    color: #9aa4bf;
+    font-size: 14px;
+}
+
+.quick-action-card .btn-primary {
+    margin-top: 16px;
+}
+
+/* =========================
+   CENTER TOAST
+========================= */
+
+.toast {
+    position: fixed;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%) scale(0.95);
+
+    background: #151929;
+    color: #e0e4f0;
+
+    border: 1px solid #252b3d;
+    border-radius: 14px;
+
+    padding: 16px 24px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition: all 0.25s ease;
+
+    z-index: 10000;
+
+    backdrop-filter: blur(10px);
+
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+}
+
+/* visible state */
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* error */
+
+.toast.error {
+    border-color: #ff6b6b;
+    color: #ff9a9a;
+}
+
+/* success */
+
+.toast.success {
+    border-color: #00e5a0;
+    color: #7ff5cb;
+}
+
+.field-error {
+    margin-top: 5px;
+    min-height: 16px;
+    color: #ff9a9a;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
+
+.field-error.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.form-group input.input-error {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15);
+}
+/* =========================
+   EMPTY STATE
+========================= */
+
+.empty-message {
+    text-align: center;
+    padding: 24px;
+    color: #9aa4bf;
+    font-size: 14px;
+}
