@@ -1,7 +1,7 @@
 let selectedPatientId = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  QueueStore.subscribe(render);
+  QueueStore.subscribe(render); //nothing
 
   await QueueStore.loadDoctorsFromSupabase();
   await QueueStore.loadQueueFromSupabase();
