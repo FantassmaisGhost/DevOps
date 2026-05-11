@@ -79,7 +79,7 @@ async function loadStaffDashboard() {
     const today = new Date().toISOString().split('T')[0];
     const todaysAppointments    = appointments?.filter(a => a.appointment_date === today) || [];
     const waitingAppointments   = todaysAppointments.filter(a => String(a.status).trim().toLowerCase() === 'waiting');
-    const completedAppointments = todaysAppointments.filter(a => String(a.status).trim().toLowerCase() === 'complete');
+    const completedAppointments = todaysAppointments.filter(a => String(a.status).trim().toLowerCase() === 'completed');
 
     const main = document.getElementById('dashboardContent');
     main.innerHTML = `
@@ -175,7 +175,7 @@ async function loadStaffDashboard() {
                             // Determine badge colour by known statuses, fallback to neutral
                             const statusClass = {
                                 waiting:     'status-waiting',
-                                complete:   'status-completed',
+                                completed:   'status-completed',
                                 cancelled:   'status-cancelled',
                                 unavailable: 'status-unavailable',
                             }[String(apt.status).trim().toLowerCase()] || 'status-unknown';
@@ -187,7 +187,7 @@ async function loadStaffDashboard() {
                             const clash  = isUnavailable(apt, unavailRecords || []);
                             let actionButtons = '';
 
-                            if (status === 'complete' || status === 'cancelled') {
+                            if (status === 'completed' || status === 'cancelled') {
                                 // No actions for terminal statuses
                                 actionButtons = '<span style="color:#5a6280;">—</span>';
                             } else if (clash) {
