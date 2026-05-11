@@ -345,7 +345,22 @@
   border-color: rgba(26,92,58,0.32);
   box-shadow: 0 0 0 3px rgba(26,92,58,0.07), var(--shadow-sm);
 }
-.doctor-card.offline { opacity: 0.45; pointer-events: none; }
+.doctor-card.offline {
+  opacity: 0.55;
+}
+
+.doctor-card.offline .doctor-actions,
+.doctor-card.offline .doctor-actions .btn {
+  pointer-events: auto;
+}
+
+.doctor-card.offline .btn-primary,
+.doctor-card.offline .btn-success,
+.doctor-card.offline .btn-danger,
+.doctor-card.offline .btn-neutral {
+  opacity: 1;
+  cursor: pointer;
+}
 
 .doctor-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .doctor-avatar {
