@@ -460,7 +460,7 @@ async function openRescheduleModal(appointmentId, patientName, currentDate, curr
         });
 
         if (isUnavailable) {
-            showFieldError('newDate', 'This date or time is unavailable.');
+            showFieldError('newDate', 'This date is unavailable.');
             showFieldError('newTime', 'Choose another available slot.');
             return;
         }

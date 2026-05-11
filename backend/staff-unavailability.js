@@ -4,6 +4,7 @@ let currentStaff = null;
 
 async function init() {
     const { data: { session } } = await supabase.auth.getSession();
+
     if (!session) {
         window.location.href = '/pages/index.html';
         return;
@@ -24,17 +25,22 @@ async function init() {
 
     currentStaff = staff;
 
-    
     document.getElementById('inputDate').min = new Date().toISOString().split('T')[0];
+    document.getElementById('inputStart').min = '08:00';
+    document.getElementById('inputStart').max = '17:00';
+    document.getElementById('inputEnd').min = '08:00';
+    document.getElementById('inputEnd').max = '17:00';
 
     document.getElementById('addBtn').addEventListener('click', addUnavailability);
 
     await renderList();
 }
 
+// ─── Render list ──────────────────────────────────────────────────────────────
+
 async function renderList() {
     const listEl = document.getElementById('unavailList');
-    listEl.innerHTML = '<div class="empty-state">Loading...</div>';
+    listEl.innerHTML = '<section class="empty-state">Loading...</section>';
 
     const { data, error } = await supabase
         .from('staff_unavail')
@@ -44,13 +50,13 @@ async function renderList() {
         .order('Start', { ascending: true });
 
     if (error) {
-        listEl.innerHTML = '<div class="empty-state">Failed to load data.</div>';
+        listEl.innerHTML = '<section class="empty-state">Failed to load data.</section>';
         showToast('Failed to load unavailability', true);
         return;
     }
 
     if (!data || data.length === 0) {
-        listEl.innerHTML = '<div class="empty-state">No unavailable periods set yet.</div>';
+        listEl.innerHTML = '<section class="empty-state">No unavailable periods set yet.</section>';
         return;
     }
 
@@ -64,11 +70,68 @@ async function renderList() {
         </article>
     `).join('');
 
-
     listEl.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', () => deleteEntry(btn.getAttribute('data-id')));
     });
 }
+
+// ─── Sync: mark clashing appointments as unavailable ─────────────────────────
+
+async function markClashingAppointments(date, start, end) {
+    const { data: appointments, error } = await supabase
+        .from('Appointments')
+        .select('id, appointment_time')
+        .eq('StaffID', currentStaff.id)
+        .eq('appointment_date', date)
+        .eq('status', 'waiting');
+
+    if (error || !appointments?.length) return;
+
+    const toMark = appointments
+        .filter(apt => {
+            const aptTime = apt.appointment_time?.slice(0, 5);
+            if (!start && !end) return true; // full day block
+            return aptTime >= start && aptTime < end;
+        })
+        .map(apt => apt.id);
+
+    if (toMark.length > 0) {
+        await supabase
+            .from('Appointments')
+            .update({ status: 'unavailable' })
+            .in('id', toMark);
+    }
+}
+
+// ─── Sync: revert unavailable appointments back to waiting ────────────────────
+
+async function revertClashingAppointments(date, start, end) {
+    const { data: appointments, error } = await supabase
+        .from('Appointments')
+        .select('id, appointment_time')
+        .eq('StaffID', currentStaff.id)
+        .eq('appointment_date', date)
+        .eq('status', 'unavailable');
+
+    if (error || !appointments?.length) return;
+
+    const toRevert = appointments
+        .filter(apt => {
+            const aptTime = apt.appointment_time?.slice(0, 5);
+            if (!start && !end) return true; // full day block
+            return aptTime >= start && aptTime < end;
+        })
+        .map(apt => apt.id);
+
+    if (toRevert.length > 0) {
+        await supabase
+            .from('Appointments')
+            .update({ status: 'waiting' })
+            .in('id', toRevert);
+    }
+}
+
+// ─── Add unavailability ───────────────────────────────────────────────────────
 
 async function addUnavailability() {
     const date  = document.getElementById('inputDate').value;
@@ -90,19 +153,22 @@ async function addUnavailability() {
         return;
     }
 
+    if (start && end && (start < '08:00' || start > '17:00' || end < '08:00' || end > '17:00')) {
+        showToast('Unavailable times must be between 08:00 and 17:00', true);
+        return;
+    }
+
     const { error } = await supabase
         .from('staff_unavail')
-        .insert({
-            Staff_id: currentStaff.id,
-            Date: date,
-            Start: start,
-            End: end,
-        });
+        .insert({ Staff_id: currentStaff.id, Date: date, Start: start, End: end });
 
     if (error) {
         showToast('Failed to save: ' + error.message, true);
         return;
     }
+
+    // Mark any clashing waiting appointments as unavailable
+    await markClashingAppointments(date, start, end);
 
     document.getElementById('inputDate').value  = '';
     document.getElementById('inputStart').value = '';
@@ -112,8 +178,22 @@ async function addUnavailability() {
     await renderList();
 }
 
+// ─── Delete unavailability ────────────────────────────────────────────────────
+
 async function deleteEntry(id) {
     if (!confirm('Remove this unavailable period?')) return;
+
+    // Fetch the record first so we know what to revert
+    const { data: record, error: fetchError } = await supabase
+        .from('staff_unavail')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !record) {
+        showToast('Failed to find record', true);
+        return;
+    }
 
     const { error } = await supabase
         .from('staff_unavail')
@@ -125,9 +205,14 @@ async function deleteEntry(id) {
         return;
     }
 
+    // Revert appointments that were blocked by this record back to waiting
+    await revertClashingAppointments(record.Date, record.Start, record.End);
+
     showToast('Removed successfully');
     await renderList();
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(dateStr) {
     if (!dateStr) return '';
@@ -155,6 +240,8 @@ function showToast(message, isError = false) {
     toast.className   = `toast${isError ? ' error' : ''} show`;
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
     localStorage.removeItem('userRole');
