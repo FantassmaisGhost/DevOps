@@ -10,57 +10,20 @@ function escapeHtml(str) {
     });
 }
 
-// ─── Check & mark unavailable appointments ───────────────────────────────────
+// ─── Check if a single appointment clashes with unavailability records ────────
 
-async function markUnavailableAppointments(staffId, appointments) {
-    if (!appointments?.length) return appointments;
+function isUnavailable(apt, unavailRecords) {
+    const aptDate = apt.appointment_date;
+    const aptTime = apt.appointment_time?.slice(0, 5); // HH:MM
 
-    const { data: unavailRecords, error } = await supabase
-        .from('staff_unavail')
-        .select('*')
-        .eq('Staff_id', staffId);
-
-    if (error || !unavailRecords?.length) return appointments;
-
-    const toMark = [];
-
-    for (const apt of appointments) {
-        if (apt.status !== 'waiting') continue;
-
-        const aptDate = apt.appointment_date;
-        const aptTime = apt.appointment_time?.slice(0, 5);
-
-        const isUnavailable = unavailRecords.some(u => {
-            if (u.Date !== aptDate) return false;
-
-            if (!u.Start && !u.End) return true;
-
-            return (
-                aptTime >= u.Start?.slice(0, 5) &&
-                aptTime < u.End?.slice(0, 5)
-            );
-        });
-
-        if (isUnavailable) toMark.push(apt.id);
-    }
-
-    if (toMark.length > 0) {
-        await supabase
-            .from('Appointments')
-            .update({ status: 'unavailable' })
-            .in('id', toMark);
-
-        appointments = appointments.map(apt =>
-            toMark.includes(apt.id)
-                ? { ...apt, status: 'unavailable' }
-                : apt
-        );
-    }
-
-    return appointments;
+    return unavailRecords.some(u => {
+        if (u.Date !== aptDate) return false;
+        if (!u.Start && !u.End) return true; // full day block
+        return aptTime >= u.Start?.slice(0, 5) && aptTime < u.End?.slice(0, 5);
+    });
 }
 
-// ─── Main dashboard loader ───────────────────────────────────────────────────
+// ─── Main dashboard loader ────────────────────────────────────────────────────
 
 async function loadStaffDashboard() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -86,31 +49,42 @@ async function loadStaffDashboard() {
 
     document.getElementById('userEmail').textContent = session.user.email;
 
-    let { data: appointments, error: appointmentsError } = await supabase
-        .from('Appointments')
-        .select('*')
-        .eq('StaffID', staff.id)
-        .order('appointment_date', { ascending: true })
-        .order('appointment_time', { ascending: true });
+    // Fetch appointments, unavailability, and clinic name in parallel
+    const [
+        { data: appointments, error: appointmentsError },
+        { data: unavailRecords },
+        { data: facility }
+    ] = await Promise.all([
+        supabase
+            .from('Appointments')
+            .select('*')
+            .eq('StaffID', staff.id)
+            .order('appointment_date', { ascending: true })
+            .order('appointment_time', { ascending: true }),
+        supabase
+            .from('staff_unavail')
+            .select('*')
+            .eq('Staff_id', staff.id),
+        supabase
+            .from('Facilities')
+            .select('Name')
+            .eq('ClinicID', staff.ClinicID)
+            .single()
+    ]);
 
-    if (appointmentsError) {
-        console.error('Error loading appointments:', appointmentsError);
-        appointments = [];
-    }
+    const clinicName = facility?.Name || 'Unknown Clinic';
 
-    appointments = await markUnavailableAppointments(staff.id, appointments);
+    if (appointmentsError) console.error('Error loading appointments:', appointmentsError);
 
     const today = new Date().toISOString().split('T')[0];
-
-    const todaysAppointments = appointments?.filter(a => a.appointment_date === today) || [];
-    const waitingAppointments = todaysAppointments.filter(a => a.status === 'waiting');
-    const completedAppointments = todaysAppointments.filter(a => a.status === 'complete');
+    const todaysAppointments    = appointments?.filter(a => a.appointment_date === today) || [];
+    const waitingAppointments   = todaysAppointments.filter(a => String(a.status).trim().toLowerCase() === 'waiting');
+    const completedAppointments = todaysAppointments.filter(a => String(a.status).trim().toLowerCase() === 'complete');
 
     const main = document.getElementById('dashboardContent');
-
     main.innerHTML = `
         <article class="welcome-card">
-            <h2>Welcome, ${escapeHtml(staff.full_name?.split(' ')[0] || 'Staff')}! 👋</h2>
+            <h2>Welcome, ${staff.full_name.split(' ')[0]}! 👋</h2>
             <p><strong>Staff ID:</strong> ${escapeHtml(staff.id)}</p>
         </article>
 
@@ -119,12 +93,10 @@ async function loadStaffDashboard() {
                 <h3>${waitingAppointments.length}</h3>
                 <p>Waiting Patients</p>
             </article>
-
             <article class="stat-card">
                 <h3>${completedAppointments.length}</h3>
                 <p>Completed Today</p>
             </article>
-
             <article class="stat-card">
                 <h3>${todaysAppointments.length}</h3>
                 <p>Today's Appointments</p>
@@ -133,27 +105,22 @@ async function loadStaffDashboard() {
 
         <article class="info-card">
             <h3>Your Profile</h3>
-
             <section class="info-row">
                 <strong class="info-label">Staff ID:</strong>
                 ${escapeHtml(staff.id)}
             </section>
-
             <section class="info-row">
                 <strong class="info-label">Full Name:</strong>
                 ${escapeHtml(staff.full_name)}
             </section>
-
             <section class="info-row">
                 <strong class="info-label">Email:</strong>
                 ${escapeHtml(staff.email)}
             </section>
-
             <section class="info-row">
                 <strong class="info-label">Occupation:</strong>
                 ${escapeHtml(staff.Occupation)}
             </section>
-
             <section class="info-row">
                 <strong class="info-label">Phone:</strong>
                 ${escapeHtml(staff.contact || 'Not provided')}
@@ -162,12 +129,14 @@ async function loadStaffDashboard() {
 
         <article class="info-card">
             <h3>Clinic Information</h3>
-
+            <section class="info-row">
+                <strong class="info-label">Clinic Name:</strong>
+                ${escapeHtml(clinicName)}
+            </section>
             <section class="info-row">
                 <strong class="info-label">Clinic ID:</strong>
                 ${escapeHtml(staff.ClinicID)}
             </section>
-
             <section class="info-row">
                 <strong class="info-label">Your Role:</strong>
                 ${escapeHtml(staff.Occupation)}
@@ -176,11 +145,9 @@ async function loadStaffDashboard() {
 
         <article class="info-card quick-action-card">
             <h3>📅 Availability Management</h3>
-
-            <p style="margin-top: 10px; color: #9aa4bf;">
+            <p style="margin-top:10px; color:#9aa4bf;">
                 Manage your unavailable dates and working hours.
             </p>
-
             <button class="btn-primary" onclick="window.location.href='/pages/staff-unavailability.html'">
                 Manage Availability
             </button>
@@ -188,7 +155,6 @@ async function loadStaffDashboard() {
 
         <article class="info-card">
             <h3>📋 Today's Appointments</h3>
-
             ${todaysAppointments.length === 0
                 ? '<p style="text-align:center; padding:20px;">No appointments scheduled for today.</p>'
                 : `<table class="appointments-table">
@@ -197,75 +163,58 @@ async function loadStaffDashboard() {
                             <th>Patient</th>
                             <th>Time</th>
                             <th>Reason</th>
-                            <th>Notes</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         ${todaysAppointments.map(apt => {
-                            const status = String(apt.status || '').trim().toLowerCase();
+                            // Show status exactly as it is in the DB
+                            const statusLabel = escapeHtml(apt.status || 'unknown');
 
-                            let statusBadge = '';
+                            // Determine badge colour by known statuses, fallback to neutral
+                            const statusClass = {
+                                waiting:     'status-waiting',
+                                complete:   'status-completed',
+                                cancelled:   'status-cancelled',
+                                unavailable: 'status-unavailable',
+                            }[String(apt.status).trim().toLowerCase()] || 'status-unknown';
+
+                            const statusBadge = `<span class="status-badge ${statusClass}">${statusLabel.toUpperCase()}</span>`;
+
+                            // Buttons depend on status first, then clash
+                            const status = String(apt.status || '').trim().toLowerCase();
+                            const clash  = isUnavailable(apt, unavailRecords || []);
                             let actionButtons = '';
 
-                            if (status === 'waiting') {
-                                statusBadge = '<span class="status-badge status-waiting">WAITING</span>';
-
+                            if (status === 'complete' || status === 'cancelled') {
+                                // No actions for terminal statuses
+                                actionButtons = '<span style="color:#5a6280;">—</span>';
+                            } else if (clash) {
+                                // Waiting but clashes with unavailability — show reschedule
                                 actionButtons = `
-                                    <button class="complete-btn" data-id="${apt.id}">
-                                        Complete
-                                    </button>
-
-                                    <button class="cancel-btn" data-id="${apt.id}">
-                                        Cancel
-                                    </button>
-                                `;
-                            }
-
-                            else if (status === 'complete') {
-                                statusBadge = '<span class="status-badge status-completed">COMPLETED</span>';
-                                actionButtons = '<span style="color:#5a6280;">-</span>';
-                            }
-
-                            else if (status === 'cancelled') {
-                                statusBadge = '<span class="status-badge status-cancelled">CANCELLED</span>';
-                                actionButtons = '<span style="color:#5a6280;">-</span>';
-                            }
-
-                            else if (status === 'unavailable') {
-                                statusBadge = '<span class="status-badge status-unavailable">UNAVAILABLE</span>';
-
-                                actionButtons = `
-                                    <button
-                                        class="reschedule-btn"
+                                    <button class="reschedule-btn"
                                         data-id="${apt.id}"
                                         data-patient="${escapeHtml(apt.patient_name)}"
                                         data-date="${apt.appointment_date}"
-                                        data-time="${apt.appointment_time?.slice(0, 5)}"
-                                    >
+                                        data-time="${apt.appointment_time?.slice(0,5)}">
                                         Reschedule
-                                    </button>
-                                `;
+                                    </button>`;
+                            } else if (status === 'waiting') {
+                                // Normal waiting — complete and cancel
+                                actionButtons = `
+                                    <button class="complete-btn" data-id="${apt.id}">Complete</button>
+                                    <button class="cancel-btn" data-id="${apt.id}">Cancel</button>`;
+                            } else {
+                                // Any other unknown status — no actions
+                                actionButtons = '<span style="color:#5a6280;">—</span>';
                             }
 
                             return `
-                                <tr>
+                                <tr${clash ? ' class="row-clash"' : ''}>
                                     <td>${escapeHtml(apt.patient_name)}</td>
-                                    <td>${escapeHtml(apt.appointment_time?.slice(0, 5)) || 'N/A'}</td>
+                                    <td>${escapeHtml(apt.appointment_time?.slice(0,5)) || 'N/A'}</td>
                                     <td>${escapeHtml(apt.reason || 'N/A')}</td>
-
-                                    <td>
-                                        <button
-                                            class="note-btn"
-                                            data-id="${apt.id}"
-                                            data-note="${escapeHtml(apt.notes || '')}"
-                                        >
-                                            ${apt.notes ? 'View/Edit Note' : 'Add Note'}
-                                        </button>
-                                    </td>
-
                                     <td>${statusBadge}</td>
                                     <td>${actionButtons}</td>
                                 </tr>
@@ -301,16 +250,8 @@ async function loadStaffDashboard() {
                 btn.getAttribute('data-id'),
                 btn.getAttribute('data-patient'),
                 btn.getAttribute('data-date'),
-                btn.getAttribute('data-time')
-            );
-        });
-    });
-
-    document.querySelectorAll('.note-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            openNoteModal(
-                btn.getAttribute('data-id'),
-                btn.getAttribute('data-note')
+                btn.getAttribute('data-time'),
+                unavailRecords
             );
         });
     });
@@ -318,67 +259,34 @@ async function loadStaffDashboard() {
     document.getElementById('refreshBtn')?.addEventListener('click', loadStaffDashboard);
 }
 
-// ─── Reschedule modal ────────────────────────────────────────────────────────
+// ─── Reschedule modal ─────────────────────────────────────────────────────────
 
-async function openRescheduleModal(appointmentId, patientName, currentDate, currentTime) {
+function openRescheduleModal(appointmentId, patientName, currentDate, currentTime, unavailRecords) {
     document.getElementById('rescheduleModal')?.remove();
 
     const modal = document.createElement('dialog');
     modal.id = 'rescheduleModal';
-
     modal.innerHTML = `
         <article class="modal-box">
             <h3>Reschedule Appointment</h3>
-
-            <p>
-                Patient:
-                <strong>${escapeHtml(patientName)}</strong>
-            </p>
-
+            <p>Patient: <strong>${escapeHtml(patientName)}</strong></p>
             <p style="color:#a0a8c0; font-size:13px;">
-                Current:
-                ${formatDate(currentDate)}
-                at
-                ${formatTime(currentTime)}
+                Current: ${formatDate(currentDate)} at ${formatTime(currentTime)}
             </p>
-
             <section class="modal-form">
                 <section class="form-group">
                     <label for="newDate">New Date</label>
-
-                    <input
-                        type="date"
-                        id="newDate"
-                        min="${new Date().toISOString().split('T')[0]}"
-                        value="${currentDate}"
-                    />
-
-                    <small class="field-error" id="newDateError"></small>
+                    <input type="date" id="newDate" min="${new Date().toISOString().split('T')[0]}" value="${currentDate}" />
                 </section>
-
                 <section class="form-group">
-                    <label for="newTime">New Time</label>
-
-                    <input
-                        type="time"
-                        id="newTime"
-                        min="08:00"
-                        max="17:00"
-                        value="${currentTime}"
-                    />
-
-                    <small class="field-error" id="newTimeError"></small>
+                    <label for="newTime">New Time (09:00 – 17:00)</label>
+                    <input type="time" id="newTime" min="09:00" max="17:00" value="${currentTime}" />
                 </section>
             </section>
-
+            <p class="modal-error" id="modalError"></p>
             <footer class="modal-actions">
-                <button class="btn-secondary" id="cancelModalBtn">
-                    Cancel
-                </button>
-
-                <button class="reschedule-btn" id="confirmRescheduleBtn">
-                    Reschedule
-                </button>
+                <button class="btn-secondary" id="cancelModalBtn">Cancel</button>
+                <button class="btn-primary" id="confirmRescheduleBtn">Confirm Reschedule</button>
             </footer>
         </article>
     `;
@@ -386,82 +294,35 @@ async function openRescheduleModal(appointmentId, patientName, currentDate, curr
     document.body.appendChild(modal);
     modal.showModal();
 
-    document.getElementById('cancelModalBtn').addEventListener('click', () => {
-        modal.close();
-        modal.remove();
-    });
-
-    modal.addEventListener('click', e => {
-        if (e.target === modal) {
-            modal.close();
-            modal.remove();
-        }
-    });
+    document.getElementById('cancelModalBtn').addEventListener('click', () => modal.close());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
 
     document.getElementById('confirmRescheduleBtn').addEventListener('click', async () => {
-        clearFieldErrors();
-
         const newDate = document.getElementById('newDate').value;
         const newTime = document.getElementById('newTime').value;
+        const errorEl = document.getElementById('modalError');
+        errorEl.textContent = '';
 
-        let hasError = false;
-
-        if (!newDate) {
-            showFieldError('newDate', 'Please select a new date.');
-            hasError = true;
-        }
-
-        if (!newTime) {
-            showFieldError('newTime', 'Please select a new time.');
-            hasError = true;
-        }
-
-        if (hasError) return;
-
-        if (newTime < '08:00' || newTime > '17:00') {
-            showFieldError('newTime', 'Time must be between 08:00 and 17:00.');
+        if (!newDate || !newTime) {
+            errorEl.textContent = 'Please select both a date and time.';
             return;
         }
 
-        const { data: appointmentData, error: appointmentError } = await supabase
-            .from('Appointments')
-            .select('StaffID')
-            .eq('id', appointmentId)
-            .single();
-
-        if (appointmentError || !appointmentData) {
-            showFieldError('newDate', 'Could not verify this appointment.');
-            showFieldError('newTime', 'Please try again.');
+        // Enforce 09:00 – 17:00
+        if (newTime < '09:00' || newTime > '17:00') {
+            errorEl.textContent = 'Please choose a time between 09:00 and 17:00.';
             return;
         }
 
-        const { data: unavailRecords, error: unavailError } = await supabase
-            .from('staff_unavail')
-            .select('*')
-            .eq('Staff_id', appointmentData.StaffID);
-
-        if (unavailError) {
-            showFieldError('newDate', 'Could not check availability.');
-            showFieldError('newTime', 'Please try again.');
-            return;
-        }
-
-        const isUnavailable = unavailRecords?.some(u => {
+        // Check against unavailability records
+        const clash = (unavailRecords || []).some(u => {
             if (u.Date !== newDate) return false;
-
-            if (!u.Start && !u.End) {
-                return true;
-            }
-
-            return (
-                newTime >= u.Start?.slice(0, 5) &&
-                newTime < u.End?.slice(0, 5)
-            );
+            if (!u.Start && !u.End) return true; // full day block
+            return newTime >= u.Start?.slice(0, 5) && newTime < u.End?.slice(0, 5);
         });
 
-        if (isUnavailable) {
-            showFieldError('newDate', 'This date is unavailable.');
-            showFieldError('newTime', 'Choose another available slot.');
+        if (clash) {
+            errorEl.textContent = 'You are marked as unavailable at that date/time. Please choose another slot.';
             return;
         }
 
@@ -470,106 +331,20 @@ async function openRescheduleModal(appointmentId, patientName, currentDate, curr
             .update({
                 appointment_date: newDate,
                 appointment_time: newTime,
-                status: 'waiting',
             })
             .eq('id', appointmentId);
 
         if (error) {
-            showFieldError('newDate', 'Failed to reschedule.');
-            showFieldError('newTime', error.message);
+            errorEl.textContent = 'Failed to reschedule: ' + error.message;
             return;
         }
 
         modal.close();
-        modal.remove();
-
-        showToast('Appointment rescheduled successfully!');
         loadStaffDashboard();
     });
 }
 
-// ─── Note modal ───────────────────────────────────────────────────────────────
-
-function openNoteModal(appointmentId, currentNote) {
-    document.getElementById('noteModal')?.remove();
-
-    const modal = document.createElement('dialog');
-    modal.id = 'noteModal';
-
-    modal.innerHTML = `
-        <article class="modal-box">
-            <h3>Edit Appointment Note</h3>
-
-            <p style="color:#a0a8c0; font-size:13px;">
-                Add or update notes for this appointment.
-            </p>
-
-            <section class="modal-form">
-                <section class="form-group">
-                    <label for="appointmentNote">Note</label>
-
-                    <textarea
-                        id="appointmentNote"
-                        class="note-textarea"
-                        rows="6"
-                        placeholder="Write appointment notes here..."
-                    >${escapeHtml(currentNote || '')}</textarea>
-
-                    <small class="field-error" id="appointmentNoteError"></small>
-                </section>
-            </section>
-
-            <footer class="modal-actions">
-                <button class="btn-secondary" id="cancelNoteBtn">
-                    Cancel
-                </button>
-
-                <button class="reschedule-btn" id="saveNoteBtn">
-                    Save Note
-                </button>
-            </footer>
-        </article>
-    `;
-
-    document.body.appendChild(modal);
-    modal.showModal();
-
-    document.getElementById('cancelNoteBtn').addEventListener('click', () => {
-        modal.close();
-        modal.remove();
-    });
-
-    modal.addEventListener('click', e => {
-        if (e.target === modal) {
-            modal.close();
-            modal.remove();
-        }
-    });
-
-    document.getElementById('saveNoteBtn').addEventListener('click', async () => {
-        clearFieldErrors();
-
-        const newNote = document.getElementById('appointmentNote').value.trim();
-
-        const { error } = await supabase
-            .from('Appointments')
-            .update({ notes: newNote })
-            .eq('id', appointmentId);
-
-        if (error) {
-            showFieldError('appointmentNote', 'Failed to save note: ' + error.message);
-            return;
-        }
-
-        modal.close();
-        modal.remove();
-
-        showToast('Note saved successfully!');
-        loadStaffDashboard();
-    });
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function updateAppointmentStatus(appointmentId, newStatus) {
     const { error } = await supabase
@@ -578,79 +353,28 @@ async function updateAppointmentStatus(appointmentId, newStatus) {
         .eq('id', appointmentId);
 
     if (error) {
-        showToast('Failed to update appointment status: ' + error.message, true);
-        return;
+        alert('Failed to update appointment status: ' + error.message);
+    } else {
+        loadStaffDashboard();
     }
-
-    showToast('Appointment updated successfully!');
-    loadStaffDashboard();
 }
 
 function formatDate(dateStr) {
     if (!dateStr) return '';
-
     const d = new Date(dateStr + 'T00:00:00');
-
-    return d.toLocaleDateString('en-ZA', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    return d.toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function formatTime(timeStr) {
     if (!timeStr) return '';
-
     const [h, m] = timeStr.split(':');
     const hour = parseInt(h);
     const ampm = hour >= 12 ? 'PM' : 'AM';
-    const h12 = hour % 12 || 12;
-
+    const h12  = hour % 12 || 12;
     return `${h12}:${m} ${ampm}`;
 }
 
-function showToast(message, isError = false) {
-    let toast = document.getElementById('toast');
-
-    if (!toast) {
-        toast = document.createElement('aside');
-        toast.id = 'toast';
-        toast.className = 'toast';
-        document.body.appendChild(toast);
-    }
-
-    toast.textContent = message;
-    toast.className = `toast ${isError ? 'error' : 'success'} show`;
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
-}
-
-function showFieldError(inputId, message) {
-    const input = document.getElementById(inputId);
-    const error = document.getElementById(`${inputId}Error`);
-
-    if (!input || !error) return;
-
-    error.textContent = message;
-    error.classList.add('show');
-    input.classList.add('input-error');
-}
-
-function clearFieldErrors() {
-    document.querySelectorAll('.field-error').forEach(error => {
-        error.textContent = '';
-        error.classList.remove('show');
-    });
-
-    document.querySelectorAll('.input-error').forEach(input => {
-        input.classList.remove('input-error');
-    });
-}
-
-// ─── Logout ──────────────────────────────────────────────────────────────────
+// ─── Logout ───────────────────────────────────────────────────────────────────
 
 async function logout() {
     localStorage.removeItem('userRole');
@@ -659,5 +383,4 @@ async function logout() {
 }
 
 document.getElementById('logoutBtn').addEventListener('click', logout);
-
 loadStaffDashboard();
