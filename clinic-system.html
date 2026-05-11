@@ -282,23 +282,24 @@ select.search-input { appearance: none; cursor: pointer; }
   gap: 14px;
 }
 .clinic-card {
-  background: var(--white);
-  border: 1px solid var(--grey-200);
+  background: #e8f2fd;
+  border: 1px solid #bcd6f5;
   border-radius: var(--radius-lg);
   padding: 0;
   cursor: pointer;
   transition: all 0.18s;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 6px rgba(37,99,235,0.08);
 }
 .clinic-card:hover {
+  background: #daeaf9;
   border-color: var(--blue-400);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 6px 18px rgba(37,99,235,0.15);
   transform: translateY(-2px);
 }
 .card-header-strip {
   height: 4px;
-  background: var(--grey-200);
+  background: #bcd6f5;
   transition: background 0.18s;
 }
 .clinic-card:hover .card-header-strip { background: var(--blue-500); }
@@ -350,8 +351,8 @@ select.search-input { appearance: none; cursor: pointer; }
 .meta-item svg { flex-shrink: 0; color: var(--grey-400); }
 .card-footer {
   padding: 12px 20px;
-  background: var(--grey-50);
-  border-top: 1px solid var(--grey-100);
+  background: #d0e8f8;
+  border-top: 1px solid #bcd6f5;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1540,7 +1541,7 @@ async function submitReview() {
   if(!selectedRating){alert('Please select a star rating.');return;}
   const {data:{user}}=await sb.auth.getUser();
   if(!user){alert('Please log in to submit a review.');return;}
-  const {error}=await sb.from('clinic_reviews').upsert({clinic_id:currentClinicId,patient_id:user.id,rating:selectedRating,comment:document.getElementById('reviewComment').value,created_at:new Date().toISOString()});
+  const {error}=await sb.from('clinic_reviews').insert({clinic_id:currentClinicId,patient_id:user.id,rating:selectedRating,comment:document.getElementById('reviewComment').value,created_at:new Date().toISOString()});
   if(error) alert('Error: '+error.message);
   else{closeReviewModal();viewClinicDetail(currentClinicId);}
 }
