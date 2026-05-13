@@ -10,7 +10,7 @@ window.QueueStore = (() => {
   const PRIORITY_ORDER = { urgent: 0, high: 1, normal: 2 };
 
   const DEPT_LABELS = {
-    GP: "General Practice",
+    GP: "GP",
     Specialist: "Specialist",
     Emergency: "Emergency",
     Lab: "Laboratory",
