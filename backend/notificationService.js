@@ -1,5 +1,5 @@
 // notificationService.js
-import { supabase, supabaseAnonKey } from './supabase.js';
+import { supabase, supabaseAnonKey } from '../backend/supabase.js';
 
 export class NotificationService {
   static async sendEmailNotification(email, subject, htmlContent) {
