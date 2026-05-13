@@ -78,36 +78,40 @@ function renderQueue(s) {
   count.textContent = s.queue.length;
 
   if (!s.queue.length) {
-    list.innerHTML = '<div class="empty-msg">Queue is empty</div>';
+    list.innerHTML = '<p class="empty-msg">Queue is empty</p>';
     return;
   }
 
   list.innerHTML = s.queue
     .map(
       p => `
-    <div class="queue-item ${String(p.id) === String(selectedPatientId) ? "selected" : ""} fade-in"
-         onclick="selectPatient('${p.id}')">
-      <div class="q-num-badge ${p.priority === "urgent" ? "urgent" : ""}">
+    <article class="queue-item ${String(p.id) === String(selectedPatientId) ? "selected" : ""} fade-in"
+      onclick="selectPatient('${p.id}')">
+
+      <strong class="q-num-badge ${p.priority === "urgent" ? "urgent" : ""}">
         ${String(p.num).padStart(3, "0")}
-      </div>
+      </strong>
 
-      <div class="q-info">
-        <div class="q-name">${escHtml(p.name)}</div>
+      <section class="q-info">
+        <h3 class="q-name">${escHtml(p.name)}</h3>
 
-        <div class="q-meta">
-          <span class="badge badge-${p.dept.toLowerCase()}">
+        <p class="q-meta">
+          <mark class="badge badge-${p.dept.toLowerCase()}">
             ${QueueStore.DEPT_LABELS[p.dept] || p.dept}
-          </span>
-          <span class="priority-pill priority-${p.priority}">
+          </mark>
+
+          <mark class="priority-pill priority-${p.priority}">
             ${p.priority}
-          </span>
-        </div>
+          </mark>
+        </p>
 
-        <div class="q-wait">${formatWait(p.addedAt)}</div>
-      </div>
+        <time class="q-wait">${formatWait(p.addedAt)}</time>
+      </section>
 
-      <div class="q-right" onclick="event.stopPropagation()">
-        <select class="assign-select" onchange="assignPatient('${p.id}', this.value)">
+      <aside class="q-right" onclick="event.stopPropagation()">
+        <label class="sr-only" for="assign-${p.id}"></label>
+
+        <select id="assign-${p.id}" class="assign-select" onchange="assignPatient('${p.id}', this.value)">
           <option value="">Assign…</option>
           ${s.doctors
             .filter(d => d.available && d.dept === p.dept)
@@ -124,8 +128,8 @@ function renderQueue(s) {
         <button class="btn-icon danger" onclick="QueueStore.removeFromQueue('${p.id}')" title="Remove">
           ✕
         </button>
-      </div>
-    </div>
+      </aside>
+    </article>
   `
     )
     .join("");
@@ -135,7 +139,7 @@ function renderDoctors(s) {
   const grid = document.getElementById("doctor-grid");
 
   if (!s.doctors.length) {
-    grid.innerHTML = '<div class="empty-msg">No doctors found for this clinic</div>';
+    grid.innerHTML = '<p class="empty-msg">No doctors found for this clinic</p>';
     return;
   }
 
@@ -157,47 +161,49 @@ function renderDoctors(s) {
       const cardCls = busy ? "doctor-card busy" : d.available ? "doctor-card" : "doctor-card offline";
 
       return `
-    <div class="${cardCls}">
-      <div class="doctor-top">
-        <div class="doctor-avatar ${busy ? "busy-av" : ""}">
+    <article class="${cardCls}">
+      <header class="doctor-top">
+        <figure class="doctor-avatar ${busy ? "busy-av" : ""}">
           ${initials}
-        </div>
+        </figure>
 
-        <div class="doctor-meta">
-          <div class="doctor-name">${escHtml(d.name)}</div>
-          <div class="doctor-room-line">
+        <section class="doctor-meta">
+          <h3 class="doctor-name">${escHtml(d.name)}</h3>
+
+          <p class="doctor-room-line">
             ${escHtml(d.room)}
-            <span class="badge badge-${d.dept.toLowerCase()}">${d.dept}</span>
-          </div>
-        </div>
+            <mark class="badge badge-${d.dept.toLowerCase()}">${d.dept}</mark>
+          </p>
+        </section>
 
-        <div class="doctor-status-row">
-          <span class="status-dot ${statusCls} ${busy ? "blink" : ""}"></span>
-          <span class="status-label">${statusLabel}</span>
-        </div>
-      </div>
+        <p class="doctor-status-row">
+          <mark class="status-dot ${statusCls} ${busy ? "blink" : ""}"></mark>
+          <strong class="status-label">${statusLabel}</strong>
+        </p>
+      </header>
 
       ${
         busy
           ? `
-        <div class="patient-slot">
-          <div class="slot-ticket">
+        <section class="patient-slot">
+          <strong class="slot-ticket">
             #${String(d.currentPatient.num).padStart(3, "0")}
-          </div>
+          </strong>
 
-          <div class="slot-info">
-            <div class="slot-name">${escHtml(d.currentPatient.name)}</div>
-            <div class="slot-dept">
-              <span class="badge badge-${d.currentPatient.dept.toLowerCase()}">
+          <section class="slot-info">
+            <h4 class="slot-name">${escHtml(d.currentPatient.name)}</h4>
+
+            <p class="slot-dept">
+              <mark class="badge badge-${d.currentPatient.dept.toLowerCase()}">
                 ${QueueStore.DEPT_LABELS[d.currentPatient.dept] || d.currentPatient.dept}
-              </span>
-            </div>
-          </div>
+              </mark>
+            </p>
+          </section>
 
-          <div class="slot-elapsed" id="elapsed-${d.id}">0m 0s</div>
-        </div>
+          <time class="slot-elapsed" id="elapsed-${d.id}">0m 0s</time>
+        </section>
 
-        <div class="doctor-actions">
+        <footer class="doctor-actions">
           <button class="btn btn-success" onclick="QueueStore.completeDoctor('${d.id}')">
             ✓ Done
           </button>
@@ -209,13 +215,12 @@ function renderDoctors(s) {
           <button class="btn btn-blue" onclick="QueueStore.callNextForDoctor('${d.id}')">
             Next →
           </button>
-        </div>
+        </footer>
       `
           : `
-        <div class="doctor-empty">No patient assigned</div>
+        <p class="doctor-empty">No patient assigned</p>
 
-        <div class="doctor-actions">
-
+        <footer class="doctor-actions">
           ${
             d.available
               ? `
@@ -237,13 +242,10 @@ function renderDoctors(s) {
           >
             ${d.available ? "Set offline" : "Set available"}
           </button>
-
-          
-
-        </div>
+        </footer>
       `
       }
-    </div>`;
+    </article>`;
     })
     .join("");
 }
@@ -266,7 +268,7 @@ function renderCompleted(s) {
   const el = document.getElementById("completed-list");
 
   if (!s.completed.length) {
-    el.innerHTML = '<div class="empty-msg">No completed visits yet</div>';
+    el.innerHTML = '<p class="empty-msg">No completed visits yet</p>';
     return;
   }
 
@@ -274,19 +276,19 @@ function renderCompleted(s) {
     .slice(0, 14)
     .map(
       p => `
-    <div class="completed-item">
-      <div class="ci-tick">✓</div>
+    <article class="completed-item">
+      <strong class="ci-tick">✓</strong>
 
-      <div class="ci-info">
-        <div class="ci-name">${escHtml(p.name)}</div>
-        <div class="ci-meta">${escHtml(p.doctorName)}</div>
-      </div>
+      <section class="ci-info">
+        <h4 class="ci-name">${escHtml(p.name)}</h4>
+        <p class="ci-meta">${escHtml(p.doctorName)}</p>
+      </section>
 
-      <div class="ci-right">
-        <span class="ci-dur">${p.duration}m</span>
-        <span class="ci-time">${p.completedAt}</span>
-      </div>
-    </div>
+      <aside class="ci-right">
+        <strong class="ci-dur">${p.duration}m</strong>
+        <time class="ci-time">${p.completedAt}</time>
+      </aside>
+    </article>
   `
     )
     .join("");
