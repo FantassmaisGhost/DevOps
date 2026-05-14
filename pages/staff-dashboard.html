@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Dashboard | Health-Flow</title>
+
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="../styles/staff-dashboard.css">
+
     <style>
-        /* Overrides to restore original dashboard look */
         .welcome-banner {
             background: linear-gradient(135deg, #1a2a3d 0%, #111520 100%);
             border-radius: var(--radius-md);
@@ -15,21 +16,24 @@
             margin-bottom: 28px;
             border: 1px solid var(--border-md);
         }
+
         .welcome-banner h2 {
             font-size: 24px;
             color: #F7F4EE;
             margin-bottom: 8px;
         }
+
         .welcome-banner p {
             color: var(--ink-3);
         }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 16px;
             margin-bottom: 28px;
         }
-        /* Improved action bar instead of a separate card */
+
         .action-bar {
             background: var(--surface);
             border: 1.5px solid var(--border-md);
@@ -42,21 +46,25 @@
             flex-wrap: wrap;
             gap: 16px;
         }
+
         .action-info h4 {
             font-size: 14px;
             font-weight: 600;
             color: var(--ink);
             margin-bottom: 4px;
         }
+
         .action-info p {
             font-size: 12px;
             color: var(--ink-3);
             margin: 0;
         }
+
         .action-buttons-group {
             display: flex;
             gap: 12px;
         }
+
         .info-card {
             background: var(--surface);
             border: 1.5px solid var(--border-md);
@@ -64,6 +72,7 @@
             padding: 22px 26px;
             margin-bottom: 24px;
         }
+
         .info-card h3 {
             font-size: 13px;
             letter-spacing: 0.1em;
@@ -71,29 +80,36 @@
             color: var(--ink-3);
             margin-bottom: 16px;
         }
+
         .info-row {
             display: flex;
             padding: 10px 0;
             border-bottom: 1px solid var(--border);
         }
-        .info-row:last-child { border-bottom: none; }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
         .info-label {
             width: 130px;
             font-weight: 600;
             color: var(--ink-2);
             font-size: 13px;
         }
+
         .info-value {
             flex: 1;
             color: var(--ink);
         }
-        /* Appointments header with refresh button */
+
         .section-header-actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
         }
+
         .section-header-actions h3 {
             font-size: 13px;
             letter-spacing: 0.1em;
@@ -101,10 +117,12 @@
             color: var(--ink-3);
             margin: 0;
         }
+
         .appointments-table {
             width: 100%;
             border-collapse: collapse;
         }
+
         .appointments-table th {
             text-align: left;
             padding: 12px 8px;
@@ -114,18 +132,22 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+
         .appointments-table td {
             padding: 12px 8px;
             border-bottom: 1px solid var(--border);
             font-size: 13px;
         }
+
         .row-clash {
             background: rgba(124, 92, 191, 0.08);
         }
+
         .btn-small {
             padding: 6px 14px;
             font-size: 12px;
         }
+
         .toast {
             position: fixed;
             bottom: 30px;
@@ -141,13 +163,16 @@
             pointer-events: none;
             z-index: 1000;
         }
+
         .toast.error {
             background: var(--rust);
             color: white;
         }
+
         .toast.show {
             opacity: 1;
         }
+
         dialog#rescheduleModal {
             background: transparent;
             border: none;
@@ -158,9 +183,11 @@
             transform: translate(-50%, -50%);
             margin: 0;
         }
+
         dialog#rescheduleModal::backdrop {
             background: rgba(0,0,0,0.7);
         }
+
         .modal-box {
             background: var(--surface);
             border: 1.5px solid var(--border-md);
@@ -169,58 +196,111 @@
             width: 420px;
             max-width: 90vw;
         }
+
         .modal-box h3 {
             margin-top: 0;
             font-size: 20px;
         }
+
         .modal-form {
             display: flex;
             flex-direction: column;
             gap: 16px;
             margin: 20px 0;
         }
+
         .modal-actions {
             display: flex;
             justify-content: flex-end;
             gap: 12px;
             margin-top: 8px;
         }
+
         .modal-error {
             color: var(--rust);
             font-size: 13px;
             margin: 8px 0 0;
         }
+
         @media (max-width: 640px) {
-            .welcome-banner { padding: 20px; }
-            .info-row { flex-direction: column; gap: 4px; }
-            .info-label { width: auto; }
-            .action-bar { flex-direction: column; align-items: flex-start; }
+            .welcome-banner {
+                padding: 20px;
+            }
+
+            .info-row {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .info-label {
+                width: auto;
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
+
 <body>
 
 <header class="topbar">
-    <span class="brand">
-        <span class="brand-icon">✚</span>
-        <strong class="brand-name">Health-Flow</strong>
-    </span>
-    <div class="topbar-right">
-        <span id="userEmail" style="font-size:11px;color:rgba(247,244,238,0.4);">Loading…</span>
-        <span class="role-badge badge-staff">Staff</span>
-        <button class="btn btn-ghost" id="logoutBtn">Sign out</button>
-    </div>
+
+    <section class="brand">
+
+        <figure class="brand-icon" aria-hidden="true">
+            ✚
+        </figure>
+
+        <strong class="brand-name">
+            Health-Flow
+        </strong>
+
+    </section>
+
+    <nav class="topbar-right">
+
+        <output
+            id="userEmail"
+            style="font-size:11px;color:rgba(247,244,238,0.4);"
+        >
+            Loading…
+        </output>
+
+        <p class="role-badge badge-staff">
+            Staff
+        </p>
+
+        <button class="btn btn-ghost" id="logoutBtn">
+            Sign out
+        </button>
+
+    </nav>
+
 </header>
 
 <main class="page-wide" id="dashboardContent">
-    <div class="loading-state">
-        <div class="spinner"></div>
-        <div style="margin-top:10px;">Loading staff dashboard…</div>
-    </div>
+
+    <section class="loading-state">
+
+        <progress
+            class="spinner"
+            aria-label="Loading staff dashboard"
+        ></progress>
+
+        <p style="margin-top:10px;">
+            Loading staff dashboard…
+        </p>
+
+    </section>
+
 </main>
 
 <aside id="toast" class="toast"></aside>
 
 <script type="module" src="../backend/staff-dashboard.js"></script>
+
 </body>
 </html>
