@@ -1,8 +1,8 @@
 // booking.js
 import { createClient } from 'https://esm.sh/@supabase/supabase-js'
 import { NotificationService} from '../backend/notificationService.js';
-import { Utils } from '../utils.js';
-import { supabase } from '../supabase.js';
+import { Utils } from '../backend/utils.js';
+import { supabase } from '../backend/supabase.js';
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DAY_SHORT = ['Su','Mo','Tu','We','Th','Fr','Sa'];
