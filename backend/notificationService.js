@@ -1,7 +1,8 @@
 // notificationService.js
-import { supabase, supabaseAnonKey } from '../backend/supabase.js';
+import { supabase, supabaseKey } from '../backend/supabase.js';
 
 export class NotificationService {
+  
   static async sendEmailNotification(email, subject, htmlContent) {
     console.log("Attempting to send email to:", email);
     try {
@@ -9,8 +10,8 @@ export class NotificationService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": supabaseAnonKey,
-          "Authorization": `Bearer ${supabaseAnonKey}`
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`
         },
         body: JSON.stringify({ email, subject, html: htmlContent })
       });
