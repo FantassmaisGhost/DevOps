@@ -1,145 +1,55 @@
-# HealthFind SA — Community Clinic Directory
+HealthFind SA: Community Clinic Directory
+HealthFind SA is a web-based platform designed to help South African citizens locate, review, and manage appointments at local community clinics. The application provides a modern, responsive interface for accessing healthcare facility information and patient services.
 
-A single-page web application for finding and reviewing public health facilities across South Africa. Built with plain HTML, CSS, and JavaScript — no build tools or frameworks required.
+🚀 Features
+1. Clinic Discovery
+Search & Filter: Search for clinics by name or filter them by facility type (e.g., General, Specialized).
 
----
+Clinic Cards: View high-level information at a glance, including clinic type, contact details, and public/private sector status.
 
-## Overview
+Live Status: Integrated logic to show "Open" or "Closed" status pills based on current operating hours.
 
-HealthFind SA allows patients and community members to search for clinics and hospitals by name or province, view live contact details and opening hours pulled from Google Places, read and submit patient reviews, and check their appointment history.
+2. Patient Services
+Booking Management: Dedicated "My Bookings" section to track scheduled, completed, and cancelled appointments with status badges.
 
----
+Patient Reviews: A star-based rating system where users can submit reviews and read feedback from other patients.
 
-## Features
+Detailed Insights: View full clinic profiles, including comprehensive operating hours, service descriptions, and contact information.
 
-### Find Clinics
-- Search across all registered public health facilities in South Africa
-- Filter by province using a dropdown
-- Results update in real time as you type
-- Each card shows the facility type, province, district, and sector
+3. Clinic Management
+Information Editing: Built-in form functionality to update clinic details, such as addresses, phone numbers, and services.
 
-### Clinic Detail Page
-- Full facility information (type, subtype, sector, province, district)
-- **Live contact details** fetched from Google Places — phone number, street address, website, and a direct Google Maps link
-- **Live opening hours** from Google Places with a live Open Now / Closed indicator, and today's hours highlighted
-- Falls back to Supabase database data if Google Places returns no result
+🛠 Technical Stack
+Frontend: HTML5, CSS3 (using CSS variables for theming), and Vanilla JavaScript.
 
-### Reviews
-- Combined patient reviews (stored in Supabase) and Google reviews in one tabbed section
-- Displays Google's overall rating and review count
-- Displays average patient rating across all submitted reviews
-- Patients can submit a star rating (1–5) and written comment
+Backend as a Service: Supabase (v2) for database management and real-time data fetching.
 
-### My Bookings
-- View your full appointment history (requires login)
-- Filter by All, Upcoming, Completed, or Cancelled
-- Shows clinic name, date, time, province, and status badge
+Typography: Inter via Google Fonts.
 
-### Admin Mode
-- Admin users see an "Edit Details" button on each clinic detail page
-- Editable fields: phone, email, address, suburb, city, postal code, facility type
-- Changes are saved directly to the Supabase `Facilities` table
+Icons: Inline SVGs and Lucide-inspired iconography.
 
----
+⚙️ Configuration
+The application is configured to connect to a Supabase backend:
 
-## Technology Stack
+Project URL: https://ixikhufrylaugpdxokwu.supabase.co.
 
-| Layer | Technology |
-|---|---|
-| Frontend | HTML5, CSS3, Vanilla JavaScript |
-| Database | [Supabase](https://supabase.com) (PostgreSQL) |
-| Auth | Supabase Auth |
-| Live clinic data | Google Places API (New) |
-| Font | Inter via Google Fonts |
+Database Tables:
 
----
+clinics: Stores primary facility data.
 
-## Database Tables
+clinic_reviews: Stores user ratings and comments.
 
-| Table | Purpose |
-|---|---|
-| `Facilities` | All clinic and hospital records |
-| `Operating_Hours` | Fallback opening hours per clinic |
-| `clinic_reviews` | Patient star ratings and comments |
-| `Appointments` | Patient booking history |
-| `users` | User profiles including `role` field for admin access |
+📂 File Structure
+The project is contained within a single HTML file for ease of deployment, organized as follows:
 
----
+<style>: Contains the design system, responsive grid layouts, and animation keyframes (e.g., loading spinners and pulse effects).
 
-## Configuration
+<body>: Contains the structural components:
 
-All configuration lives at the top of the `<script>` block in `community-clinic-system.html`:
+header: Navigation and branding.
 
-```js
-const MY_SUPABASE_URL = 'your-supabase-project-url';
-const MY_SUPABASE_KEY = 'your-supabase-anon-key';
-const GOOGLE_API_KEY  = 'your-google-places-api-key';
-```
+main#content: Dynamic container for switching between Clinic and Booking views.
 
-### Getting a Google Places API Key
+modal-backdrop: The interface for submitting reviews.
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create or select a project
-3. Navigate to **APIs & Services → Library** and enable **Places API (New)**
-4. Go to **APIs & Services → Credentials → Create Credentials → API Key**
-5. Restrict the key to your website domain for security
-
-> The app uses the **Places API (New)** endpoints (`/v1/places:searchText` and `/v1/places/{id}`), not the legacy Places API.
-
-### Setting Up Supabase
-
-1. Create a project at [supabase.com](https://supabase.com)
-2. Create the tables listed above with the appropriate columns
-3. Enable Row Level Security (RLS) policies as needed
-4. Copy your project URL and anon key into the config
-
----
-
-## Running the App
-
-No build step is needed. Simply open `community-clinic-system.html` in a browser, or serve it with any static file server:
-
-```bash
-# Using Python
-python -m http.server 8000
-
-# Using Node.js (npx)
-npx serve .
-```
-
-Then open `http://localhost:8000/community-clinic-system.html`.
-
----
-
-## Admin Access
-
-To grant admin access to a user, set their `role` column to `'admin'` in the `users` table in Supabase. Admin users will see an **Edit Details** button on every clinic detail page.
-
----
-
-## Google Places Data
-
-Contact details and opening hours are fetched live from Google Places when a user opens a clinic's detail page. Results are cached in memory for the duration of the browser session to avoid redundant API calls.
-
-If Google Places cannot find a match for a given clinic name and province, the app falls back to whatever contact data exists in the Supabase `Facilities` table, and falls back to the `Operating_Hours` table for hours.
-
----
-
-## Browser Support
-
-Works in all modern browsers (Chrome, Firefox, Safari, Edge). Requires JavaScript to be enabled. Not compatible with Internet Explorer.
-
----
-
-## Project Structure
-
-```
-community-clinic-system.html   # Entire application (single file)
-README.md                      # This file
-```
-
----
-
-## License
-
-This project is intended for community and public health use in South Africa. Please ensure compliance with POPIA (Protection of Personal Information Act) when collecting and storing patient review data.
+<script>: Contains the application logic, including Supabase client initialization, data rendering functions, and view-switching logic.
