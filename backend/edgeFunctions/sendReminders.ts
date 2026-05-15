@@ -11,6 +11,270 @@
 // supabase/functions/send-reminders/index.ts
 
 
+
+//15 May 2026:
+import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders, status: 200 });
+  }
+
+  // Check authorization
+  const authHeader = req.headers.get('Authorization');
+  const expectedAuth = `Bearer ${Deno.env.get('CRON_SECRET')}`;
+  
+  if (!authHeader || authHeader !== expectedAuth) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  try {
+    // Get current time in South Africa time (UTC+2)
+    const now = new Date();
+    const saTime = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Johannesburg" }));
+    const todayStr = saTime.toISOString().split('T')[0];
+    
+    // Get tomorrow's date
+    const tomorrow = new Date(saTime);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    // Current time in minutes since midnight (SA time)
+    const currentHour = saTime.getHours();
+    const currentMinute = saTime.getMinutes();
+    const currentTimeMinutes = currentHour * 60 + currentMinute;
+    
+    console.log(`=== REMINDER CHECK ===`);
+    console.log(`SA Time: ${saTime.toLocaleString()}`);
+    console.log(`Current time in minutes: ${currentTimeMinutes}`);
+    console.log(`Today: ${todayStr}, Tomorrow: ${tomorrowStr}`);
+    
+    let daySentCount = 0;
+    let hourSentCount = 0;
+    
+    // ============================================================
+    // 1. DAY-BEFORE REMINDERS
+    // ============================================================
+    const { data: dayBeforeAppointments, error: dayError } = await supabase
+      .from("Appointments")
+      .select("*")
+      .eq("appointment_date", tomorrowStr)
+      .eq("reminder_sent", false);
+    
+    if (dayError) {
+      console.error("Error fetching day-before appointments:", dayError);
+    } else {
+      console.log(`Found ${dayBeforeAppointments?.length || 0} appointments for tomorrow`);
+    }
+    
+    for (const appointment of dayBeforeAppointments || []) {
+      try {
+        const appointmentDate = new Date(appointment.appointment_date);
+        const formattedDate = appointmentDate.toLocaleDateString('en-ZA', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+        
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #00e5a0;">Appointment Reminder ⏰</h2>
+            <p>Dear <strong>${appointment.patient_name}</strong>,</p>
+            <p>This is a reminder that you have an appointment <strong>tomorrow</strong>:</p>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>🏥 Facility:</strong> ${appointment.ClinicID}</p>
+              <p><strong>📅 Date:</strong> ${formattedDate}</p>
+              <p><strong>⏰ Time:</strong> ${appointment.appointment_time}</p>
+            </div>
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>📋 Please remember to:</strong></p>
+              <ul>
+                <li>Arrive 10 minutes before your appointment</li>
+                <li>Bring your ID document</li>
+                <li>Bring any relevant medical records</li>
+              </ul>
+            </div>
+            <hr>
+            <p style="color: #666; font-size: 12px;">SA HealthMap - Your health, our priority</p>
+          </div>
+        `;
+        
+        const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "api-key": BREVO_API_KEY },
+          body: JSON.stringify({
+            sender: { email: "2672572@students.wits.ac.za", name: "SA HealthMap" },
+            to: [{ email: appointment.patient_email }],
+            subject: "Appointment Reminder - Tomorrow",
+            htmlContent: emailHtml,
+          })
+        });
+        
+        if (brevoResponse.ok) {
+          await supabase.from("Appointments").update({ reminder_sent: true }).eq("id", appointment.id);
+          
+          await supabase.from("notifications").insert([{
+            user_id: appointment.PatientID,
+            appointment_id: appointment.id,
+            message: `Reminder: You have an appointment at ${appointment.ClinicID} tomorrow at ${appointment.appointment_time}`,
+            type: 'reminder',
+            is_read: false
+          }]);
+          
+          daySentCount++;
+          console.log(`✅ Day-before reminder sent to ${appointment.patient_email}`);
+        } else {
+          console.error(`❌ Brevo failed for day-before: ${appointment.patient_email}`);
+        }
+      } catch (err) {
+        console.error(`Failed day-before reminder for ${appointment.id}:`, err);
+      }
+    }
+    
+    // ============================================================
+    // 2. 1-HOUR-BEFORE REMINDERS
+    // ============================================================
+    const { data: hourBeforeAppointments, error: hourError } = await supabase
+      .from("Appointments")
+      .select("*")
+      .eq("appointment_date", todayStr)
+      .eq("hour_reminder_sent", false)
+      .neq("status", "cancelled");
+    
+    if (hourError) {
+      console.error("Error fetching hour-before appointments:", hourError);
+    } else {
+      console.log(`Found ${hourBeforeAppointments?.length || 0} appointments for today to check`);
+    }
+    
+    for (const appointment of hourBeforeAppointments || []) {
+      if (!appointment.appointment_time) {
+        console.log(`⏭️ No time set for appointment ${appointment.id}`);
+        continue;
+      }
+      
+      // Parse appointment time
+      const [aptHour, aptMinute] = appointment.appointment_time.split(':').map(Number);
+      const appointmentTimeMinutes = aptHour * 60 + aptMinute;
+      
+      // Calculate minutes until appointment
+      let minutesUntil = appointmentTimeMinutes - currentTimeMinutes;
+      
+      console.log(`Appointment at ${appointment.appointment_time}: ${minutesUntil} minutes from now`);
+      
+      // Send reminder if appointment is within the next 60 minutes AND in the future
+      if (minutesUntil > 0 && minutesUntil <= 60) {
+        try {
+          const appointmentDate = new Date(appointment.appointment_date);
+          const formattedDate = appointmentDate.toLocaleDateString('en-ZA', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+          });
+          
+          const timeUntil = minutesUntil <= 30 ? `${minutesUntil} minutes` : '1 hour';
+          
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #ff6b6b;">⚠️ Appointment Approaching!</h2>
+              <p>Dear <strong>${appointment.patient_name}</strong>,</p>
+              <p>Your appointment is in <strong>${timeUntil}</strong>!</p>
+              <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>🏥 Facility:</strong> ${appointment.ClinicID}</p>
+                <p><strong>📅 Date:</strong> ${formattedDate}</p>
+                <p><strong>⏰ Time:</strong> ${appointment.appointment_time}</p>
+              </div>
+              <div style="background: #ff6b6b20; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>🚗 Please don't be late!</strong></p>
+                <p>We look forward to seeing you.</p>
+              </div>
+              <hr>
+              <p style="color: #666; font-size: 12px;">SA HealthMap - Your health, our priority</p>
+            </div>
+          `;
+          
+          const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "api-key": BREVO_API_KEY },
+            body: JSON.stringify({
+              sender: { email: "2672572@students.wits.ac.za", name: "SA HealthMap" },
+              to: [{ email: appointment.patient_email }],
+              subject: "⚠️ Appointment Approaching!",
+              htmlContent: emailHtml,
+            })
+          });
+          
+          if (brevoResponse.ok) {
+            await supabase
+              .from("Appointments")
+              .update({ hour_reminder_sent: true })
+              .eq("id", appointment.id);
+            
+            await supabase
+              .from("notifications")
+              .insert([{
+                user_id: appointment.PatientID,
+                appointment_id: appointment.id,
+                message: `⚠️ Your appointment at ${appointment.ClinicID} is in ${timeUntil}! Please don't be late.`,
+                type: 'urgent_reminder',
+                is_read: false
+              }]);
+            
+            hourSentCount++;
+            console.log(`✅ Hour-before reminder sent to ${appointment.patient_email} (${minutesUntil} min before)`);
+          } else {
+            console.error(`❌ Brevo failed for hour-before: ${appointment.patient_email}`);
+          }
+        } catch (err) {
+          console.error(`Failed hour-before reminder for ${appointment.id}:`, err);
+        }
+      } else if (minutesUntil > 0) {
+        console.log(`⏭️ Appointment at ${appointment.appointment_time} is in ${minutesUntil} minutes (outside 60-min window)`);
+      } else {
+        console.log(`⏭️ Appointment at ${appointment.appointment_time} already passed (${-minutesUntil} minutes ago)`);
+      }
+    }
+    
+    console.log(`=== SUMMARY ===`);
+    console.log(`Day-before reminders sent: ${daySentCount}`);
+    console.log(`Hour-before reminders sent: ${hourSentCount}`);
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      day_before_sent: daySentCount, 
+      hour_before_sent: hourSentCount,
+      timestamp: saTime.toISOString()
+    }), { 
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+    
+  } catch (error) {
+    console.error("Error:", error);
+    return new Response(JSON.stringify({ error: error.message }), { 
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+});
+
+
+
+
+//14 May 2026:
+/*
 import { createClient } from 'https://esm.sh/@supabase/supabase-js'
 
 const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
@@ -242,7 +506,7 @@ Deno.serve(async (req) => {
     });
   }
 });
-
+*/
 
 
 
