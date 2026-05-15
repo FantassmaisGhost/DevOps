@@ -45,18 +45,14 @@ body {
   min-height: 100vh;
 }
 
-/* ══════════════════════════════════
-   TOP BAR
-══════════════════════════════════ */
+/* top bar */
 .topbar {
   background: var(--blue-800);
   height: 4px;
   background: linear-gradient(90deg, var(--blue-500), var(--blue-400), #60a5fa);
 }
 
-/* ══════════════════════════════════
-   HEADER
-══════════════════════════════════ */
+/* header */
 .header {
   background: var(--blue-900);
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
@@ -137,18 +133,14 @@ body {
   box-shadow: 0 0 0 1px rgba(59,130,246,0.3);
 }
 
-/* ══════════════════════════════════
-   LAYOUT
-══════════════════════════════════ */
+/* main layout */
 .main {
   max-width: 1180px;
   margin: 0 auto;
   padding: 32px 28px 60px;
 }
 
-/* ══════════════════════════════════
-   HERO / SEARCH BANNER
-══════════════════════════════════ */
+/* hero / search banner */
 .hero {
   background: var(--blue-800);
   border-radius: var(--radius-xl);
@@ -239,9 +231,7 @@ body {
 .search-input option { background: var(--grey-800); color: var(--white); }
 select.search-input { appearance: none; cursor: pointer; }
 
-/* ══════════════════════════════════
-   SECTION HEADER
-══════════════════════════════════ */
+/* section header */
 .section-header {
   display: flex;
   align-items: center;
@@ -264,9 +254,7 @@ select.search-input { appearance: none; cursor: pointer; }
   border-radius: 20px;
 }
 
-/* ══════════════════════════════════
-   CLINIC CARDS
-══════════════════════════════════ */
+/* clinic cards */
 .clinics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -379,9 +367,7 @@ select.search-input { appearance: none; cursor: pointer; }
 .view-link svg { transition: transform 0.15s; }
 .clinic-card:hover .view-link svg { transform: translateX(3px); }
 
-/* ══════════════════════════════════
-   DETAIL PAGE
-══════════════════════════════════ */
+/* detail page */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -479,7 +465,7 @@ select.search-input { appearance: none; cursor: pointer; }
 }
 .edit-btn:hover { background: var(--grey-50); border-color: var(--grey-300); }
 
-/* Detail grid */
+/* detail grid */
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -523,7 +509,7 @@ select.search-input { appearance: none; cursor: pointer; }
 }
 .card-content { padding: 18px 20px; }
 
-/* Info table rows */
+/* info rows */
 .info-row {
   display: flex;
   align-items: flex-start;
@@ -552,7 +538,7 @@ select.search-input { appearance: none; cursor: pointer; }
 .info-val a { color: var(--blue-600); text-decoration: none; }
 .info-val a:hover { text-decoration: underline; }
 
-/* Live badge */
+/* live tag */
 .live-tag {
   display: inline-flex;
   align-items: center;
@@ -577,7 +563,7 @@ select.search-input { appearance: none; cursor: pointer; }
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* Hours */
+/* hours */
 .hours-table { display: flex; flex-direction: column; gap: 1px; }
 .hour-row {
   display: flex;
@@ -610,7 +596,7 @@ select.search-input { appearance: none; cursor: pointer; }
 .pill-open { background: var(--green-50); color: var(--green-600); border: 1px solid #bbf7d0; }
 .pill-closed { background: var(--red-50); color: var(--red-600); border: 1px solid #fecaca; }
 
-/* Reviews */
+/* reviews */
 .rating-block {
   display: flex;
   align-items: center;
@@ -703,9 +689,7 @@ select.search-input { appearance: none; cursor: pointer; }
 }
 .write-review-btn:hover { background: var(--blue-500); }
 
-/* ══════════════════════════════════
-   BOOKINGS
-══════════════════════════════════ */
+/* bookings */
 .page-heading {
   font-size: 20px;
   font-weight: 700;
@@ -772,9 +756,7 @@ select.search-input { appearance: none; cursor: pointer; }
 .badge-completed { background: var(--green-50); color: var(--green-600); border: 1px solid #bbf7d0; }
 .badge-cancelled { background: var(--red-50); color: var(--red-600); border: 1px solid #fecaca; }
 
-/* ══════════════════════════════════
-   MODAL
-══════════════════════════════════ */
+/* modal */
 .modal-backdrop {
   display: none;
   position: fixed;
@@ -861,9 +843,7 @@ select.search-input { appearance: none; cursor: pointer; }
 }
 .modal-submit:hover { background: var(--blue-500); }
 
-/* ══════════════════════════════════
-   EDIT FORM
-══════════════════════════════════ */
+/* edit form */
 .edit-card {
   background: var(--white);
   border: 1px solid var(--grey-200);
@@ -930,9 +910,7 @@ select.search-input { appearance: none; cursor: pointer; }
 }
 .btn-ghost:hover { background: var(--grey-50); }
 
-/* ══════════════════════════════════
-   STATES
-══════════════════════════════════ */
+/* states */
 .loading-wrap {
   display: flex;
   flex-direction: column;
@@ -983,9 +961,7 @@ select.search-input { appearance: none; cursor: pointer; }
 .alert-error { background: var(--red-50); color: var(--red-600); border-color: #fecaca; }
 .alert-info { background: var(--blue-50); color: var(--blue-600); border-color: var(--blue-100); }
 
-/* ══════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════ */
+/* responsive */
 @media (max-width: 720px) {
   .detail-grid { grid-template-columns: 1fr; }
   .detail-card.full { grid-column: 1; }

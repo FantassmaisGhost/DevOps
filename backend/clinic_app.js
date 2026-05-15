@@ -1,366 +1,14 @@
 // clinic_app.js
-import { supabase } from './supabase.js';
-import { Utils } from './utils.js';
-
-<<<<<<< HEAD
-// ========== GLOBAL VARIABLES ==========
-let allClinics = [];
-let currentClinicId = null;
-let selectedRating = 0;
-let currentFilter = 'all';
-let allBookings = [];
-
-const esc = Utils.esc;
-
-// ========== ADMIN CHECK (using Admin table) ==========
-async function isAdmin() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return false;
-        const { data: admin } = await supabase
-            .from('Admin')
-            .select('Email')
-            .eq('Email', user.email)
-            .maybeSingle();
-        return !!admin;
-    } catch (err) {
-        console.error('Admin check error:', err);
-        return false;
-    }
-}
-
-// ========== CLINIC LIST ==========
-async function loadClinics() {
-    const contentDiv = document.getElementById('content');
-    contentDiv.innerHTML = '<div class="loading">🔄 Loading clinics from database...</div>';
-    try {
-        const { data, error } = await supabase
-            .from('Facilities')
-            .select('*')
-            .order('Name');
-        if (error) throw error;
-        allClinics = data || [];
-        if (allClinics.length === 0) {
-            contentDiv.innerHTML = '<div class="info">📭 No clinics found in database.</div>';
-            return;
-        }
-        const provinces = [...new Set(allClinics.map(c => c.Province).filter(p => p))];
-        const html = `
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 Search by clinic name...">
-            </div>
-            <div class="province-filter">
-                <select id="provinceFilter">
-                    <option value="">🌍 All Provinces (${allClinics.length} clinics)</option>
-                    ${provinces.map(p => `<option value="${p}">📍 ${p}</option>`).join('')}
-                </select>
-            </div>
-            <div class="clinics-grid" id="clinicsGrid"></div>
-        `;
-        contentDiv.innerHTML = html;
-        filterClinics();
-
-        document.getElementById('searchInput').addEventListener('input', () => filterClinics());
-        document.getElementById('provinceFilter').addEventListener('change', () => filterClinics());
-    } catch (err) {
-        contentDiv.innerHTML = `<div class="error">💥 Error: ${esc(err.message)}</div>`;
-    }
-}
-
-function filterClinics() {
-    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
-    const province = document.getElementById('provinceFilter')?.value || '';
-    let filtered = allClinics;
-    if (searchTerm) filtered = filtered.filter(c => c.Name?.toLowerCase().includes(searchTerm));
-    if (province) filtered = filtered.filter(c => c.Province === province);
-    const grid = document.getElementById('clinicsGrid');
-    if (!grid) return;
-    if (filtered.length === 0) {
-        grid.innerHTML = '<div class="info">🔍 No clinics match your search.</div>';
-        return;
-    }
-    grid.innerHTML = filtered.map(clinic => `
-        <div class="clinic-card" data-clinic-id="${esc(clinic.ClinicID)}">
-            <h3>🏥 ${esc(clinic.Name || 'Unnamed Clinic')}</h3>
-            <p>📍 ${esc(clinic.Province || 'Unknown')} | 🏥 ${esc(clinic.Type || 'Clinic')}</p>
-            <p>🏢 ${esc(clinic.Sector || 'N/A')}</p>
-            <button class="btn btn-primary view-detail-btn" style="margin-top: 10px;">View Details →</button>
-        </div>
-    `).join('');
-
-    document.querySelectorAll('.clinic-card').forEach(card => {
-        const clinicId = card.dataset.clinicId;
-        card.addEventListener('click', (e) => {
-            if (e.target.classList.contains('view-detail-btn')) e.stopPropagation();
-            viewClinicDetail(clinicId);
-        });
-        const btn = card.querySelector('.view-detail-btn');
-        if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); viewClinicDetail(clinicId); });
-    });
-}
-
-// ========== CLINIC DETAILS (WITH EDIT BUTTON) ==========
-async function viewClinicDetail(clinicId) {
-    const contentDiv = document.getElementById('content');
-    contentDiv.innerHTML = '<div class="loading">🔍 Loading clinic details...</div>';
-    try {
-        const { data: clinic, error } = await supabase
-            .from('Facilities')
-            .select('*')
-            .eq('ClinicID', clinicId)
-            .single();
-        if (error) throw error;
-
-        const admin = await isAdmin();
-
-        // Operating hours
-        let hoursHtml = '';
-        const { data: hours } = await supabase
-            .from('Operating_Hours')
-            .select('*')
-            .eq('clinicid', clinicId);
-        if (hours && hours.length) {
-            hoursHtml = `<div class="detail-section"><h3>🕒 Operating Hours</h3>${hours.map(h => `<p><strong>${esc(h.day)}:</strong> ${esc(h.opentime || '--')} - ${esc(h.closingtime || '--')}</p>`).join('')}</div>`;
-        }
-
-        // Reviews
-        let ratingHtml = '<div class="detail-section"><h3>⭐ Patient Reviews</h3><p>No reviews yet. Be the first!</p></div>';
-        const { data: reviews } = await supabase
-            .from('clinic_reviews')
-            .select('rating, comment, created_at')
-            .eq('clinic_id', clinicId);
-        if (reviews && reviews.length) {
-            const sum = reviews.reduce((a, b) => a + b.rating, 0);
-            const avg = (sum / reviews.length).toFixed(1);
-            ratingHtml = `<div class="detail-section"><h3>⭐ Patient Reviews</h3><p><strong>Average: ${avg}/5</strong> (${reviews.length} reviews)</p>${reviews.slice(0, 5).map(r => `<div style="border-top:1px solid #eee; padding:10px 0;"><div>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>${r.comment ? `<p style="margin:5px 0 0 0; color:#555;">${esc(r.comment)}</p>` : ''}<small style="color:#999;">${new Date(r.created_at).toLocaleDateString()}</small></div>`).join('')}</div>`;
-        }
-
-        const html = `
-            <button class="btn btn-secondary" id="backToClinicsBtn" style="margin-bottom: 20px;">← Back to Clinics</button>
-            <div style="background: white; border-radius: 12px;">
-                <div class="header-with-edit">
-                    <h2 style="margin: 0;">🏥 ${esc(clinic.Name)}</h2>
-                    ${admin ? `<button class="btn btn-warning" id="editClinicBtn">✏️ Edit Clinic Info</button>` : ''}
-                </div>
-                ${admin ? '<span class="admin-badge">👑 Admin Mode - You can edit clinic information</span>' : ''}
-                <div class="detail-section"><h3>📍 Location</h3><p><strong>Type:</strong> ${esc(clinic.Type || 'N/A')}</p><p><strong>Subtype:</strong> ${esc(clinic.Subtype || 'N/A')}</p><p><strong>Sector:</strong> ${esc(clinic.Sector || 'N/A')}</p><p><strong>Province:</strong> ${esc(clinic.Province || 'N/A')}</p>${clinic.district ? `<p><strong>District:</strong> ${esc(clinic.district)}</p>` : ''}</div>
-                ${hoursHtml}
-                <div class="detail-section" id="contactSection">
-                    <h3>📞 Contact Information</h3>
-                    <p><strong>Phone:</strong> ${esc(clinic.phone || 'Not available')}</p>
-                    <p><strong>Email:</strong> ${esc(clinic.email || 'Not available')}</p>
-                    ${clinic.address ? `<p><strong>Address:</strong> ${esc(clinic.address)}${clinic.suburb ? `, ${esc(clinic.suburb)}` : ''}${clinic.city ? `, ${esc(clinic.city)}` : ''}${clinic.postal_code ? `, ${esc(clinic.postal_code)}` : ''}</p>` : ''}
-                </div>
-                ${ratingHtml}
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="btn btn-success" id="bookAppointmentBtn" style="flex: 1;">📅 Book Appointment</button>
-                    <button class="btn btn-review" id="writeReviewBtn" style="flex: 1;">⭐ Write a Review</button>
-                </div>
-            </div>
-        `;
-        contentDiv.innerHTML = html;
-
-        document.getElementById('backToClinicsBtn').addEventListener('click', () => loadClinics());
-        if (admin) document.getElementById('editClinicBtn').addEventListener('click', () => showEditForm(clinicId));
-        document.getElementById('bookAppointmentBtn').addEventListener('click', () => alert('Booking feature coming soon!'));
-        document.getElementById('writeReviewBtn').addEventListener('click', () => openReviewModal(clinicId, clinic.Name));
-    } catch (err) {
-        contentDiv.innerHTML = `<div class="error">💥 Error: ${esc(err.message)}</div>`;
-    }
-}
-
-// ========== ADMIN: EDIT CLINIC FORM ==========
-async function showEditForm(clinicId) {
-    if (!(await isAdmin())) {
-        alert('Admin access required.');
-        return;
-    }
-    const { data: clinic, error } = await supabase
-        .from('Facilities')
-        .select('*')
-        .eq('ClinicID', clinicId)
-        .single();
-    if (error) { alert('Error loading clinic data'); return; }
-
-    const existingForm = document.getElementById('editForm');
-    if (existingForm) existingForm.remove();
-
-    const formHtml = `
-        <div class="edit-form" id="editForm">
-            <h3>✏️ Edit Clinic Information</h3>
-            <label>📞 Phone Number:</label>
-            <input type="text" id="editPhone" value="${esc(clinic.phone || '')}" placeholder="e.g., 012 345 6789">
-            <label>📧 Email Address:</label>
-            <input type="email" id="editEmail" value="${esc(clinic.email || '')}" placeholder="e.g., clinic@example.com">
-            <label>📍 Street Address:</label>
-            <textarea id="editAddress" rows="2" placeholder="Street address">${esc(clinic.address || '')}</textarea>
-            <label>🏘️ Suburb/Town:</label>
-            <input type="text" id="editSuburb" value="${esc(clinic.suburb || '')}">
-            <label>🏙️ City:</label>
-            <input type="text" id="editCity" value="${esc(clinic.city || '')}">
-            <label>📮 Postal Code:</label>
-            <input type="text" id="editPostalCode" value="${esc(clinic.postal_code || '')}">
-            <label>🏥 Facility Type:</label>
-            <select id="editType">
-                <option value="Clinic" ${clinic.Type === 'Clinic' ? 'selected' : ''}>Clinic</option>
-                <option value="Hospital" ${clinic.Type === 'Hospital' ? 'selected' : ''}>Hospital</option>
-                <option value="Community Health Centre" ${clinic.Type === 'Community Health Centre' ? 'selected' : ''}>Community Health Centre</option>
-                <option value="Primary Health Care" ${clinic.Type === 'Primary Health Care' ? 'selected' : ''}>Primary Health Care</option>
-            </select>
-            <div style="margin-top: 20px;">
-                <button class="btn btn-success" id="saveClinicBtn">💾 Save Changes</button>
-                <button class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
-            </div>
-        </div>
-    `;
-    const contactSection = document.getElementById('contactSection');
-    if (contactSection) contactSection.insertAdjacentHTML('afterend', formHtml);
-    else document.querySelector('#content > div:last-child').insertAdjacentHTML('beforeend', formHtml);
-
-    document.getElementById('saveClinicBtn').addEventListener('click', () => saveClinicUpdates(clinicId));
-    document.getElementById('cancelEditBtn').addEventListener('click', () => document.getElementById('editForm')?.remove());
-}
-
-async function saveClinicUpdates(clinicId) {
-    const updates = {
-        phone: document.getElementById('editPhone')?.value || null,
-        email: document.getElementById('editEmail')?.value || null,
-        address: document.getElementById('editAddress')?.value || null,
-        suburb: document.getElementById('editSuburb')?.value || null,
-        city: document.getElementById('editCity')?.value || null,
-        postal_code: document.getElementById('editPostalCode')?.value || null,
-        Type: document.getElementById('editType')?.value || null,
-        updated_at: new Date().toISOString()
-    };
-    const { error } = await supabase.from('Facilities').update(updates).eq('ClinicID', clinicId);
-    if (error) alert('Error saving: ' + error.message);
-    else { alert('✅ Clinic information updated successfully!'); document.getElementById('editForm')?.remove(); viewClinicDetail(clinicId); }
-}
-
-// ========== BOOKING HISTORY ==========
-async function loadBookings() {
-    const contentDiv = document.getElementById('content');
-    contentDiv.innerHTML = '<div class="loading">📅 Loading your bookings...</div>';
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            contentDiv.innerHTML = `<div class="info">🔐 Please log in to view your bookings.<br><br>⚠️ You need to create an account first.</div><button class="btn btn-primary" id="browseClinicsBtn" style="margin-top: 15px;">← Browse Clinics</button>`;
-            document.getElementById('browseClinicsBtn')?.addEventListener('click', () => loadClinics());
-            return;
-        }
-        const { data, error } = await supabase
-            .from('Appointments')
-            .select('*, Facilities!ClinicID(Name, Province)')
-            .eq('PatientID', user.id)
-            .order('appointment_date', { ascending: false });
-        if (error) throw error;
-        if (!data || data.length === 0) {
-            contentDiv.innerHTML = `<div class="info">📭 You have no bookings yet.</div><button class="btn btn-primary" id="browseClinicsBtn">Browse Clinics to Book</button>`;
-            document.getElementById('browseClinicsBtn')?.addEventListener('click', () => loadClinics());
-            return;
-        }
-        allBookings = data;
-        const html = `<h2>📅 My Appointments</h2><div class="filter-group"><button class="filter-btn" data-filter="all">All</button><button class="filter-btn" data-filter="upcoming">Upcoming</button><button class="filter-btn" data-filter="completed">Completed</button><button class="filter-btn" data-filter="cancelled">Cancelled</button></div><div id="bookingsList"></div>`;
-        contentDiv.innerHTML = html;
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                currentFilter = btn.dataset.filter;
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                displayBookings();
-            });
-        });
-        displayBookings();
-    } catch (err) {
-        contentDiv.innerHTML = `<div class="error">💥 Error: ${esc(err.message)}</div>`;
-    }
-}
-
-function displayBookings() {
-    let filtered = allBookings;
-    const now = new Date();
-    if (currentFilter === 'upcoming') filtered = filtered.filter(b => b.appointment_date && new Date(b.appointment_date) > now && b.status !== 'cancelled');
-    else if (currentFilter === 'completed') filtered = filtered.filter(b => b.status === 'completed');
-    else if (currentFilter === 'cancelled') filtered = filtered.filter(b => b.status === 'cancelled');
-    const container = document.getElementById('bookingsList');
-    if (!container) return;
-    if (filtered.length === 0) { container.innerHTML = '<div class="info">No appointments in this category.</div>'; return; }
-    container.innerHTML = filtered.map(apt => `<div class="booking-card ${apt.status === 'cancelled' ? 'cancelled' : (apt.status === 'completed' ? 'completed' : 'scheduled')}"><div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="margin:0;">🏥 ${esc(apt.Facilities?.Name || 'Unknown')}</h3><span class="booking-status status-${apt.status || 'scheduled'}">${esc(apt.status || 'scheduled')}</span></div>${apt.appointment_date ? `<p>📅 ${new Date(apt.appointment_date).toLocaleDateString()}</p>` : ''}${apt.appointment_time ? `<p>⏰ ${apt.appointment_time}</p>` : ''}<p>📍 ${esc(apt.Facilities?.Province || 'N/A')}</p></div>`).join('');
-}
-
-// ========== REVIEWS ==========
-function openReviewModal(clinicId, clinicName) {
-    currentClinicId = clinicId;
-    selectedRating = 0;
-    document.getElementById('reviewClinicName').innerHTML = `<strong>${esc(clinicName)}</strong>`;
-    document.getElementById('reviewComment').value = '';
-    document.querySelectorAll('#starContainer .star').forEach(star => star.innerHTML = '☆');
-    document.getElementById('reviewModal').style.display = 'block';
-}
-
-function closeReviewModal() {
-    document.getElementById('reviewModal').style.display = 'none';
-    currentClinicId = null;
-    selectedRating = 0;
-}
-
-function setupStars() {
-    const starContainer = document.getElementById('starContainer');
-    if (!starContainer) return;
-    starContainer.addEventListener('click', (e) => {
-        const star = e.target.closest('.star');
-        if (star) {
-            selectedRating = parseInt(star.dataset.rating);
-            const stars = document.querySelectorAll('#starContainer .star');
-            stars.forEach((s, i) => s.innerHTML = i < selectedRating ? '★' : '☆');
-        }
-    });
-}
-
-async function submitReview() {
-    if (selectedRating === 0) { alert('Please select a rating'); return; }
-    const comment = document.getElementById('reviewComment').value;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { alert('Please login to submit a review'); return; }
-    const { error } = await supabase.from('clinic_reviews').upsert({
-        clinic_id: currentClinicId,
-        patient_id: user.id,
-        rating: selectedRating,
-        comment: comment,
-        created_at: new Date().toISOString()
-    });
-    if (error) alert('Error: ' + error.message);
-    else { alert('Thank you for your review!'); closeReviewModal(); viewClinicDetail(currentClinicId); }
-}
-
-// ========== INITIALISE ==========
-function init() {
-    document.getElementById('clinicsBtn').addEventListener('click', () => {
-        document.getElementById('clinicsBtn').classList.add('active');
-        document.getElementById('bookingsBtn').classList.remove('active');
-        loadClinics();
-    });
-    document.getElementById('bookingsBtn').addEventListener('click', () => {
-        document.getElementById('bookingsBtn').classList.add('active');
-        document.getElementById('clinicsBtn').classList.remove('active');
-        loadBookings();
-    });
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    if (closeModalBtn) closeModalBtn.addEventListener('click', closeReviewModal);
-    const submitBtn = document.getElementById('submitReviewBtn');
-    if (submitBtn) submitBtn.addEventListener('click', submitReview);
-    setupStars();
-    loadClinics();
-}
-
-init();
-=======
+// ── CONFIG ──
+const MY_SUPABASE_URL = 'https://ixikhufrylaugpdxokwu.supabase.co';
+const MY_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ';
 const GOOGLE_API_KEY = 'AIzaSyCK6BUjEk1HQq7Pr3kNH3Clif8iSBvM0YI';
+const sb = window.supabase.createClient(MY_SUPABASE_URL, MY_SUPABASE_KEY);
 
 let allClinics = [], currentClinicId = null, selectedRating = 0, currentFilter = 'all', allBookings = [];
 const gCache = {};
 
-// ── SVG icons (unchanged) ──
+// ── SVG ──
 const I = {
   pin:   `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
   map:   `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
@@ -369,9 +17,10 @@ const I = {
   search:`<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>`,
   arrow: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>`,
   back:  `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>`,
+  edit:  `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
 };
 
-// ── GOOGLE PLACES (unchanged) ──
+// ── GOOGLE PLACES ──
 async function searchPlaceId(name, province) {
   try {
     const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -404,6 +53,16 @@ async function fetchGoogle(name, province) {
   return d;
 }
 
+// ── ADMIN ──
+async function isAdmin() {
+  try {
+    const { data:{ user } } = await sb.auth.getUser();
+    if (!user) return false;
+    const { data } = await sb.from('users').select('role').eq('id', user.id).single();
+    return data?.role === 'admin';
+  } catch { return false; }
+}
+
 // ── HELPERS ──
 const typeIcon = t => t==='Hospital'?'🏨':t==='Community Health Centre'?'🏘️':'🏥';
 const stars = (n, tot=5) => '★'.repeat(n)+'☆'.repeat(tot-n);
@@ -413,13 +72,10 @@ async function loadClinics() {
   const c = document.getElementById('content');
   c.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading facilities…</span></div>`;
   try {
-    const { data, error } = await supabase.from('Facilities').select('*').order('Name');
-    if (error) throw error;
+    const { data, error } = await sb.from('Facilities').select('*').order('Name');
+    if (error) { c.innerHTML = `<div class="alert alert-error">Database error: ${error.message}</div>`; return; }
     allClinics = data || [];
-    if (!allClinics.length) {
-      c.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🏥</div><div class="empty-title">No clinics found</div></div>`;
-      return;
-    }
+    if (!allClinics.length) { c.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🏥</div><div class="empty-title">No clinics found</div></div>`; return; }
     const provinces = [...new Set(allClinics.map(x=>x.Province).filter(Boolean))].sort();
     c.innerHTML = `
       <div class="hero">
@@ -451,18 +107,15 @@ async function loadClinics() {
     searchInput.addEventListener('input', filterClinics);
     provinceFilter.addEventListener('change', filterClinics);
     filterClinics();
-  } catch(e) {
-    c.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-  }
+  } catch(e) { c.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
 }
 
 function filterClinics() {
-  const q = document.getElementById('searchInput')?.value.toLowerCase() || '';
-  const prov = document.getElementById('provinceFilter')?.value || '';
+  const q = document.getElementById('searchInput')?.value.toLowerCase()||'';
+  const prov = document.getElementById('provinceFilter')?.value||'';
   let list = allClinics;
-  if (q) list = list.filter(x => x.Name?.toLowerCase().includes(q));
-  if (prov) list = list.filter(x => x.Province === prov);
-  list = list.filter(cl => cl.ClinicID && cl.ClinicID !== 'null');
+  if (q) list = list.filter(x=>x.Name?.toLowerCase().includes(q));
+  if (prov) list = list.filter(x=>x.Province===prov);
   const rc = document.getElementById('resultCount');
   if (rc) rc.textContent = `${list.length} result${list.length!==1?'s':''}`;
   const grid = document.getElementById('clinicsGrid');
@@ -471,8 +124,8 @@ function filterClinics() {
     grid.innerHTML = `<div class="empty-wrap" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No results found</div><div class="empty-sub">Try adjusting your search or province filter</div></div>`;
     return;
   }
- grid.innerHTML = list.map(cl => `
-  <div class="clinic-card" ${cl.ClinicID ? `data-clinic-id="${cl.ClinicID}"` : ''}>
+  grid.innerHTML = list.map(cl=>`
+    <div class="clinic-card" data-clinic-id="${cl.ClinicID}">
       <div class="card-header-strip"></div>
       <div class="card-body">
         <div class="card-top">
@@ -493,7 +146,7 @@ function filterClinics() {
   // attach click listeners
   document.querySelectorAll('.clinic-card').forEach(card => {
     const clinicId = card.dataset.clinicId;
-    if (!clinicId || clinicId === 'null') return; // skip invalid ids
+    if (!clinicId || clinicId === 'null') return;
     card.addEventListener('click', (e) => {
       if (!e.target.closest('.view-link')) viewClinicDetail(clinicId);
     });
@@ -505,19 +158,18 @@ function filterClinics() {
 // ── CLINIC DETAIL ──
 async function viewClinicDetail(clinicId) {
   if (!clinicId || clinicId === 'null') {
-    console.warn('Invalid clinic ID:', clinicId);
-    alert('Invalid clinic ID. Please go back and try again.');
+    alert('Invalid clinic ID');
     return;
   }
   const c = document.getElementById('content');
   c.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading facility details…</span></div>`;
   try {
-    const { data:clinic, error } = await supabase.from('Facilities').select('*').eq('ClinicID', clinicId).maybeSingle();
-    if (error || !clinic) {
-      c.innerHTML = `<div class="alert alert-error">Facility not found.</div>`;
-      return;
-    }
-    const { data:reviews } = await supabase.from('clinic_reviews').select('rating,comment,created_at').eq('clinic_id', clinicId);
+    const { data:clinic, error } = await sb.from('Facilities').select('*').eq('ClinicID', clinicId).single();
+    if (error) { c.innerHTML = `<div class="alert alert-error">${error.message}</div>`; return; }
+    const [admin, { data:reviews }] = await Promise.all([
+      isAdmin(),
+      sb.from('clinic_reviews').select('rating,comment,created_at').eq('clinic_id', clinicId)
+    ]);
 
     c.innerHTML = `
       <div class="breadcrumb">
@@ -536,8 +188,10 @@ async function viewClinicDetail(clinicId) {
               ${clinic.Type?`<span class="chip chip-blue">${clinic.Type}</span>`:''}
               ${clinic.Sector?`<span class="chip chip-grey">${clinic.Sector}</span>`:''}
               ${clinic.Province?`<span class="chip chip-grey">${clinic.Province}</span>`:''}
+              ${admin?`<span class="chip chip-amber">👑 Admin</span>`:''}
             </div>
           </div>
+          ${admin?`<button class="edit-btn" id="editClinicBtn">${I.edit} Edit Details</button>`:''}
         </div>
       </div>
 
@@ -594,6 +248,10 @@ async function viewClinicDetail(clinicId) {
       </div>`;
 
     document.getElementById('backToClinicsBtn').addEventListener('click', loadClinics);
+    if (admin) {
+      const editBtn = document.getElementById('editClinicBtn');
+      if (editBtn) editBtn.addEventListener('click', () => showEditForm(clinic.ClinicID));
+    }
     const writeReviewBtn = document.getElementById('writeReviewBtn');
     if (writeReviewBtn) {
       writeReviewBtn.addEventListener('click', () => {
@@ -603,9 +261,7 @@ async function viewClinicDetail(clinicId) {
       });
     }
     loadGoogleData(clinic, reviews||[]);
-  } catch(e) {
-    c.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-  }
+  } catch(e) { c.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
 }
 
 async function loadGoogleData(clinic, patientReviews) {
@@ -652,7 +308,7 @@ async function loadGoogleData(clinic, patientReviews) {
       });
       body += `</div>`;
     } else {
-      const { data:hrs } = await supabase.from('Operating_Hours').select('*').eq('clinicid', clinic.ClinicID);
+      const { data:hrs } = await sb.from('Operating_Hours').select('*').eq('clinicid', clinic.ClinicID);
       if (hrs?.length) {
         body = `<div class="hours-table">${hrs.map(h=>`<div class="hour-row"><span class="hour-day">${h.day}</span><span class="hour-time">${h.opentime||'--'} – ${h.closingtime||'--'}</span></div>`).join('')}</div>`;
       } else {
@@ -717,17 +373,76 @@ async function loadGoogleData(clinic, patientReviews) {
   }
 }
 
+// ── ADMIN EDIT ──
+async function showEditForm(clinicId) {
+  if (!await isAdmin()) { alert('Admin access required.'); return; }
+  const { data:cl } = await sb.from('Facilities').select('*').eq('ClinicID', clinicId).single();
+  document.getElementById('editForm')?.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'editForm';
+  wrap.className = 'edit-card';
+  wrap.style.gridColumn = '1/-1';
+  wrap.innerHTML = `
+    <div class="edit-card-header">✏️ EDITING FACILITY DETAILS</div>
+    <div class="edit-card-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="editPhone" value="${cl.phone||''}" placeholder="012 345 6789"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="editEmail" value="${cl.email||''}" placeholder="clinic@example.com"></div>
+      </div>
+      <div class="form-row single">
+        <div class="form-group"><label class="form-label">Street Address</label><input class="form-input" id="editAddress" value="${cl.address||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Suburb</label><input class="form-input" id="editSuburb" value="${cl.suburb||''}"></div>
+        <div class="form-group"><label class="form-label">City</label><input class="form-input" id="editCity" value="${cl.city||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Postal Code</label><input class="form-input" id="editPostalCode" value="${cl.postal_code||''}"></div>
+        <div class="form-group"><label class="form-label">Facility Type</label>
+          <select class="form-input" id="editType">
+            ${['Clinic','Hospital','Community Health Centre','Primary Health Care'].map(t=>`<option ${cl.Type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="saveClinicBtn">Save Changes</button>
+        <button class="btn-ghost" id="cancelEditBtn">Cancel</button>
+      </div>
+    </div>`;
+  const grid = document.querySelector('.detail-grid');
+  if (grid) grid.appendChild(wrap);
+  document.getElementById('saveClinicBtn').addEventListener('click', () => saveClinicUpdates(clinicId));
+  document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+}
+
+async function saveClinicUpdates(id) {
+  const u = {
+    phone: document.getElementById('editPhone')?.value||null,
+    email: document.getElementById('editEmail')?.value||null,
+    address: document.getElementById('editAddress')?.value||null,
+    suburb: document.getElementById('editSuburb')?.value||null,
+    city: document.getElementById('editCity')?.value||null,
+    postal_code: document.getElementById('editPostalCode')?.value||null,
+    Type: document.getElementById('editType')?.value||null,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('Facilities').update(u).eq('ClinicID', id);
+  if (error) alert('Error: '+error.message);
+  else { cancelEdit(); viewClinicDetail(id); }
+}
+function cancelEdit() { document.getElementById('editForm')?.remove(); }
+
 // ── BOOKINGS ──
 async function loadBookings() {
   const c = document.getElementById('content');
   c.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading bookings…</span></div>`;
   try {
-    const { data:{ user } } = await supabase.auth.getUser();
+    const { data:{ user } } = await sb.auth.getUser();
     if (!user) {
       c.innerHTML = `<div class="alert alert-info">🔐 Please log in to view your appointment history.</div>`;
       return;
     }
-    const { data, error } = await supabase.from('Appointments').select('*, Facilities!ClinicID(Name,Province)').eq('PatientID', user.id).order('appointment_date', { ascending:false });
+    const { data, error } = await sb.from('Appointments').select('*, Facilities!ClinicID(Name,Province)').eq('PatientID', user.id).order('appointment_date', { ascending:false });
     if (error) throw error;
     if (!data?.length) {
       c.innerHTML = `<div class="empty-wrap"><div class="empty-icon">📅</div><div class="empty-title">No appointments found</div><div class="empty-sub">Your appointment history will appear here once bookings are made</div></div>`;
@@ -752,9 +467,7 @@ async function loadBookings() {
       });
     });
     displayBookings();
-  } catch(e) {
-    c.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
-  }
+  } catch(e) { c.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
 }
 
 function displayBookings() {
@@ -784,68 +497,45 @@ function displayBookings() {
     </div>`).join('');
 }
 
-function setFilter(f) {
-  currentFilter=f; displayBookings();
-  document.querySelectorAll('.filter-pill').forEach(b=>b.classList.toggle('active', b.textContent.toLowerCase().startsWith(f)));
-}
-
 // ── REVIEWS MODAL ──
 function openReviewModal(clinicId, name) {
-  currentClinicId=clinicId;
-  selectedRating=0;
-  document.getElementById('reviewClinicName').textContent=name;
-  document.getElementById('reviewComment').value='';
-  document.querySelectorAll('#starContainer .star').forEach(s=>s.classList.remove('lit'));
+  currentClinicId = clinicId;
+  selectedRating = 0;
+  document.getElementById('reviewClinicName').textContent = name;
+  document.getElementById('reviewComment').value = '';
+  document.querySelectorAll('#starContainer .star').forEach(s => s.classList.remove('lit'));
   document.getElementById('reviewModal').classList.add('open');
 }
 
-function closeReviewModal(){
+function closeReviewModal() {
   document.getElementById('reviewModal').classList.remove('open');
-  currentClinicId=null; selectedRating=0;
+  currentClinicId = null;
+  selectedRating = 0;
 }
 
 function setupStarContainer() {
   const starContainer = document.getElementById('starContainer');
   if (!starContainer) return;
-  starContainer.addEventListener('click', e=>{
-    const s=e.target.closest('.star'); if(!s) return;
-    selectedRating=parseInt(s.dataset.rating);
-    document.querySelectorAll('#starContainer .star').forEach((star,i)=>star.classList.toggle('lit',i<selectedRating));
+  starContainer.addEventListener('click', e => {
+    const s = e.target.closest('.star'); if (!s) return;
+    selectedRating = parseInt(s.dataset.rating);
+    document.querySelectorAll('#starContainer .star').forEach((star,i) => star.classList.toggle('lit', i < selectedRating));
   });
 }
 
 async function submitReview() {
-  if (!selectedRating) {
-    alert('Please select a star rating.');
-    return;
-  }
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    alert('Please log in to submit a review.');
-    return;
-  }
-  
-  // Store the clinic ID BEFORE closing the modal
-  const clinicId = currentClinicId;
-  if (!clinicId) {
-    alert('Clinic information is missing. Please refresh and try again.');
-    return;
-  }
-  
-  const { error } = await supabase.from('clinic_reviews').insert({
-    clinic_id: clinicId,
+  if (!selectedRating) { alert('Please select a star rating.'); return; }
+  const { data:{ user } } = await sb.auth.getUser();
+  if (!user) { alert('Please log in to submit a review.'); return; }
+  const { error } = await sb.from('clinic_reviews').upsert({
+    clinic_id: currentClinicId,
     patient_id: user.id,
     rating: selectedRating,
     comment: document.getElementById('reviewComment').value,
     created_at: new Date().toISOString()
   });
-  
-  if (error) {
-    alert('Error: ' + error.message);
-  } else {
-    closeReviewModal();           // this resets currentClinicId to null, but we already saved it
-    viewClinicDetail(clinicId);   // use the saved ID
-  }
+  if (error) alert('Error: ' + error.message);
+  else { closeReviewModal(); viewClinicDetail(currentClinicId); }
 }
 
 // ── NAVIGATION ──
@@ -865,4 +555,3 @@ setupStarContainer();
 
 // Start the app
 loadClinics();
->>>>>>> Classes
