@@ -90,6 +90,7 @@ function renderAppointments(appointments) {
     const normalizedStatus = status.toLowerCase();
 
     const isCheckedIn = normalizedStatus === 'checked_in';
+    const isCompleted = normalizedStatus === "complete"
 
     const isCancelled =
     normalizedStatus === 'cancelled' ||
@@ -103,33 +104,29 @@ function renderAppointments(appointments) {
         <td>${formatTime(appointment.appointment_time)}</td>
         <td>${appointment.reason || '—'}</td>
         <td>
-          <span class="pill ${statusClass(status)}">
+          <span class="pill ${statusClass(status)}"> 
             ${status.replace('_', ' ')}
           </span>
         </td>
         <td>
             <section class="appointment-actions">
-
                 ${
                 isCancelled
-                    ? `
-                    <span class="pill pill-cancelled">
-                        Cancelled
-                    </span>
-                    `
+                    ? `<span class="pill pill-cancelled">Cancelled</span>`
+                    : isCompleted
+                    ? `<span class="pill pill-completed">Complete</span>`
                     : `
-                    <button
+                        <button
                         class="btn btn-success"
                         data-checkin-id="${appointment.id}"
                         ${isCheckedIn ? 'disabled' : ''}
-                    >
+                        >
                         ${isCheckedIn ? 'Checked in' : 'Check in'}
-                    </button>
+                        </button>
                     `
                 }
-
             </section>
-            </td>
+        </td>
       </tr>
     `;
   }).join('');

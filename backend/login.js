@@ -401,12 +401,12 @@ setupClinicSearch() {
     this.toggleBtn.addEventListener('click', () => this.toggleMode());
 
     this.registerStaffBtn?.addEventListener('click', () => {
-      alert("staff registration button clicked");
+      //alert("staff registration button clicked");
       this.openRegistrationModal('staff');
     });
 
     this.registerReceptionistBtn?.addEventListener('click', () => {
-      alert("receptionist registration button clicked");
+      //alert("receptionist registration button clicked");
       this.openRegistrationModal('receptionist');
     });
 
