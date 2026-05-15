@@ -1,4 +1,3 @@
-// redirect.js
 import { supabase } from './supabase.js';
 
 export class RedirectController {
@@ -8,6 +7,7 @@ export class RedirectController {
 
   async handleRedirect() {
     const { data: { session } } = await supabase.auth.getSession();
+
     if (!session) {
       localStorage.removeItem('userRole');
       window.location.href = '/pages/index.html';
@@ -18,21 +18,51 @@ export class RedirectController {
     const userId = session.user.id;
     const userName = session.user.user_metadata?.full_name || email.split('@')[0];
 
-    const { data: admin } = await supabase.from('Admin').select('*').eq('Email', email).single();
-    const { data: staff } = await supabase.from('Staff').select('*').eq('email', email).single();
-    const { data: pending } = await supabase.from('pending_staff').select('*').eq('email', email).single();
+    const { data: admin } = await supabase
+      .from('Admin')
+      .select('*')
+      .eq('Email', email)
+      .maybeSingle();
+
+    const { data: staff } = await supabase
+      .from('Staff')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    const { data: pending } = await supabase
+      .from('pending_staff')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    const { data: receptionist } = await supabase
+      .from('Receptionist')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
 
     let actualRole = 'patient';
+
     if (admin) actualRole = 'admin';
+    else if (receptionist) actualRole = 'receptionist';
     else if (staff) actualRole = 'staff';
     else if (pending) actualRole = 'pending';
 
     async function ensurePatientRecord() {
-      const { data: patient } = await supabase.from('Patients').select('*').eq('id', userId).single();
+      const { data: patient } = await supabase
+        .from('Patients')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
       if (!patient) {
         await supabase.from('Patients').insert([{
-          id: userId, email: email, role: 'patient',
-          full_name: userName, created_at: new Date().toISOString()
+          id: userId,
+          email: email,
+          role: 'patient',
+          full_name: userName,
+          created_at: new Date().toISOString()
         }]);
       }
     }
@@ -41,76 +71,85 @@ export class RedirectController {
       if (actualRole === 'admin') {
         localStorage.setItem('userRole', 'admin');
         window.location.href = '/pages/admin-dashboard.html';
-      } else if (actualRole === 'staff') {
+        return;
+      }
+
+      if (actualRole === 'receptionist') {
+        localStorage.setItem('userRole', 'receptionist');
+        localStorage.setItem('clinicid', receptionist.clinicid);
+        localStorage.setItem('clinicname', receptionist.clinicname);
+        window.location.href = '/pages/receptionist-dashboard.html';
+        return;
+      }
+
+      if (actualRole === 'staff') {
         localStorage.setItem('userRole', 'staff');
         window.location.href = '/pages/staff-dashboard.html';
-      } else if (actualRole === 'pending') {
-        localStorage.setItem('userRole', 'pending');
-        window.location.href = '/pages/pending-approval.html';
-      } else {
-        await ensurePatientRecord();
-        localStorage.setItem('userRole', 'patient');
-        window.location.href = '/pages/dashboard.html';
+        return;
       }
-      return;
-    }
 
-    // Handle new Google staff user who selected 'staff' but isn't registered yet
-    if (this.selectedRole === 'staff' && actualRole === 'patient') {
-      const { error: pendingInsertError } = await supabase.from('pending_staff').insert([{
-        email: email, full_name: userName, status: 'pending'
-      }]);
-      if (!pendingInsertError || pendingInsertError.code === '23505') {
+      if (actualRole === 'pending') {
         localStorage.setItem('userRole', 'pending');
         window.location.href = '/pages/pending-approval.html';
         return;
       }
-    }
 
-    let isValid = false;
-    let targetUrl = '';
-    if (this.selectedRole === 'admin' && actualRole === 'admin') {
-      isValid = true;
-      targetUrl = '/pages/admin-dashboard.html';
-      localStorage.setItem('userRole', 'admin');
-    } else if (this.selectedRole === 'staff' && actualRole === 'staff') {
-      isValid = true;
-      targetUrl = '/pages/staff-dashboard.html';
-      localStorage.setItem('userRole', 'staff');
-    } else if (this.selectedRole === 'staff' && actualRole === 'pending') {
-      isValid = true;
-      targetUrl = '/pages/pending-approval.html';
-      localStorage.setItem('userRole', 'pending');
-    } else if (this.selectedRole === 'patient' && actualRole === 'patient') {
-      isValid = true;
-      targetUrl = '/pages/dashboard.html';
-      localStorage.setItem('userRole', 'patient');
       await ensurePatientRecord();
-    } else if (this.selectedRole === 'patient' && (actualRole === 'admin' || actualRole === 'staff' || actualRole === 'pending')) {
-      isValid = true;
-      targetUrl = '/pages/dashboard.html';
       localStorage.setItem('userRole', 'patient');
+      window.location.href = '/pages/dashboard.html';
+      return;
     }
 
-    if (isValid) {
-      window.location.href = targetUrl;
-    } else {
-      const spinner = document.getElementById('spinner');
-      const message = document.getElementById('message');
-      const errorMsg = document.getElementById('errorMsg');
-      if (spinner) spinner.style.display = 'none';
-      if (message) message.style.display = 'none';
-      if (errorMsg) {
-        errorMsg.innerHTML = `❌ Access Denied: You are not authorized as "${this.selectedRole}".<br>Redirecting to login page...`;
-      }
-      setTimeout(() => {
-        localStorage.removeItem('userRole');
-        window.location.href = '/pages/index.html';
-      }, 3000);
+    if (this.selectedRole === 'admin' && actualRole === 'admin') {
+      localStorage.setItem('userRole', 'admin');
+      window.location.href = '/pages/admin-dashboard.html';
+      return;
     }
+
+    if (this.selectedRole === 'receptionist' && actualRole === 'receptionist') {
+      localStorage.setItem('userRole', 'receptionist');
+      localStorage.setItem('clinicid', receptionist.clinicid);
+      localStorage.setItem('clinicname', receptionist.clinicname);
+      window.location.href = '/pages/receptionist-dashboard.html';
+      return;
+    }
+
+    if (this.selectedRole === 'staff' && actualRole === 'staff') {
+      localStorage.setItem('userRole', 'staff');
+      window.location.href = '/pages/staff-dashboard.html';
+      return;
+    }
+
+    if (this.selectedRole === 'staff' && actualRole === 'pending') {
+      localStorage.setItem('userRole', 'pending');
+      window.location.href = '/pages/pending-approval.html';
+      return;
+    }
+
+    if (this.selectedRole === 'patient') {
+      await ensurePatientRecord();
+      localStorage.setItem('userRole', 'patient');
+      window.location.href = '/pages/dashboard.html';
+      return;
+    }
+
+    const spinner = document.getElementById('spinner');
+    const message = document.getElementById('message');
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (spinner) spinner.style.display = 'none';
+    if (message) message.style.display = 'none';
+
+    if (errorMsg) {
+      errorMsg.innerHTML = `❌ Access Denied: You are not registered as "${this.selectedRole}".`;
+    }
+
+    setTimeout(() => {
+      localStorage.removeItem('userRole');
+      window.location.href = '/pages/index.html';
+    }, 3000);
   }
 }
 
-// Run immediately
 const controller = new RedirectController();
 controller.handleRedirect();
