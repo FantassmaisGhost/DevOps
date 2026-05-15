@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareQueue — Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <section class="topbar-left">
+      <hgroup class="logo">
+        <strong class="logo-mark">C</strong>
+        <h1 class="logo-name">CareQueue</h1>
+        <p class="logo-sub">Admin</p>
+      </hgroup>
+    </section>
+
+    <section class="topbar-center">
+      <time id="clock" class="topbar-clock">00:00:00</time>
+    </section>
+
+    <nav class="topbar-right" aria-label="Admin actions">
+      <button class="btn btn-blue" id="btn-display">Display Board ↗</button>
+      <button class="btn btn-neutral" id="btn-reset">Reset Day</button>
+    </nav>
+  </header>
+
+  <main class="admin-layout">
+
+    <aside class="sidebar-left" aria-label="Patient queue controls">
+      <header class="panel-label">
+        <h2 class="panel-title">Add Patient</h2>
+      </header>
+
+      <form class="add-form" onsubmit="return false;">
+        <fieldset class="field">
+          <label for="inp-name">Patient name</label>
+          <input type="text" id="inp-name" placeholder="Full name…" autocomplete="off" />
+        </fieldset>
+
+        <section class="form-row">
+          <fieldset class="field">
+            <label for="inp-dept">Department</label>
+            <select id="inp-dept">
+              <option value="GP">GP</option>
+              <option value="Specialist">Specialist</option>
+              <option value="Emergency">Emergency</option>
+              <option value="Lab">Laboratory</option>
+            </select>
+          </fieldset>
+
+          <fieldset class="field">
+            <label for="inp-priority">Priority</label>
+            <select id="inp-priority">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </fieldset>
+        </section>
+
+        <button class="btn btn-primary btn-full" id="btn-add-patient">
+          + Add to queue
+        </button>
+      </form>
+
+      <header class="panel-label queue-heading">
+        <h2 class="panel-title">Waiting Queue</h2>
+        <output class="panel-count" id="queue-count">0</output>
+      </header>
+
+      <section class="queue-list" id="queue-list" aria-live="polite">
+        <p class="empty-msg">Queue is empty</p>
+      </section>
+    </aside>
+
+    <section class="center-main" aria-labelledby="rooms-heading">
+      <header class="center-toolbar">
+        <section>
+          <h2 class="center-toolbar-title" id="rooms-heading">Consultation Rooms</h2>
+          <p class="center-toolbar-sub">Manage doctor assignments and patient flow</p>
+        </section>
+
+        <button class="btn btn-neutral" onclick="document.getElementById('add-doctor-panel').classList.toggle('open')">
+          + Add Doctor
+        </button>
+      </header>
+
+      <section class="add-doctor-panel" id="add-doctor-panel">
+        <h3 class="add-doctor-title">Register new doctor</h3>
+
+        <form class="add-doctor-form" onsubmit="return false;">
+          <fieldset class="field">
+            <label for="doc-name">Doctor name</label>
+            <input type="text" id="doc-name" placeholder="Dr. …" />
+          </fieldset>
+
+          <fieldset class="field">
+            <label for="doc-dept">Department</label>
+            <select id="doc-dept">
+              <option value="GP">General Practice</option>
+              <option value="Specialist">Specialist</option>
+              <option value="Emergency">Emergency</option>
+              <option value="Lab">Laboratory</option>
+            </select>
+          </fieldset>
+
+          <fieldset class="field">
+            <label for="doc-room">Room</label>
+            <input type="text" id="doc-room" placeholder="Room 5…" />
+          </fieldset>
+
+          <button class="btn btn-primary" id="btn-add-doctor">Add</button>
+        </form>
+      </section>
+
+      <section class="doctor-grid" id="doctor-grid" aria-live="polite"></section>
+    </section>
+
+    <aside class="sidebar-right" aria-label="Daily statistics and completed visits">
+      <section class="stats-section">
+        <header class="panel-label">
+          <h2 class="panel-title">Today</h2>
+        </header>
+
+        <section class="stats-grid">
+          <article class="stat-card">
+            <output class="stat-val" id="s-total">0</output>
+            <p class="stat-lbl">Total</p>
+          </article>
+
+          <article class="stat-card">
+            <output class="stat-val" id="s-done">0</output>
+            <p class="stat-lbl">Completed</p>
+          </article>
+
+          <article class="stat-card">
+            <output class="stat-val" id="s-waiting">0</output>
+            <p class="stat-lbl">Waiting</p>
+          </article>
+
+          <article class="stat-card">
+            <output class="stat-val" id="s-avg">—</output>
+            <p class="stat-lbl">Avg Visit</p>
+          </article>
+
+          <article class="stat-card stat-full">
+            <output class="stat-val" id="s-doctors">0</output>
+            <p class="stat-lbl">Active Doctors</p>
+          </article>
+        </section>
+      </section>
+
+      <section class="completed-section">
+        <header class="panel-label">
+          <h2 class="panel-title">Completed</h2>
+        </header>
+
+        <section class="completed-list" id="completed-list" aria-live="polite">
+          <p class="empty-msg">No completed visits yet</p>
+        </section>
+      </section>
+    </aside>
+
+  </main>
+
+  <script type="module" src="../backend/queue.js"></script>
+  <script type="module" src="../backend/adminq.js"></script>
+</body>
+</html>

@@ -5,77 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pending Approval | Health-Flow</title>
   <link rel="stylesheet" href="shared.css" />
+
   <style>
     body {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      min-height: 100vh; padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
     }
+
     body::after {
       content: '';
-      position: fixed; inset: 0;
+      position: fixed;
+      inset: 0;
       background-image:
         linear-gradient(rgba(31,29,20,0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(31,29,20,0.04) 1px, transparent 1px);
       background-size: 32px 32px;
-      pointer-events: none; z-index: 0;
+      pointer-events: none;
+      z-index: 0;
     }
 
     .pending-card {
-      width: 100%; max-width: 420px;
+      width: 100%;
+      max-width: 420px;
       background: var(--surface);
       border: 1.5px solid var(--border-md);
       border-radius: var(--radius-lg);
       overflow: hidden;
       box-shadow: var(--shadow-md);
       text-align: center;
-      position: relative; z-index: 1;
+      position: relative;
+      z-index: 1;
     }
+
     .pending-top {
       padding: 36px 32px 28px;
       border-bottom: 1px solid var(--border);
       background: var(--obsidian);
-      position: relative; overflow: hidden;
+      position: relative;
+      overflow: hidden;
     }
+
     .pending-top::before {
       content: '';
-      position: absolute; inset: 0;
+      position: absolute;
+      inset: 0;
       background-image:
         linear-gradient(rgba(247,244,238,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(247,244,238,0.03) 1px, transparent 1px);
       background-size: 24px 24px;
     }
+
     .pending-top::after {
       content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0; height: 3px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
       background: linear-gradient(90deg, var(--ochre-mid), var(--teal));
     }
+
     .pending-icon {
-      width: 64px; height: 64px;
+      width: 64px;
+      height: 64px;
       background: rgba(154,92,0,0.2);
       border: 1.5px solid rgba(192,120,0,0.35);
       border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 28px;
       margin: 0 auto 20px;
-      position: relative; z-index: 1;
+      position: relative;
+      z-index: 1;
     }
+
     .pending-title {
       font-family: var(--font-disp);
-      font-size: 22px; font-weight: 700;
+      font-size: 22px;
+      font-weight: 700;
       margin-bottom: 8px;
       color: #F7F4EE;
-      position: relative; z-index: 1;
+      position: relative;
+      z-index: 1;
     }
+
     .pending-sub {
       font-size: 12px;
       color: rgba(247,244,238,0.45);
       line-height: 1.6;
-      position: relative; z-index: 1;
+      position: relative;
+      z-index: 1;
     }
 
-    .pending-body { padding: 24px 28px 28px; }
+    .pending-body {
+      padding: 24px 28px 28px;
+    }
 
     .info-block {
       background: var(--surface2);
@@ -87,23 +116,37 @@
       color: var(--ink-3);
       text-align: left;
     }
+
     .info-block strong {
-      display: block; font-size: 9px;
-      letter-spacing: 0.09em; text-transform: uppercase;
-      color: var(--ink-3); margin-bottom: 4px;
+      display: block;
+      font-size: 9px;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 4px;
       font-family: var(--font-body);
     }
-    .info-block span { color: var(--ink); font-weight: 600; }
+
+    .info-block span {
+      color: var(--ink);
+      font-weight: 600;
+    }
 
     .spinner-wrap {
       margin: 18px 0;
-      display: flex; align-items: center; justify-content: center;
-      gap: 8px; font-size: 12px; color: var(--ink-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--ink-3);
     }
 
     .pending-note {
-      font-size: 12px; color: var(--ink-3);
-      line-height: 1.6; margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--ink-3);
+      line-height: 1.6;
+      margin-bottom: 20px;
     }
 
     .btn-full {
@@ -113,41 +156,85 @@
       border-radius: var(--radius-sm);
       color: var(--ink-3);
       font-family: var(--font-body);
-      font-size: 12px; font-weight: 700;
-      padding: 10px; cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px;
+      cursor: pointer;
       transition: all 0.15s;
     }
-    .btn-full:hover { border-color: var(--rust); color: var(--rust); }
+
+    .btn-full:hover {
+      border-color: var(--rust);
+      color: var(--rust);
+    }
   </style>
 </head>
+
 <body>
 
-  <div class="pending-card">
-    <div class="pending-top">
-      <div class="pending-icon">⏳</div>
-      <div class="pending-title">Pending Approval</div>
-      <div class="pending-sub">Your staff account has been registered and is waiting for administrator approval.</div>
-    </div>
-    <div class="pending-body">
-      <div class="info-block">
+  <main class="pending-card">
+
+    <header class="pending-top">
+
+      <figure class="pending-icon" aria-hidden="true">
+        ⏳
+      </figure>
+
+      <h1 class="pending-title">
+        Pending Approval
+      </h1>
+
+      <p class="pending-sub">
+        Your staff account has been registered and is waiting for administrator approval.
+      </p>
+
+    </header>
+
+    <section class="pending-body">
+
+      <article class="info-block">
+
         <strong>Registered email</strong>
-        <span id="userEmail">Loading…</span>
-      </div>
-      <div class="info-block" id="clinicInfo">
+
+        <output id="userEmail">
+          Loading…
+        </output>
+
+      </article>
+
+      <article class="info-block" id="clinicInfo">
+
         <strong>Clinic</strong>
-        <span>Loading clinic information…</span>
-      </div>
 
-      <div class="spinner-wrap">
-        <div class="spinner"></div>
-        Waiting for admin approval
-      </div>
+        <output>
+          Loading clinic information…
+        </output>
 
-      <p class="pending-note">You will receive staff access once an administrator approves your account.</p>
-      <button class="btn-full" id="logoutBtn">Sign out</button>
-    </div>
-  </div>
+      </article>
+
+      <section class="spinner-wrap">
+
+        <progress class="spinner" aria-label="Waiting for approval"></progress>
+
+        <p>Waiting for admin approval</p>
+
+      </section>
+
+      <p class="pending-note">
+        You will receive staff access once an administrator approves your account.
+      </p>
+
+      <footer>
+        <button class="btn-full" id="logoutBtn">
+          Sign out
+        </button>
+      </footer>
+
+    </section>
+
+  </main>
 
   <script type="module" src="../backend/pending-approval.js"></script>
+
 </body>
 </html>

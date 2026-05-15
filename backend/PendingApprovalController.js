@@ -1,46 +1,36 @@
-// pending-approval.js
-import { supabase } from './supabase.js';
-
-export class PendingApprovalController {
+class PendingApprovalController {
   constructor() {
     this.checkInterval = null;
   }
 
   async checkAndRedirect() {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      localStorage.removeItem('userRole');
-      window.location.href = '/pages/index.html';
-      return;
-    }
+    if (!session) return window.location.href = '/pages/index.html';
     localStorage.setItem('userRole', 'pending');
+
     const userEmailElement = document.getElementById('userEmail');
     if (userEmailElement) userEmailElement.textContent = session.user.email;
 
     const { data: pending } = await supabase.from('pending_staff').select('*').eq('email', session.user.email).single();
     if (pending) {
       const { data: clinic } = await supabase.from('Facilities').select('Name').eq('ClinicID', pending.clinicid).single();
-      const clinicInfoElement = document.getElementById('clinicInfo');
-      if (clinicInfoElement) {
-        if (clinic) clinicInfoElement.innerHTML = `🏥 Requested Clinic: ${clinic.Name}`;
-        else clinicInfoElement.innerHTML = `🏥 Clinic ID: ${pending.clinicid}`;
-      }
+      document.getElementById('clinicInfo').innerHTML = clinic ? `🏥 Requested Clinic: ${clinic.Name}` : `🏥 Clinic ID: ${pending.clinicid}`;
     }
+
     const { data: staff } = await supabase.from('Staff').select('*').eq('email', session.user.email).single();
     if (staff) {
       clearInterval(this.checkInterval);
       localStorage.setItem('userRole', 'staff');
       window.location.href = '/pages/staff-dashboard.html';
     } else {
-      const spinnerElement = document.getElementById('spinner');
-      if (spinnerElement) spinnerElement.style.display = 'none';
+      document.getElementById('spinner').style.display = 'none';
     }
   }
 
-  async logout() {
+  logout() {
     clearInterval(this.checkInterval);
     localStorage.removeItem('userRole');
-    await supabase.auth.signOut();
+    supabase.auth.signOut();
     window.location.href = '/pages/index.html';
   }
 
@@ -49,8 +39,3 @@ export class PendingApprovalController {
     this.checkInterval = setInterval(() => this.checkAndRedirect(), 5000);
   }
 }
-
-const controller = new PendingApprovalController();
-controller.startPolling();
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) logoutBtn.addEventListener('click', () => controller.logout());

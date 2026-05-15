@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Appointments | Health-Flow</title>
   <link rel="stylesheet" href="shared.css" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
   <style>
     .search-wrap {
       display: flex;
@@ -55,7 +54,6 @@
       letter-spacing: 0.04em;
     }
 
-    /* Stat val color overrides */
     #statTotal    { color: var(--ink); }
     #statCompleted { color: var(--forest); }
     #statScheduled { color: var(--cerulean); }
@@ -72,12 +70,12 @@
     <div class="topbar-right topbar-inner">
       <span class="search-wrap">
         <span>⌕</span>
-        <input id="searchInput" placeholder="Search…" oninput="applyFilters()" />
+        <input id="searchInput" placeholder="Search…" />
       </span>
       <span id="userPill" style="font-size:10px;color:rgba(247,244,238,0.4);display:none;"></span>
-      <button class="btn btn-primary" onclick="loadData()" style="background:rgba(247,244,238,0.1);color:#F7F4EE;border-color:rgba(247,244,238,0.2);">↺ Refresh</button>
-      <button class="btn btn-outline" onclick="window.location.href='dashboard.html'">← Dashboard</button>
-      <button class="btn btn-ghost" onclick="handleLogout()">Sign out</button>
+      <button id="refreshBtn" class="btn btn-primary" style="background:rgba(247,244,238,0.1);color:#F7F4EE;border-color:rgba(247,244,238,0.2);">↺ Refresh</button>
+      <button id="dashboardBtn" class="btn btn-outline">← Dashboard</button>
+      <button id="logoutBtn" class="btn btn-ghost">Sign out</button>
     </div>
   </header>
 
@@ -114,146 +112,175 @@
     </div>
   </div>
 
-  <script>
-  const SUPABASE_URL  = "https://ixikhufrylaugpdxokwu.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ";
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <script type="module">
+    import { supabase } from '../backend/supabase.js';
 
-  let allData = [], filteredData = [], columns = [], sortCol = null, sortAsc = true;
+    let allData = [], filteredData = [], columns = [], sortCol = null, sortAsc = true;
 
-  const columnLabels = {
-    "Staff.full_name": "Doctor", "Facilities.Name": "Clinic",
-    reason: "Reason", status: "Status", ClinicID: "Clinic ID",
-    appointment_date: "Date", appointment_time: "Time", actions: "Actions"
-  };
+    const columnLabels = {
+      "Staff.full_name": "Doctor", "Facilities.Name": "Clinic",
+      reason: "Reason", status: "Status", ClinicID: "Clinic ID",
+      appointment_date: "Date", appointment_time: "Time", actions: "Actions"
+    };
 
-  async function boot() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { window.location.href = 'index.html'; return; }
-    document.getElementById("userPill").textContent = session.user.email;
-    document.getElementById("userPill").style.display = '';
-    await loadData(session.user.email);
-  }
+    function escHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-  async function handleLogout() { await sb.auth.signOut(); window.location.href = 'index.html'; }
+    function getValue(row, col) {
+      if (col === "actions") return row.id;
+      if (col.includes(".")) return col.split(".").reduce((o, k) => o?.[k], row);
+      return row[col];
+    }
 
-  async function loadData(email) {
-    if (!email) {
-      const { data: { session } } = await sb.auth.getSession();
+    function statusPill(val) {
+      const s = String(val).toLowerCase();
+      const map = { completed: 'pill-completed', scheduled: 'pill-scheduled', cancelled: 'pill-cancelled', waiting: 'pill-waiting' };
+      return `<span class="pill ${map[s] || 'pill-waiting'}">${escHtml(String(val))}</span>`;
+    }
+
+    function renderAction(row) {
+      const s = String(row.status || "").toLowerCase();
+      if (s === "cancelled" || s === "completed")
+        return `<button class="action-btn-cell disabled" disabled>${s === "cancelled" ? "Cancelled" : "Unavailable"}</button>`;
+      return `<button class="action-btn-cell" type="button" data-appointment-id="${escHtml(String(row.id))}">✕ Cancel</button>`;
+    }
+
+    function buildHead() {
+      document.getElementById("tableHead").innerHTML = "<tr>" + columns.map(c =>
+        c === "actions" ? `<th>${columnLabels[c]}</th>`
+        : `<th data-sort="${c}" class="sortable">${columnLabels[c] || c} ↕</th>`
+      ).join("") + "</tr>";
+    }
+
+    function updateStats() {
+      const count = v => allData.filter(r => String(r.status || "").toLowerCase() === v).length;
+      document.getElementById("statTotal").textContent = allData.length;
+      document.getElementById("statCompleted").textContent = count("completed");
+      document.getElementById("statScheduled").textContent = count("scheduled");
+      document.getElementById("statCancelled").textContent = count("cancelled");
+    }
+
+    function applyFilters() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      filteredData = allData.filter(row =>
+        !q || columns.some(c => c !== "actions" && String(getValue(row, c) ?? "").toLowerCase().includes(q))
+      );
+      if (sortCol) {
+        filteredData.sort((a, b) => {
+          const va = String(getValue(a, sortCol) ?? "").toLowerCase();
+          const vb = String(getValue(b, sortCol) ?? "").toLowerCase();
+          return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        });
+      }
+      render();
+    }
+
+    function sortBy(col) {
+      sortAsc = sortCol === col ? !sortAsc : true;
+      sortCol = col;
+      applyFilters();
+    }
+
+    function render() {
+      if (!allData.length) {
+        document.getElementById("tableBody").innerHTML = `<tr><td class="empty-state" colspan="${columns.length}"><div class="empty-icon">📋</div>No appointments found for your account.</td></tr>`;
+        document.getElementById("paginationBar").textContent = "0 rows";
+        return;
+      }
+      if (!filteredData.length) {
+        document.getElementById("tableBody").innerHTML = `<tr><td class="empty-state" colspan="${columns.length}">No matching records.</td></tr>`;
+        document.getElementById("paginationBar").textContent = `0 of ${allData.length} rows`;
+        return;
+      }
+      document.getElementById("tableBody").innerHTML = filteredData.map(row =>
+        "<tr>" + columns.map(c => {
+          if (c === "actions") return "<td>" + renderAction(row) + "</td>";
+          const v = getValue(row, c);
+          if (v === null || v === undefined || v === "") return "<td style='color:var(--ink-4)'>—</td>";
+          if (c === "status") return "<td>" + statusPill(v) + "</td>";
+          return "<td>" + escHtml(String(v)) + "</td>";
+        }).join("") + "</tr>"
+      ).join("");
+      document.getElementById("paginationBar").textContent = `${filteredData.length} of ${allData.length} row${allData.length === 1 ? "" : "s"}`;
+    }
+
+    async function loadData(email) {
+      if (!email) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { window.location.href = 'index.html'; return; }
+        email = session.user.email;
+      }
+      document.getElementById("tableBody").innerHTML = '<tr><td class="empty-state" colspan="8"><span class="spinner"></span>Loading…</td></tr>';
+      const { data, error } = await supabase.from("Appointments")
+        .select("id, reason, status, appointment_date, appointment_time, ClinicID, Staff(full_name), Facilities(Name)")
+        .eq("patient_email", email)
+        .order("appointment_date", { ascending: true }).order("appointment_time", { ascending: true });
+      if (error) {
+        document.getElementById("tableBody").innerHTML = `<tr><td class="empty-state" colspan="8" style="color:var(--rust);">Error: ${escHtml(error.message)}</td></tr>`;
+        return;
+      }
+      allData = data || [];
+      columns = ["Staff.full_name", "Facilities.Name", "reason", "status", "ClinicID", "appointment_date", "appointment_time", "actions"];
+      buildHead();
+      updateStats();
+      applyFilters();
+    }
+
+    async function cancelAppointment(id, btn) {
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "…";
+      const { error } = await supabase.from("Appointments").update({ status: "cancelled" }).eq("id", id);
+      if (error) {
+        alert("Failed: " + error.message);
+        btn.disabled = false;
+        btn.textContent = orig;
+        return;
+      }
+      await loadData();
+    }
+
+    // Modal logic
+    let selId = null, selBtn = null;
+    const modal = document.getElementById("cancelModal");
+    function openModal(id, btn) { selId = id; selBtn = btn; modal.classList.remove("hidden"); }
+    function closeModal() { selId = null; selBtn = null; modal.classList.add("hidden"); }
+
+    async function boot() {
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
-      email = session.user.email;
+      document.getElementById("userPill").textContent = session.user.email;
+      document.getElementById("userPill").style.display = '';
+      await loadData(session.user.email);
     }
-    document.getElementById("tableBody").innerHTML = '<tr><td class="empty-state" colspan="8"><span class="spinner"></span>Loading…</td></tr>';
-    const { data, error } = await sb.from("Appointments")
-      .select("id, reason, status, appointment_date, appointment_time, ClinicID, Staff(full_name), Facilities(Name)")
-      .eq("patient_email", email)
-      .order("appointment_date", { ascending: true }).order("appointment_time", { ascending: true });
-    if (error) { document.getElementById("tableBody").innerHTML = '<tr><td class="empty-state" colspan="8" style="color:var(--rust);">Error: ' + escHtml(error.message) + '</td></tr>'; return; }
-    allData = data || [];
-    columns = ["Staff.full_name","Facilities.Name","reason","status","ClinicID","appointment_date","appointment_time","actions"];
-    buildHead(); updateStats(); applyFilters();
-  }
 
-  function getValue(row, col) {
-    if (col === "actions") return row.id;
-    if (col.includes(".")) return col.split(".").reduce((o,k) => o?.[k], row);
-    return row[col];
-  }
-
-  function buildHead() {
-    document.getElementById("tableHead").innerHTML = "<tr>" + columns.map(c =>
-      c === "actions" ? `<th>${columnLabels[c]}</th>`
-      : `<th onclick="sortBy('${c}')">${columnLabels[c] || c} ↕</th>`
-    ).join("") + "</tr>";
-  }
-
-  function updateStats() {
-    const count = v => allData.filter(r => String(r.status||"").toLowerCase() === v).length;
-    document.getElementById("statTotal").textContent     = allData.length;
-    document.getElementById("statCompleted").textContent = count("completed");
-    document.getElementById("statScheduled").textContent = count("scheduled");
-    document.getElementById("statCancelled").textContent = count("cancelled");
-  }
-
-  function applyFilters() {
-    const q = document.getElementById("searchInput").value.trim().toLowerCase();
-    filteredData = allData.filter(row =>
-      !q || columns.some(c => c !== "actions" && String(getValue(row,c)??"").toLowerCase().includes(q))
-    );
-    if (sortCol) filteredData.sort((a,b) => {
-      const va = String(getValue(a,sortCol)??"").toLowerCase();
-      const vb = String(getValue(b,sortCol)??"").toLowerCase();
-      return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    // Event listeners
+    document.getElementById("searchInput").addEventListener("input", () => applyFilters());
+    document.getElementById("refreshBtn").addEventListener("click", () => loadData());
+    document.getElementById("dashboardBtn").addEventListener("click", () => window.location.href = 'dashboard.html');
+    document.getElementById("logoutBtn").addEventListener("click", async () => { await supabase.auth.signOut(); window.location.href = 'index.html'; });
+    document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+    document.getElementById("confirmCancelBtn").addEventListener("click", async () => {
+      if (selId && selBtn) await cancelAppointment(selId, selBtn);
+      closeModal();
     });
-    render();
-  }
 
-  function sortBy(col) { sortAsc = sortCol===col ? !sortAsc : true; sortCol = col; applyFilters(); }
+    // Sort column listeners (event delegation)
+    document.getElementById("tableHead").addEventListener("click", (e) => {
+      const th = e.target.closest("th[data-sort]");
+      if (th) sortBy(th.dataset.sort);
+    });
 
-  function statusPill(val) {
-    const s = String(val).toLowerCase();
-    const map = { completed:'pill-completed', scheduled:'pill-scheduled', cancelled:'pill-cancelled', waiting:'pill-waiting' };
-    return `<span class="pill ${map[s]||'pill-waiting'}">${escHtml(String(val))}</span>`;
-  }
+    // Cancel button delegation
+    document.getElementById("tableBody").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-appointment-id]");
+      if (!btn || btn.disabled) return;
+      openModal(btn.dataset.appointmentId, btn);
+    });
 
-  function render() {
-    if (!allData.length) {
-      document.getElementById("tableBody").innerHTML = `<tr><td class="empty-state" colspan="${columns.length}"><div class="empty-icon">📋</div>No appointments found for your account.</td></tr>`;
-      document.getElementById("paginationBar").textContent = "0 rows";
-      return;
-    }
-    if (!filteredData.length) {
-      document.getElementById("tableBody").innerHTML = `<tr><td class="empty-state" colspan="${columns.length}">No matching records.</td></tr>`;
-      document.getElementById("paginationBar").textContent = "0 of " + allData.length + " rows";
-      return;
-    }
-    document.getElementById("tableBody").innerHTML = filteredData.map(row =>
-      "<tr>" + columns.map(c => {
-        if (c === "actions") return "<td>" + renderAction(row) + "</td>";
-        const v = getValue(row,c);
-        if (v === null || v === undefined || v === "") return "<td style='color:var(--ink-4)'>—</td>";
-        if (c === "status") return "<td>" + statusPill(v) + "</td>";
-        return "<td>" + escHtml(String(v)) + "</td>";
-      }).join("") + "</tr>"
-    ).join("");
-    document.getElementById("paginationBar").textContent = filteredData.length + " of " + allData.length + " row" + (allData.length===1?"":"s");
-  }
-
-  function renderAction(row) {
-    const s = String(row.status||"").toLowerCase();
-    if (s === "cancelled" || s === "completed")
-      return `<button class="action-btn-cell disabled" disabled>${s==="cancelled"?"Cancelled":"Unavailable"}</button>`;
-    return `<button class="action-btn-cell" type="button" data-appointment-id="${escHtml(String(row.id))}">✕ Cancel</button>`;
-  }
-
-  async function cancelAppointment(id, btn) {
-    const orig = btn.textContent; btn.disabled = true; btn.textContent = "…";
-    const { error } = await sb.from("Appointments").update({ status: "cancelled" }).eq("id", id);
-    if (error) { alert("Failed: " + error.message); btn.disabled = false; btn.textContent = orig; return; }
-    await loadData();
-  }
-
-  let selId = null, selBtn = null;
-  const modal = document.getElementById("cancelModal");
-  function openModal(id, btn) { selId = id; selBtn = btn; modal.classList.remove("hidden"); }
-  function closeModal() { selId = null; selBtn = null; modal.classList.add("hidden"); }
-
-  document.getElementById("tableBody").addEventListener("click", e => {
-    const btn = e.target.closest("button[data-appointment-id]");
-    if (!btn || btn.disabled) return;
-    openModal(btn.dataset.appointmentId, btn);
-  });
-  document.getElementById("closeModalBtn").addEventListener("click", closeModal);
-  document.getElementById("confirmCancelBtn").addEventListener("click", async () => {
-    if (selId && selBtn) { await cancelAppointment(selId, selBtn); }
-    closeModal();
-  });
-
-  function escHtml(s) {
-    return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-  }
-
-  boot();
+    boot();
   </script>
 </body>
 </html>

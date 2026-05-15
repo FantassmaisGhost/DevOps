@@ -114,63 +114,69 @@
 <body>
 
   <header class="topbar">
-    <span class="brand">
-      <span class="brand-icon">✚</span>
+    <strong class="brand">
+      <em class="brand-icon">✚</em>
       <strong class="brand-name">Health-Flow</strong>
-    </span>
-    <div class="topbar-right">
-      <span id="userEmail" style="font-size:11px;color:rgba(247,244,238,0.4);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Loading…</span>
-      <span class="role-badge badge-patient">Patient</span>
+    </strong>
+    <nav class="topbar-right">
+      <b id="userEmail" style="font-size:11px;color:rgba(247,244,238,0.4);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:normal;">Loading…</b>
+      <em class="role-badge badge-patient">Patient</em>
       <button class="btn btn-ghost" id="logoutBtn">Sign out</button>
-    </div>
+    </nav>
   </header>
 
   <main class="page-wide">
-    <div class="welcome-banner">
-      <div>
-        <div class="welcome-title" id="welcomeMsg">Welcome back!</div>
-        <div class="welcome-sub">Patient Dashboard · Health-Flow</div>
-      </div>
-      <div class="welcome-icon">🏥</div>
-    </div>
+    <section class="welcome-banner">
+      <article>
+        <h1 class="welcome-title" id="welcomeMsg">Welcome back!</h1>
+        <p class="welcome-sub">Patient Dashboard · Health-Flow</p>
+      </article>
+      <i class="welcome-icon">🏥</i>
+    </section>
 
-    
-
-    <div class="section-label">Quick Access</div>
-    <div class="nav-grid">
+    <p class="section-label">Quick Access</p>
+    <nav class="nav-grid">
       <a href="appointment_dash.html" class="nav-card">
-        <div class="nav-card-icon blue">📅</div>
-        <div>
-          <div class="nav-card-title">My Appointments</div>
-          <div class="nav-card-desc">View scheduled, completed, and cancelled appointments</div>
-        </div>
-        <span class="nav-card-arrow">→</span>
+        <i class="nav-card-icon blue">📅</i>
+        <article>
+          <h2 class="nav-card-title">My Appointments</h2>
+          <p class="nav-card-desc">View scheduled, completed, and cancelled appointments</p>
+        </article>
+        <b class="nav-card-arrow">→</b>
       </a>
       <a href="map.html" class="nav-card">
-        <div class="nav-card-icon">🗺️</div>
-        <div>
-          <div class="nav-card-title">Book Appointment</div>
-          <div class="nav-card-desc">Find nearby clinics and hospitals and book a visit</div>
-        </div>
-        <span class="nav-card-arrow">→</span>
+        <i class="nav-card-icon">🗺️</i>
+        <article>
+          <h2 class="nav-card-title">Book Appointment</h2>
+          <p class="nav-card-desc">Find nearby clinics and hospitals and book a visit</p>
+        </article>
+        <b class="nav-card-arrow">→</b>
       </a>
       <a href="notifications.html" class="nav-card">
-        <div class="nav-card-icon warn">🔔</div>
-        <div>
-          <div class="nav-card-title">Notifications</div>
-          <div class="nav-card-desc">View updates and reminders about your appointments</div>
-        </div>
-        <span class="nav-card-arrow">→</span>
+        <i class="nav-card-icon warn">🔔</i>
+        <article>
+          <h2 class="nav-card-title">Notifications</h2>
+          <p class="nav-card-desc">View updates and reminders about your appointments</p>
+        </article>
+        <b class="nav-card-arrow">→</b>
       </a>
       <a href="clinic_app.html" class="nav-card">
-        <div class="nav-card-icon">ℹ️</div>
-        <div>
-          <div class="nav-card-title">Information about Clinics</div>
-          <div class="nav-card-desc">More information about Clinics</div>
-        </div>
-        <span class="nav-card-arrow">→</span>
+        <i class="nav-card-icon">ℹ️</i>
+        <article>
+          <h2 class="nav-card-title">Information about Clinics</h2>
+          <p class="nav-card-desc">More information about Clinics</p>
+        </article>
+        <b class="nav-card-arrow">→</b>
       </a>
-    </div>
+      <a href="placeholder.html" class="nav-card">
+        <i class="nav-card-icon">🗺️</i>
+        <article>
+          <h2 class="nav-card-title">Missy you can put your stuff here</h2>
+          <p class="nav-card-desc">Missy here we go!!!!</p>
+        </article>
+        <b class="nav-card-arrow">→</b>
+      </a>
+    </nav>
   </main>
 
   <script type="module" src="../backend/dashboard.js"></script>

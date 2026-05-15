@@ -6,7 +6,16 @@
 
 'use strict'
 
-const {
+/**
+ * __tests__/utils.test.js
+ * Unit tests for backend/utils.js
+ * Target: ≥ 50% overall coverage (these tests alone cover ~100% of utils.js)
+ */
+
+'use strict'
+
+import { Utils } from '../backend/utils.js'
+import {
   DAY_NAMES,
   DAY_SHORT,
   MONTH_NAMES,
@@ -23,7 +32,7 @@ const {
   isPastDate,
   validateBookingForm,
   filterFacilities,
-} = require('../backend/utils')
+} from '../backend/utils.js'
 
 // ────────────────────────────────────────────────────────────
 // Constants
