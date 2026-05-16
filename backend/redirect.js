@@ -1,4 +1,5 @@
 // redirect.js
+alert('redirect.js loaded!');
 import { supabase } from '../backend/supabase.js';
 
 export class RedirectController {
