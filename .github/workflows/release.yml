@@ -104,13 +104,13 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: meddev-${{ github.ref_name }}
+          name: HealthFlow-${{ github.ref_name }}
           path: dist/
 
       - name: Zip release package
         run: |
           cd dist
-          zip -r ../meddev-${{ github.ref_name }}.zip .
+          zip -r ../HealthFlow-${{ github.ref_name }}.zip .
 
       - name: Create GitHub Release
         uses: actions/github-script@v7
@@ -132,18 +132,18 @@ jobs:
             }
 
             const body = [
-              `## MedDev ${tag}`,
+              `## HealthFlow ${tag}`,
               '',
               '### What\'s Changed',
               changelog,
               '',
               '### Assets',
-              `- \`meddev-${tag}.zip\` — production build (run \`npm ci --omit=dev\` after extracting)`,
+              `- \`HealthFlow-${tag}.zip\` — production build (run \`npm ci --omit=dev\` after extracting)`,
               '',
               '### Deploy',
               '```bash',
-              `unzip meddev-${tag}.zip -d meddev`,
-              'cd meddev && node server.js',
+              `unzip HealthFlow-${tag}.zip -d HealthFlow`,
+              'cd HealthFlow && node server.js',
               '```',
             ].join('\n');
 
@@ -151,19 +151,19 @@ jobs:
               owner: context.repo.owner,
               repo:  context.repo.repo,
               tag_name:   tag,
-              name:       `MedDev ${tag}`,
+              name:       `HealthFlow ${tag}`,
               body,
               draft:      false,
               prerelease: tag.includes('-'),
             });
 
             // Attach the zip
-            const zip = fs.readFileSync(`meddev-${tag}.zip`);
+            const zip = fs.readFileSync(`HealthFlow-${tag}.zip`);
             await github.rest.repos.uploadReleaseAsset({
               owner:      context.repo.owner,
               repo:       context.repo.repo,
               release_id: release.data.id,
-              name:       `meddev-${tag}.zip`,
+              name:       `HealthFlow-${tag}.zip`,
               data:       zip,
               headers:    { 'content-type': 'application/zip' },
             });
@@ -177,13 +177,13 @@ jobs:
     needs: build
     environment:
       name: Production
-      url: https://meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net/pages/index.html
+      url: https://healthflow-b8hsefc2asehbagm.southafricanorth-01.azurewebsites.net/
 
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: meddev-${{ github.ref_name }}
+          name: HealthFlow-${{ github.ref_name }}
           path: dist/
 
       - name: Login to Azure
@@ -196,5 +196,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: MedDev
+          app-name: HealthFlow
           package:  dist/

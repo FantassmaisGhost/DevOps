@@ -5,7 +5,7 @@
 # NOTE: Tagged releases are handled by release.yml instead.
 # This workflow handles untagged pushes to main only.
 # ============================================================
-name: Build and deploy to Azure Web App - MedDev
+name: Build and deploy to Azure Web App - HealthFlow
 
 on:
   push:
@@ -62,7 +62,7 @@ jobs:
       contents: read
     environment:
       name: Production
-      url: https://meddev-gahjbnc4dwb2d0bg.canadacentral-01.azurewebsites.net/pages/index.html
+      url: https://healthflow-b8hsefc2asehbagm.southafricanorth-01.azurewebsites.net/
 
     steps:
       - name: Download artifact
@@ -80,5 +80,5 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: MedDev
+          app-name: HealthFlow
           package:  .
