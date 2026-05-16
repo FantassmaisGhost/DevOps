@@ -14,6 +14,9 @@ export class RedirectController {
       return;
     }
 
+    
+    console.log('Actual role:', actualRole);
+
     const email = session.user.email;
     const userId = session.user.id;
     const userName = session.user.user_metadata?.full_name || email.split('@')[0];
@@ -36,6 +39,11 @@ export class RedirectController {
         }]);
       }
     }
+
+    console.log('Session user email:', session.user.email);
+    console.log('Staff query result:', staff);
+    console.log('Pending query result:', pending);
+    console.log('Selected role:', this.selectedRole);
 
     if (!this.selectedRole) {
       if (actualRole === 'admin') {
@@ -109,6 +117,7 @@ export class RedirectController {
       }, 3000);
     }
   }
+  
 }
 
 // Run immediately
