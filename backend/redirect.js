@@ -14,59 +14,57 @@ export class RedirectController {
       return;
     }
 
-    
-    console.log('Actual role:', actualRole);
-
     const email = session.user.email;
     const userId = session.user.id;
     const userName = session.user.user_metadata?.full_name || email.split('@')[0];
 
-    const { data: admin } = await supabase.from('Admin').select('*').eq('Email', email).single();
-    const { data: staff } = await supabase.from('Staff').select('*').eq('email', email).single();
-    const { data: pending } = await supabase.from('pending_staff').select('*').eq('email', email).single();
+    // Use maybeSingle() to avoid 406 errors when no record exists
+    const [{ data: admin }, { data: staff }, { data: pending }] = await Promise.all([
+      supabase.from('Admin').select('*').eq('Email', email).maybeSingle(),
+      supabase.from('Staff').select('*').eq('email', email).maybeSingle(),
+      supabase.from('pending_staff').select('*').eq('email', email).maybeSingle()
+    ]);
 
     let actualRole = 'patient';
     if (admin) actualRole = 'admin';
     else if (staff) actualRole = 'staff';
     else if (pending) actualRole = 'pending';
 
+    // Log AFTER actualRole is defined
+    console.log('Session user email:', email);
+    console.log('Admin record:', admin);
+    console.log('Staff record:', staff);
+    console.log('Pending record:', pending);
+    console.log('Selected role:', this.selectedRole);
+    console.log('Actual role:', actualRole);
+
     async function ensurePatientRecord() {
-      const { data: patient } = await supabase.from('Patients').select('*').eq('id', userId).single();
+      const { data: patient } = await supabase.from('Patients').select('*').eq('id', userId).maybeSingle();
       if (!patient) {
         await supabase.from('Patients').insert([{
-          id: userId, email: email, role: 'patient',
+          id: userId, email, role: 'patient',
           full_name: userName, created_at: new Date().toISOString()
         }]);
       }
     }
 
-    console.log('Session user email:', session.user.email);
-    console.log('Staff query result:', staff);
-    console.log('Pending query result:', pending);
-    console.log('Selected role:', this.selectedRole);
-
+    // No role selected → use actual role
     if (!this.selectedRole) {
-      if (actualRole === 'admin') {
-        localStorage.setItem('userRole', 'admin');
-        window.location.href = '/pages/admin-dashboard.html';
-      } else if (actualRole === 'staff') {
-        localStorage.setItem('userRole', 'staff');
-        window.location.href = '/pages/staff-dashboard.html';
-      } else if (actualRole === 'pending') {
-        localStorage.setItem('userRole', 'pending');
-        window.location.href = '/pages/pending-approval.html';
-      } else {
+      localStorage.setItem('userRole', actualRole);
+      if (actualRole === 'admin') window.location.href = '/pages/admin-dashboard.html';
+      else if (actualRole === 'staff') window.location.href = '/pages/staff-dashboard.html';
+      else if (actualRole === 'pending') window.location.href = '/pages/pending-approval.html';
+      else {
         await ensurePatientRecord();
-        localStorage.setItem('userRole', 'patient');
         window.location.href = '/pages/dashboard.html';
       }
       return;
     }
 
-    // Handle new Google staff user who selected 'staff' but isn't registered yet
+    // Handle Google staff login (creates pending record)
     if (this.selectedRole === 'staff' && actualRole === 'patient') {
       const { error: pendingInsertError } = await supabase.from('pending_staff').insert([{
-        email: email, full_name: userName, status: 'pending'
+        email, full_name: userName, status: 'pending'
       }]);
       if (!pendingInsertError || pendingInsertError.code === '23505') {
         localStorage.setItem('userRole', 'pending');
@@ -75,49 +73,38 @@ export class RedirectController {
       }
     }
 
+    // Validate selected role against actual role
     let isValid = false;
     let targetUrl = '';
+
     if (this.selectedRole === 'admin' && actualRole === 'admin') {
       isValid = true;
       targetUrl = '/pages/admin-dashboard.html';
-      localStorage.setItem('userRole', 'admin');
     } else if (this.selectedRole === 'staff' && actualRole === 'staff') {
       isValid = true;
       targetUrl = '/pages/staff-dashboard.html';
-      localStorage.setItem('userRole', 'staff');
     } else if (this.selectedRole === 'staff' && actualRole === 'pending') {
       isValid = true;
       targetUrl = '/pages/pending-approval.html';
-      localStorage.setItem('userRole', 'pending');
     } else if (this.selectedRole === 'patient' && actualRole === 'patient') {
       isValid = true;
       targetUrl = '/pages/dashboard.html';
-      localStorage.setItem('userRole', 'patient');
       await ensurePatientRecord();
     } else if (this.selectedRole === 'patient' && (actualRole === 'admin' || actualRole === 'staff' || actualRole === 'pending')) {
       isValid = true;
       targetUrl = '/pages/dashboard.html';
-      localStorage.setItem('userRole', 'patient');
     }
 
     if (isValid) {
+      localStorage.setItem('userRole', this.selectedRole);
       window.location.href = targetUrl;
     } else {
-      const spinner = document.getElementById('spinner');
-      const message = document.getElementById('message');
-      const errorMsg = document.getElementById('errorMsg');
-      if (spinner) spinner.style.display = 'none';
-      if (message) message.style.display = 'none';
-      if (errorMsg) {
-        errorMsg.innerHTML = `❌ Access Denied: You are not authorized as "${this.selectedRole}".<br>Redirecting to login page...`;
-      }
-      setTimeout(() => {
-        localStorage.removeItem('userRole');
-        window.location.href = '/pages/index.html';
-      }, 3000);
+      // Fallback: send to patient dashboard instead of looping
+      console.warn('Role mismatch, falling back to patient dashboard');
+      localStorage.setItem('userRole', 'patient');
+      window.location.href = '/pages/dashboard.html';
     }
   }
-  
 }
 
 // Run immediately
