@@ -1,5 +1,5 @@
 // redirect.js
-import { supabase } from './supabase.js';
+import { supabase } from '../backend/supabase.js';
 
 export class RedirectController {
   constructor() {
@@ -10,7 +10,7 @@ export class RedirectController {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       localStorage.removeItem('userRole');
-      window.location.href = '/pages/index.html';
+      window.location.href = '../pages/index.html';
       return;
     }
 
@@ -40,17 +40,17 @@ export class RedirectController {
     if (!this.selectedRole) {
       if (actualRole === 'admin') {
         localStorage.setItem('userRole', 'admin');
-        window.location.href = '/pages/admin-dashboard.html';
+        window.location.href = '../pages/admin-dashboard.html';
       } else if (actualRole === 'staff') {
         localStorage.setItem('userRole', 'staff');
-        window.location.href = '/pages/staff-dashboard.html';
+        window.location.href = '../pages/staff-dashboard.html';
       } else if (actualRole === 'pending') {
         localStorage.setItem('userRole', 'pending');
-        window.location.href = '/pages/pending-approval.html';
+        window.location.href = '../pages/pending-approval.html';
       } else {
         await ensurePatientRecord();
         localStorage.setItem('userRole', 'patient');
-        window.location.href = '/pages/dashboard.html';
+        window.location.href = '../pages/dashboard.html';
       }
       return;
     }
@@ -62,7 +62,7 @@ export class RedirectController {
       }]);
       if (!pendingInsertError || pendingInsertError.code === '23505') {
         localStorage.setItem('userRole', 'pending');
-        window.location.href = '/pages/pending-approval.html';
+        window.location.href = '../pages/pending-approval.html';
         return;
       }
     }
@@ -71,24 +71,24 @@ export class RedirectController {
     let targetUrl = '';
     if (this.selectedRole === 'admin' && actualRole === 'admin') {
       isValid = true;
-      targetUrl = '/pages/admin-dashboard.html';
+      targetUrl = '../pages/admin-dashboard.html';
       localStorage.setItem('userRole', 'admin');
     } else if (this.selectedRole === 'staff' && actualRole === 'staff') {
       isValid = true;
-      targetUrl = '/pages/staff-dashboard.html';
+      targetUrl = '../pages/staff-dashboard.html';
       localStorage.setItem('userRole', 'staff');
     } else if (this.selectedRole === 'staff' && actualRole === 'pending') {
       isValid = true;
-      targetUrl = '/pages/pending-approval.html';
+      targetUrl = '../pages/pending-approval.html';
       localStorage.setItem('userRole', 'pending');
     } else if (this.selectedRole === 'patient' && actualRole === 'patient') {
       isValid = true;
-      targetUrl = '/pages/dashboard.html';
+      targetUrl = '../pages/dashboard.html';
       localStorage.setItem('userRole', 'patient');
       await ensurePatientRecord();
     } else if (this.selectedRole === 'patient' && (actualRole === 'admin' || actualRole === 'staff' || actualRole === 'pending')) {
       isValid = true;
-      targetUrl = '/pages/dashboard.html';
+      targetUrl = '../pages/dashboard.html';
       localStorage.setItem('userRole', 'patient');
     }
 
@@ -105,7 +105,7 @@ export class RedirectController {
       }
       setTimeout(() => {
         localStorage.removeItem('userRole');
-        window.location.href = '/pages/index.html';
+        window.location.href = '../pages/index.html';
       }, 3000);
     }
   }
