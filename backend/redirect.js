@@ -1,6 +1,5 @@
 // redirect.js
-alert('redirect.js loaded!');
-import { supabase } from '../backend/supabase.js';
+import { supabase } from './supabase.js';
 
 export class RedirectController {
   constructor() {
@@ -18,12 +17,6 @@ export class RedirectController {
     const email = session.user.email;
     const userId = session.user.id;
     const userName = session.user.user_metadata?.full_name || email.split('@')[0];
-
-      // ========== ADD DEBUG HERE ==========
-    console.log('=== REDIRECT DEBUG ===');
-    console.log('Email from session:', email);
-    console.log('Selected role:', this.selectedRole);
-    console.log('User ID:', userId);
 
     // Use maybeSingle() to avoid 406 errors when no record exists
     const [{ data: admin }, { data: staff }, { data: pending }] = await Promise.all([
