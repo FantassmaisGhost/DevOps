@@ -34,6 +34,28 @@
             margin-bottom: 28px;
         }
 
+        .stat-card {
+            background: var(--surface);
+            border: 1.5px solid var(--border-md);
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--teal);
+            margin-bottom: 8px;
+        }
+
+        .stat-card p {
+            font-size: 11px;
+            color: var(--ink-3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
         .action-bar {
             background: var(--surface);
             border: 1.5px solid var(--border-md);
@@ -81,28 +103,6 @@
             margin-bottom: 16px;
         }
 
-        .info-row {
-            display: flex;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            width: 130px;
-            font-weight: 600;
-            color: var(--ink-2);
-            font-size: 13px;
-        }
-
-        .info-value {
-            flex: 1;
-            color: var(--ink);
-        }
-
         .section-header-actions {
             display: flex;
             justify-content: space-between;
@@ -137,6 +137,7 @@
             padding: 12px 8px;
             border-bottom: 1px solid var(--border);
             font-size: 13px;
+            vertical-align: middle;
         }
 
         .row-clash {
@@ -147,6 +148,138 @@
             padding: 6px 14px;
             font-size: 12px;
         }
+
+        /* ========== PATIENT NOTES SYSTEM - START ========== */
+        /* Notes Button Styles */
+        .view-notes-btn {
+            background: none;
+            border: 1px solid var(--teal);
+            color: var(--teal);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .view-notes-btn:hover {
+            background: var(--teal);
+            color: #fff;
+        }
+
+        .note-count-badge {
+            background: var(--teal);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 4px;
+        }
+
+        .view-notes-btn:hover .note-count-badge {
+            background: white;
+            color: var(--teal);
+        }
+
+        /* Notes Modal Styles */
+        .notes-modal .modal-box {
+            max-width: 550px;
+            width: 90%;
+        }
+
+        .notes-history {
+            max-height: 350px;
+            overflow-y: auto;
+            margin: 16px 0;
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+        }
+
+        .note-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+
+        .note-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .note-text {
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 6px;
+            color: var(--ink);
+        }
+
+        .note-meta {
+            font-size: 10px;
+            color: var(--ink-3);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .note-staff {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .note-staff::before {
+            content: '👩‍⚕️';
+            font-size: 10px;
+        }
+
+        .note-date {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .note-date::before {
+            content: '📅';
+            font-size: 10px;
+        }
+
+        .no-notes {
+            text-align: center;
+            padding: 30px;
+            color: var(--ink-3);
+            font-style: italic;
+        }
+
+        .new-note-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border-md);
+            background: var(--surface2);
+            color: var(--ink);
+            font-family: var(--font-body);
+            font-size: 12px;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+
+        .new-note-input:focus {
+            outline: none;
+            border-color: var(--teal);
+        }
+
+        .notes-cell {
+            text-align: center;
+            white-space: nowrap;
+        }
+        /* ========== PATIENT NOTES SYSTEM - END ========== */
 
         .toast {
             position: fixed;
@@ -239,6 +372,17 @@
             .action-bar {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+
+            .appointments-table th,
+            .appointments-table td {
+                padding: 8px 4px;
+                font-size: 11px;
+            }
+
+            .view-notes-btn {
+                padding: 4px 8px;
+                font-size: 10px;
             }
         }
     </style>
