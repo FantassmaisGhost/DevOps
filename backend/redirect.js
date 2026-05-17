@@ -22,6 +22,8 @@ export class RedirectController {
     showStatus(`RedirectController initialized. Role: ${this.selectedRole || 'none'}`);
   }
 
+  
+
   async processSession(session) {
     if (this.processed) return;
     this.processed = true;
@@ -102,8 +104,12 @@ export class RedirectController {
 
     // 1. Listen for auth state changes
     supabase.auth.onAuthStateChange(async (event, session) => {
-      showStatus(`Auth event: ${event}, session: ${!!session}`);
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !this.processed) {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (!session) {
+          localStorage.removeItem('userRole');
+          window.location.href = '/pages/index.html';
+          return;
+        }
         await this.processSession(session);
       }
     });
