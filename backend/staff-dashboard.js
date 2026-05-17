@@ -142,6 +142,24 @@ async function loadStaffDashboard() {
     const waitingCount = todaysAppointments.filter(a => a.status === 'waiting').length;
     const completedCount = todaysAppointments.filter(a => a.status === 'complete').length;
 
+    //-------------
+    // Get note counts for each patient
+    const noteCounts = {};
+    if (todaysAppointments.length > 0) {
+        const patientIds = [...new Set(todaysAppointments.map(a => a.PatientID))];
+        const { data: notes } = await supabase
+            .from('patient_notes')
+            .select('patient_id, id')
+            .in('patient_id', patientIds);
+        
+        if (notes) {
+            notes.forEach(n => {
+                noteCounts[n.patient_id] = (noteCounts[n.patient_id] || 0) + 1;
+            });
+        }
+    }
+    //-------------
+
     const main = document.getElementById('dashboardContent');
     main.innerHTML = `
         <div class="welcome-banner">
@@ -174,7 +192,8 @@ async function loadStaffDashboard() {
             ${todaysAppointments.length === 0 
                 ? '<p style="text-align:center; padding:32px; color:var(--ink-3);">✨ No appointments scheduled for today.</p>'
                 : `<table class="appointments-table">
-                    <thead><tr><th>Patient</th><th>Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Patient</th><th>Time</th><th>Reason</th><th>Status</th><th>Notes</th><th>Action</th></tr></thead>
+                    
                     <tbody>
                         ${todaysAppointments.map(apt => {
                             const status = (apt.status || '').toLowerCase();
@@ -201,6 +220,17 @@ async function loadStaffDashboard() {
                                         <td>${esc(apt.appointment_time?.slice(0,5)) || 'N/A'}</td>
                                         <td>${esc(apt.reason || 'N/A')}</td>
                                         <td>${statusBadge}</td>
+                                        
+                                        <td class="notes-cell">
+                                            <button class="view-notes-btn" 
+                                                data-patient-id="${apt.PatientID}" 
+                                                data-appointment-id="${apt.id}"
+                                                data-patient-name="${esc(apt.patient_name)}">
+                                                📝 Notes
+                                                ${noteCounts[apt.PatientID] > 0 ? `<span class="note-count-badge">${noteCounts[apt.PatientID]}</span>` : ''}
+                                            </button>
+                                        </td>
+                                        
                                         <td>${actionHtml}</td>
                                      </tr>`;
                         }).join('')}
@@ -227,6 +257,14 @@ async function loadStaffDashboard() {
             openRescheduleModal(btn.dataset.id, btn.dataset.patient, btn.dataset.date, btn.dataset.time);
         });
     });
+    //-------------------
+    // Notes button event listeners
+    document.querySelectorAll('.view-notes-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            showPatientNotes(btn.dataset.patientId, btn.dataset.appointmentId, btn.dataset.patientName);
+        });
+    });
+    //-------------------
     document.getElementById('refreshBtn')?.addEventListener('click', loadStaffDashboard);
 }
 

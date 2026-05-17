@@ -4,51 +4,97 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CareQueue — Display Board</title>
+
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="display.css" />
 </head>
+
 <body>
 
 <header class="display-header">
-  <div class="display-logo">
-    <div class="display-logo-mark">C</div>
-    <span class="display-logo-name">CareQueue</span>
-  </div>
-  <div class="display-marquee-wrap">
-    <div class="display-marquee" id="marquee-text">
-      Welcome to our clinic &nbsp;·&nbsp; Please take a seat and have your ticket ready &nbsp;·&nbsp; Your number will be called when a doctor is available &nbsp;·&nbsp; Please keep noise to a minimum &nbsp;·&nbsp; Thank you for your patience &nbsp;&nbsp;&nbsp;
-    </div>
-  </div>
-  <div class="display-clock-wrap">
-    <span class="display-date" id="display-date"></span>
-    <span class="display-time" id="display-time"></span>
-  </div>
+
+  <section class="display-logo">
+
+    <figure class="display-logo-mark">
+      C
+    </figure>
+
+    <h1 class="display-logo-name">
+      CareQueue
+    </h1>
+
+  </section>
+
+  <section class="display-marquee-wrap" aria-label="Clinic announcements">
+
+    <p class="display-marquee" id="marquee-text">
+      Welcome to our clinic &nbsp;·&nbsp;
+      Please take a seat and have your ticket ready &nbsp;·&nbsp;
+      Your number will be called when a doctor is available &nbsp;·&nbsp;
+      Please keep noise to a minimum &nbsp;·&nbsp;
+      Thank you for your patience &nbsp;&nbsp;&nbsp;
+    </p>
+
+  </section>
+
+  <aside class="display-clock-wrap">
+
+    <time class="display-date" id="display-date"></time>
+
+    <time class="display-time" id="display-time"></time>
+
+  </aside>
+
 </header>
 
-<div class="display-body">
+<main class="display-body">
+
   <section class="serving-section">
-    <div class="serving-section-label">Now Serving</div>
-    <div class="serving-grid" id="serving-grid"></div>
+
+    <h2 class="serving-section-label">
+      Now Serving
+    </h2>
+
+    <section class="serving-grid" id="serving-grid"></section>
+
   </section>
 
   <section class="waiting-section">
-    <div class="waiting-label">Waiting</div>
-    <div class="waiting-grid" id="waiting-grid"></div>
-  </section>
-</div>
 
-<!-- Flash overlay -->
-<div class="flash-overlay" id="flash-overlay">
-  <div class="flash-box">
-    <div class="flash-label">Now Calling</div>
-    <span class="flash-num" id="flash-num"></span>
-    <div class="flash-divider"></div>
-    <div class="flash-name" id="flash-name"></div>
-    <div class="flash-room" id="flash-room"></div>
-  </div>
-</div>
+    <h2 class="waiting-label">
+      Waiting
+    </h2>
+
+    <section class="waiting-grid" id="waiting-grid"></section>
+
+  </section>
+
+</main>
+
+<aside class="flash-overlay"
+       id="flash-overlay"
+       aria-live="assertive">
+
+  <section class="flash-box">
+
+    <h2 class="flash-label">
+      Now Calling
+    </h2>
+
+    <p class="flash-num" id="flash-num"></p>
+
+    <hr class="flash-divider" />
+
+    <p class="flash-name" id="flash-name"></p>
+
+    <p class="flash-room" id="flash-room"></p>
+
+  </section>
+
+</aside>
 
 <script type="module" src="../backend/queue.js"></script>
 <script type="module" src="../backend/display.js"></script>
+
 </body>
 </html>

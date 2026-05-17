@@ -30,7 +30,7 @@ export class TableAdminController {
   async saveHours(e) {
     e.preventDefault();
     const saveBtn = document.getElementById('saveBtn');
-    saveBtn.disabled = true;
+   saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const errors = [];

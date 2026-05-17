@@ -3,66 +3,214 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>HealthFind SA</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet">
+
 <link rel="stylesheet" href="clinic_app.css">
 </head>
+
 <body>
 
-<div class="topbar"></div>
+<section class="topbar"></section>
 
 <header class="header">
-  <div class="header-inner">
-    <div class="brand">
-      <div class="brand-mark">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      </div>
-      <div class="brand-name">
+
+  <section class="header-inner">
+
+    <section class="brand">
+
+      <figure class="brand-mark">
+
+        <svg width="20"
+             height="20"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             viewBox="0 0 24 24">
+
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+
+        </svg>
+
+      </figure>
+
+      <h1 class="brand-name">
+
         <span>HealthFind SA</span>
+
         <span>Community Clinic Directory</span>
-      </div>
-    </div>
-    <nav class="nav">
-      <button class="nav-btn active" id="clinicsBtn">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+
+      </h1>
+
+    </section>
+
+    <nav class="nav" aria-label="Primary navigation">
+
+      <button class="nav-btn active"
+              id="clinicsBtn">
+
+        <svg width="14"
+             height="14"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             viewBox="0 0 24 24">
+
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+
+          <polyline points="9 22 9 12 15 12 15 22"/>
+
+        </svg>
+
         Find Clinics
+
       </button>
-      <button class="nav-btn" id="bookingsBtn">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+
+      <button class="nav-btn"
+              id="bookingsBtn">
+
+        <svg width="14"
+             height="14"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             viewBox="0 0 24 24">
+
+          <rect x="3"
+                y="4"
+                width="18"
+                height="18"
+                rx="2"
+                ry="2"/>
+
+          <line x1="16"
+                y1="2"
+                x2="16"
+                y2="6"/>
+
+          <line x1="8"
+                y1="2"
+                x2="8"
+                y2="6"/>
+
+          <line x1="3"
+                y1="10"
+                x2="21"
+                y2="10"/>
+
+        </svg>
+
         My Bookings
+
       </button>
+
     </nav>
-  </div>
+
+  </section>
+
 </header>
 
 <main class="main">
-  <div id="content">
-    <div class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading clinics…</span></div>
-  </div>
+
+  <section id="content">
+
+    <article class="loading-wrap">
+
+      <figure class="spinner"></figure>
+
+      <p class="loading-label">
+        Loading clinics…
+      </p>
+
+    </article>
+
+  </section>
+
 </main>
 
-<!-- REVIEW MODAL -->
-<div class="modal-backdrop" id="reviewModal">
-  <div class="modal-panel">
-    <div class="modal-top-bar"></div>
-    <div class="modal-body">
-      <button class="modal-close-btn" id="closeModalBtn">✕</button>
-      <div class="modal-heading">Submit a Review</div>
-      <div class="modal-sub" id="reviewClinicName"></div>
-      <div class="star-group" id="starContainer">
-        <span class="star" data-rating="1">★</span>
-        <span class="star" data-rating="2">★</span>
-        <span class="star" data-rating="3">★</span>
-        <span class="star" data-rating="4">★</span>
-        <span class="star" data-rating="5">★</span>
-      </div>
-      <textarea class="modal-textarea" id="reviewComment" rows="4" placeholder="Describe your experience at this facility…"></textarea>
-      <button class="modal-submit" id="submitReviewBtn">Submit Review</button>
-    </div>
-  </div>
-</div>
+<aside class="modal-backdrop"
+       id="reviewModal"
+       aria-hidden="true">
+
+  <section class="modal-panel">
+
+    <header class="modal-top-bar"></header>
+
+    <section class="modal-body">
+
+      <button class="modal-close-btn"
+              id="closeModalBtn"
+              aria-label="Close review modal">
+        ✕
+      </button>
+
+      <h2 class="modal-heading">
+        Submit a Review
+      </h2>
+
+      <p class="modal-sub"
+         id="reviewClinicName">
+      </p>
+
+      <section class="star-group"
+               id="starContainer"
+               aria-label="Review rating">
+
+        <button class="star"
+                data-rating="1"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="2"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="3"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="4"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="5"
+                type="button">
+          ★
+        </button>
+
+      </section>
+
+      <textarea class="modal-textarea"
+                id="reviewComment"
+                rows="4"
+                placeholder="Describe your experience at this facility…">
+      </textarea>
+
+      <button class="modal-submit"
+              id="submitReviewBtn">
+        Submit Review
+      </button>
+
+    </section>
+
+  </section>
+
+</aside>
 
 <script src="../backend/clinic_app.js"></script>
+
 </body>
 </html>
