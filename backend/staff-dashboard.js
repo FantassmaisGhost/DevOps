@@ -146,16 +146,6 @@ async function loadStaffDashboard() {
     document.getElementById('refreshBtn')?.addEventListener('click', loadStaffDashboard);
 }
 
-function isUnavailable(apt, records) {
-    const aptDate = apt.appointment_date;
-    const aptTime = apt.appointment_time?.slice(0,5);
-    return records.some(u => {
-        if (u.Date !== aptDate) return false;
-        if (!u.Start && !u.End) return true;
-        return aptTime >= u.Start?.slice(0,5) && aptTime < u.End?.slice(0,5);
-    });
-}
-
 function openRescheduleModal(id, patientName, currentDate, currentTime) {
     document.getElementById('rescheduleModal')?.remove();
     const modal = document.createElement('dialog');
