@@ -1,5 +1,5 @@
 // redirect.js
-import { supabase } from './supabase.js';
+import { supabase } from '../backend/supabase.js';
 
 export class RedirectController {
   constructor() {

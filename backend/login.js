@@ -19,7 +19,7 @@ export class LoginController {
     this.attachEventListeners();
     this.setupClinicSearch();
     this.setupPhoneInput();
-   // this.checkSession();
+    this.checkSession();
   }
 
   showMessage(text, type) {
