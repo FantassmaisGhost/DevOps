@@ -22,7 +22,8 @@ const mimeTypes = {
  */
 function resolveFile(urlPath, rootDir) {
   // Decode URL-encoded paths
-  const decodedPath = decodeURIComponent(urlPath)
+  const cleanPath = urlPath.split('?')[0].split('#')[0]
+  const decodedPath = decodeURIComponent(cleanPath)
   
   // Check if file exists in root directory first
   const rootFilePath = path.join(rootDir, decodedPath)
