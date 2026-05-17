@@ -19,6 +19,90 @@ function isUnavailable(apt, unavailRecords) {
     });
 }
 
+// ========== PATIENT NOTES SYSTEM ==========
+async function showPatientNotes(patientId, appointmentId, patientName) {
+    const { data: notes, error } = await supabase
+        .from('patient_notes')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false });
+    
+    if (error) {
+        showToast('Failed to load notes: ' + error.message, true);
+        return;
+    }
+    
+    let staffName = currentStaff?.full_name || 'Staff';
+    
+    const modal = document.createElement('dialog');
+    modal.id = 'notesModal';
+    modal.className = 'notes-modal';
+    modal.innerHTML = `
+        <div class="modal-box" style="max-width: 550px; width: 90%;">
+            <div class="modal-title">📋 Patient Medical Notes</div>
+            <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px;">
+                <strong>${Utils.esc(patientName)}</strong>
+                <span style="color: var(--ink-3); font-size: 11px; margin-left: 8px;">
+                    Total: ${notes?.length || 0} note(s)
+                </span>
+            </div>
+            <div class="notes-history">
+                ${!notes || notes.length === 0 
+                    ? '<div class="no-notes">📝 No medical notes yet. Add the first note below.</div>'
+                    : notes.map(n => `
+                        <div class="note-item">
+                            <div class="note-text">${Utils.esc(n.note)}</div>
+                            <div class="note-meta">
+                                <span class="note-staff">${Utils.esc(staffName)}</span>
+                                <span class="note-date">${new Date(n.created_at).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `).join('')
+                }
+            </div>
+            <textarea id="newNoteInput" class="new-note-input" rows="3" placeholder="Add a new medical note..."></textarea>
+            <div class="modal-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px;">
+                <button class="btn-secondary" id="closeNotesModal">Close</button>
+                <button class="btn-primary" id="addNoteBtn">➕ Add Note</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.showModal();
+    
+    document.getElementById('closeNotesModal').onclick = () => modal.remove();
+    
+    document.getElementById('addNoteBtn').onclick = async () => {
+        const newNote = document.getElementById('newNoteInput').value.trim();
+        if (!newNote) {
+            showToast('Please enter a note', true);
+            return;
+        }
+        
+        const { error: insertError } = await supabase
+            .from('patient_notes')
+            .insert([{
+                patient_id: patientId,
+                appointment_id: appointmentId,
+                staff_id: currentStaff?.id || null,
+                note: newNote
+            }]);
+        
+        if (insertError) {
+            showToast('Failed to save note: ' + insertError.message, true);
+        } else {
+            showToast('✅ Medical note added successfully');
+            modal.remove();
+            loadStaffDashboard();
+        }
+    };
+    
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+// ========== END PATIENT NOTES SYSTEM ==========
+
+
 // ─── Main dashboard loader ────────────────────────────────────────────────────
 
 async function loadStaffDashboard() {
