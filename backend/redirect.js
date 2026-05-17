@@ -1,5 +1,5 @@
 // redirect.js
-import { supabase } from '../backend/supabase.js';
+import { supabase } from './supabase.js';
 
 export class RedirectController {
   constructor() {
@@ -7,31 +7,22 @@ export class RedirectController {
   }
 
   async handleRedirect() {
-    // ========== DEBUG ALERTS ==========
-    alert('1. Redirect page loaded');
-    alert('2. URL: ' + window.location.href);
-    alert('3. Selected role from URL: ' + this.selectedRole);
-    
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    alert('4. Session exists? ' + (session ? 'YES' : 'NO'));
-    if (session) {
-      alert('5. User email: ' + session.user.email);
-    }
-    if (error) {
-      alert('6. Error message: ' + error.message);
-    }
-    // ========== END DEBUG ==========
-    
-    if (!session) {
-      alert('7. NO SESSION - Redirecting to login page');
-      localStorage.removeItem('userRole');
-      window.location.href = '/pages/index.html';
-      return;
-    }
+    // onAuthStateChange fires reliably AFTER Supabase has processed
+    // OAuth tokens from the URL — unlike getSession() which may fire
+    // before the token exchange completes.
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (!session) {
+          localStorage.removeItem('userRole');
+          window.location.href = '/pages/index.html';
+          return;
+        }
+        await this.processSession(session);
+      }
+    });
+  }
 
-    alert('8. SESSION FOUND! Continuing...');
-    
+  async processSession(session) {
     const email = session.user.email;
     const userId = session.user.id;
     const userName = session.user.user_metadata?.full_name || email.split('@')[0];
@@ -48,12 +39,6 @@ export class RedirectController {
     else if (staff) actualRole = 'staff';
     else if (pending) actualRole = 'pending';
 
-    alert('9. Actual role: ' + actualRole);
-    alert('10. Admin found: ' + (admin ? 'YES' : 'NO'));
-    alert('11. Staff found: ' + (staff ? 'YES' : 'NO'));
-    alert('12. Pending found: ' + (pending ? 'YES' : 'NO'));
-
-    // Log AFTER actualRole is defined
     console.log('Session user email:', email);
     console.log('Admin record:', admin);
     console.log('Staff record:', staff);
@@ -61,19 +46,25 @@ export class RedirectController {
     console.log('Selected role:', this.selectedRole);
     console.log('Actual role:', actualRole);
 
-    async function ensurePatientRecord() {
-      const { data: patient } = await supabase.from('Patients').select('*').eq('id', userId).maybeSingle();
+    const ensurePatientRecord = async () => {
+      const { data: patient } = await supabase
+        .from('Patients')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
       if (!patient) {
         await supabase.from('Patients').insert([{
-          id: userId, email, role: 'patient',
-          full_name: userName, created_at: new Date().toISOString()
+          id: userId,
+          email,
+          role: 'patient',
+          full_name: userName,
+          created_at: new Date().toISOString()
         }]);
       }
-    }
+    };
 
     // No role selected → use actual role
     if (!this.selectedRole) {
-      alert('13. No role selected, using actual role: ' + actualRole);
       localStorage.setItem('userRole', actualRole);
       if (actualRole === 'admin') window.location.href = '/pages/admin-dashboard.html';
       else if (actualRole === 'staff') window.location.href = '/pages/staff-dashboard.html';
@@ -85,11 +76,12 @@ export class RedirectController {
       return;
     }
 
-    // Handle Google staff login (creates pending record)
+    // Handle Google staff login (creates pending record if not found)
     if (this.selectedRole === 'staff' && actualRole === 'patient') {
-      alert('14. Creating pending record for staff...');
       const { error: pendingInsertError } = await supabase.from('pending_staff').insert([{
-        email, full_name: userName, status: 'pending'
+        email,
+        full_name: userName,
+        status: 'pending'
       }]);
       if (!pendingInsertError || pendingInsertError.code === '23505') {
         localStorage.setItem('userRole', 'pending');
@@ -115,17 +107,19 @@ export class RedirectController {
       isValid = true;
       targetUrl = '/pages/dashboard.html';
       await ensurePatientRecord();
-    } else if (this.selectedRole === 'patient' && (actualRole === 'admin' || actualRole === 'staff' || actualRole === 'pending')) {
+    } else if (
+      this.selectedRole === 'patient' &&
+      (actualRole === 'admin' || actualRole === 'staff' || actualRole === 'pending')
+    ) {
       isValid = true;
       targetUrl = '/pages/dashboard.html';
     }
 
     if (isValid) {
-      alert('15. Valid role! Redirecting to: ' + targetUrl);
       localStorage.setItem('userRole', this.selectedRole);
       window.location.href = targetUrl;
     } else {
-      alert('16. Role mismatch! Falling back to patient dashboard');
+      // Fallback: send to patient dashboard instead of looping
       console.warn('Role mismatch, falling back to patient dashboard');
       localStorage.setItem('userRole', 'patient');
       window.location.href = '/pages/dashboard.html';

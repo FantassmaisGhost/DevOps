@@ -15,11 +15,11 @@ export class LoginController {
     this.staffDialog = document.getElementById('staffModal');
     this.closeModal = document.getElementById('closeModal');
     this.submitStaffReg = document.getElementById('submitStaffReg');
-    
+
     this.attachEventListeners();
     this.setupClinicSearch();
     this.setupPhoneInput();
-    //this.checkSession();
+    // this.checkSession();
   }
 
   showMessage(text, type) {
@@ -69,6 +69,7 @@ export class LoginController {
     const clinicError = document.getElementById('clinicError');
     if (!clinicInput) return;
     let searchTimeout;
+
     clinicInput.addEventListener('input', async (e) => {
       clearTimeout(searchTimeout);
       const searchTerm = e.target.value.trim();
@@ -79,7 +80,11 @@ export class LoginController {
         return;
       }
       searchTimeout = setTimeout(async () => {
-        const { data, error } = await supabase.from('Facilities').select('ClinicID, Name, Province').ilike('Name', `%${searchTerm}%`).limit(10);
+        const { data, error } = await supabase
+          .from('Facilities')
+          .select('ClinicID, Name, Province')
+          .ilike('Name', `%${searchTerm}%`)
+          .limit(10);
         if (error) return;
         if (suggestionsSection) {
           if (data && data.length > 0) {
@@ -110,8 +115,11 @@ export class LoginController {
         }
       }, 300);
     });
+
     clinicInput.addEventListener('blur', () => {
-      setTimeout(() => { if (suggestionsSection) suggestionsSection.style.display = 'none'; }, 200);
+      setTimeout(() => {
+        if (suggestionsSection) suggestionsSection.style.display = 'none';
+      }, 200);
     });
   }
 
@@ -119,6 +127,7 @@ export class LoginController {
     const phoneInput = document.getElementById('regPhone');
     const phoneError = document.getElementById('phoneError');
     if (!phoneInput) return;
+
     phoneInput.addEventListener('input', (e) => {
       const rawValue = e.target.value.replace(/\D/g, '');
       if (rawValue.length > 10) {
@@ -152,7 +161,7 @@ export class LoginController {
 
   escapeHtml(str) {
     if (!str) return '';
-    return String(str).replace(/[&<>]/g, function(m) {
+    return String(str).replace(/[&<>]/g, function (m) {
       if (m === '&') return '&amp;';
       if (m === '<') return '&lt;';
       if (m === '>') return '&gt;';
@@ -199,16 +208,18 @@ export class LoginController {
       regMessage.innerHTML = '<strong style="color: #c33;">Please enter a valid email address</strong>';
       return;
     }
+
     regMessage.innerHTML = '<strong style="color: #069;">Registering...</strong>';
-    const clinicId = selectedClinicId;
+
     const { error } = await supabase.from('pending_staff').insert([{
       email: email,
       full_name: fullName,
       occupation: occupation,
       phone_number: cleanedPhone,
-      clinicid: clinicId,
+      clinicid: selectedClinicId,
       status: 'pending'
     }]);
+
     if (error) {
       if (error.code === '23505') {
         regMessage.innerHTML = '<strong style="color: #c33;">This email is already registered as pending staff</strong>';
@@ -262,7 +273,9 @@ export class LoginController {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin + '/pages/redirect.html?role=' + selectedRole }
+        options: {
+          redirectTo: window.location.origin + '/pages/redirect.html?role=' + selectedRole
+        }
       });
       if (error) throw error;
     } catch (err) {
@@ -302,6 +315,7 @@ export class LoginController {
     this.toggleBtn.addEventListener('click', () => this.toggleMode());
     this.emailInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.handleEmailAuth(); });
     this.passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.handleEmailAuth(); });
+
     this.registerStaffBtn?.addEventListener('click', () => {
       document.getElementById('regEmail').value = '';
       document.getElementById('regName').value = '';
@@ -319,6 +333,7 @@ export class LoginController {
       if (regMessage) regMessage.innerHTML = '';
       this.staffDialog.showModal();
     });
+
     this.closeModal?.addEventListener('click', () => this.staffDialog.close());
     this.submitStaffReg?.addEventListener('click', () => this.submitStaffRegistration());
     window.addEventListener('click', (e) => { if (e.target === this.staffDialog) this.staffDialog.close(); });
