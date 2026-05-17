@@ -4,25 +4,21 @@ import { supabase } from './supabase.js';
 export class RedirectController {
   constructor() {
     this.selectedRole = new URLSearchParams(window.location.search).get('role');
-  }
-
-  async handleRedirect() {
-    // onAuthStateChange fires reliably AFTER Supabase has processed
-    // OAuth tokens from the URL — unlike getSession() which may fire
-    // before the token exchange completes.
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (!session) {
-          localStorage.removeItem('userRole');
-          window.location.href = '/pages/index.html';
-          return;
-        }
-        await this.processSession(session);
-      }
-    });
+    this.processed = false; // prevent double redirect
   }
 
   async processSession(session) {
+    // ── TEMPORARY DEBUG ALERT ──────────────────────────────────
+    alert('Session received: ' + JSON.stringify({
+      email: session?.user?.email,
+      id: session?.user?.id,
+      expires_at: session?.expires_at
+    }, null, 2));
+    // ──────────────────────────────────────────────────────────
+
+    if (this.processed) return;
+    this.processed = true;
+
     const email = session.user.email;
     const userId = session.user.id;
     const userName = session.user.user_metadata?.full_name || email.split('@')[0];
@@ -40,9 +36,6 @@ export class RedirectController {
     else if (pending) actualRole = 'pending';
 
     console.log('Session user email:', email);
-    console.log('Admin record:', admin);
-    console.log('Staff record:', staff);
-    console.log('Pending record:', pending);
     console.log('Selected role:', this.selectedRole);
     console.log('Actual role:', actualRole);
 
@@ -119,11 +112,31 @@ export class RedirectController {
       localStorage.setItem('userRole', this.selectedRole);
       window.location.href = targetUrl;
     } else {
-      // Fallback: send to patient dashboard instead of looping
       console.warn('Role mismatch, falling back to patient dashboard');
       localStorage.setItem('userRole', 'patient');
       window.location.href = '/pages/dashboard.html';
     }
+  }
+
+  async handleRedirect() {
+    // 1. Listen for auth state changes (normal OAuth flow)
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !this.processed) {
+        await this.processSession(session);
+      }
+    });
+
+    // 2. Fallback: try to get session after 2 seconds in case onAuthStateChange never fires
+    setTimeout(async () => {
+      if (this.processed) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await this.processSession(session);
+      } else {
+        console.warn('No session found after fallback, redirecting to login');
+        window.location.href = '/pages/index.html';
+      }
+    }, 2000);
   }
 }
 
