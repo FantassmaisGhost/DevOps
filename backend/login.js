@@ -205,32 +205,54 @@ setupClinicSearch() {
     });
   }
 
-  openRegistrationModal(type) {
-    this.staffDialog.setAttribute('data-register-type', type);
+openRegistrationModal(type) {
+  this.staffDialog.setAttribute('data-register-type', type);
 
-    document.getElementById('regEmail').value = '';
-    document.getElementById('regName').value = '';
-    document.getElementById('regPhone').value = '';
+  document.getElementById('regEmail').value = '';
+  document.getElementById('regName').value = '';
+  document.getElementById('regPhone').value = '';
 
-    const clinicInput = document.getElementById('regClinicName');
-    clinicInput.value = '';
-    clinicInput.removeAttribute('data-selected-id');
+  const clinicInput = document.getElementById('regClinicName');
+  clinicInput.value = '';
+  clinicInput.removeAttribute('data-selected-id');
+  clinicInput.removeAttribute('data-selected-name');
 
-    document.getElementById('regMessage').innerHTML = '';
+  document.getElementById('regMessage').innerHTML = '';
 
-    const modalTitle = document.querySelector('.modal-title');
-    const modalBody = document.querySelector('.modal-body');
+  const modalTitle = document.querySelector('.modal-title');
+  const modalBody = document.querySelector('.modal-body');
+  const occupationSelect = document.getElementById('regOccupation');
 
-    if (type === 'staff') {
-      modalTitle.textContent = 'Staff Registration';
-      modalBody.textContent = 'Register as staff. You will be able to log in once an admin approves your account.';
-    } else {
-      modalTitle.textContent = 'Receptionist Registration';
-      modalBody.textContent = 'Register as a receptionist. You will be able to log in with Google after registration.';
-    }
+  if (type === 'staff') {
+    modalTitle.textContent = 'Staff Registration';
 
-    this.staffDialog.showModal();
+    modalBody.textContent =
+      'Register as staff. You will be able to log in once an admin approves your account.';
+
+    occupationSelect.innerHTML = `
+      <option value="Doctor">Doctor</option>
+      <option value="Nurse">Nurse</option>
+      <option value="Pharmacist">Pharmacist</option>
+      <option value="Administrator">Administrator</option>
+    `;
+
+    occupationSelect.disabled = false;
+  } else {
+    modalTitle.textContent = 'Receptionist Registration';
+
+    modalBody.textContent =
+      'Register as a receptionist. You will be able to log in with Google after registration.';
+
+    occupationSelect.innerHTML = `
+      <option value="Receptionist">Receptionist</option>
+    `;
+
+    occupationSelect.value = 'Receptionist';
+    occupationSelect.disabled = true;
   }
+
+  this.staffDialog.showModal();
+}
 
   async submitStaffRegistration() {
     const registerType = this.staffDialog.getAttribute('data-register-type');
