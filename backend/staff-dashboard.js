@@ -142,6 +142,24 @@ async function loadStaffDashboard() {
     const waitingCount = todaysAppointments.filter(a => a.status === 'waiting').length;
     const completedCount = todaysAppointments.filter(a => a.status === 'complete').length;
 
+    //-------------
+    // Get note counts for each patient
+    const noteCounts = {};
+    if (todaysAppointments.length > 0) {
+        const patientIds = [...new Set(todaysAppointments.map(a => a.PatientID))];
+        const { data: notes } = await supabase
+            .from('patient_notes')
+            .select('patient_id, id')
+            .in('patient_id', patientIds);
+        
+        if (notes) {
+            notes.forEach(n => {
+                noteCounts[n.patient_id] = (noteCounts[n.patient_id] || 0) + 1;
+            });
+        }
+    }
+    //-------------
+
     const main = document.getElementById('dashboardContent');
     main.innerHTML = `
         <div class="welcome-banner">
