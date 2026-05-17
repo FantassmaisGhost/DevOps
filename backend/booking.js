@@ -18,6 +18,9 @@ export class BookingController {
     this.clinicCity = clinicCity;
     this.clinicProvince = clinicProvince;
     this.hoursMap = {};
+    this.doctors = [];           // staff list for this clinic
+    this.selectedDoctorID = null;
+    this.selectedDoctorName = null;
     this.calYear = new Date().getFullYear();
     this.calMonth = new Date().getMonth();
     this.selectedDate = null;
@@ -62,6 +65,25 @@ export class BookingController {
       return;
     }
     data.forEach(row => { this.hoursMap[row.day] = row; });
+  }
+
+  /**
+   * Fetches all staff members assigned to this clinic from the Staff table.
+   * Assumes columns: staffid, clinicid, first_name, last_name, role
+   * Adjust column names below if your schema differs.
+   */
+  async loadDoctors() {
+    const { data, error } = await this.sb
+      .from('Staff')
+      .select('staffid, first_name, last_name, role')
+      .eq('clinicid', this.clinicID)
+      .order('last_name', { ascending: true });
+
+    if (error || !data) {
+      this.doctors = [];
+      return;
+    }
+    this.doctors = data;
   }
 
   renderShell() {
@@ -186,54 +208,136 @@ export class BookingController {
     });
   }
 
+  /**
+   * Builds the <select> options for the doctor dropdown.
+   * Shows a loading state if doctors haven't resolved yet (shouldn't happen as
+   * loadDoctors() is awaited in init()), and a helpful fallback if none found.
+   */
+  buildDoctorOptions() {
+    if (this.doctors.length === 0) {
+      return `<option value="">— No doctors on file for this facility —</option>`;
+    }
+    const placeholder = `<option value="">— Select a doctor (optional) —</option>`;
+    const options = this.doctors.map(doc => {
+      const name = `Dr. ${this.esc(doc.first_name)} ${this.esc(doc.last_name)}${doc.role ? ` · ${this.esc(doc.role)}` : ''}`;
+      const selected = doc.staffid === this.selectedDoctorID ? 'selected' : '';
+      return `<option value="${this.esc(doc.staffid)}" data-name="${this.esc(`Dr. ${doc.first_name} ${doc.last_name}`)}" ${selected}>${name}</option>`;
+    }).join('');
+    return placeholder + options;
+  }
+
   renderDetails(container) {
     const dateLabel = this.selectedDate.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     container.innerHTML = `
-      <div class="summary-box"><div class="summary-title">Appointment Summary</div><div class="summary-row"><span class="summary-key">Facility</span><span class="summary-val">${this.esc(this.clinicName)}</span></div><div class="summary-row"><span class="summary-key">Date</span><span class="summary-val">${dateLabel}</span></div><div class="summary-row"><span class="summary-key">Time</span><span class="summary-val">${this.selectedSlot}</span></div></div>
+      <div class="summary-box">
+        <div class="summary-title">Appointment Summary</div>
+        <div class="summary-row"><span class="summary-key">Facility</span><span class="summary-val">${this.esc(this.clinicName)}</span></div>
+        <div class="summary-row"><span class="summary-key">Date</span><span class="summary-val">${dateLabel}</span></div>
+        <div class="summary-row"><span class="summary-key">Time</span><span class="summary-val">${this.selectedSlot}</span></div>
+      </div>
       <p class="section-label">Your Details</p>
-      <div class="form-row"><div class="form-group"><label class="form-label" for="f-firstname">First Name *</label><input class="form-input" id="f-firstname" type="text" placeholder="e.g. Thabo" autocomplete="given-name" required /></div><div class="form-group"><label class="form-label" for="f-lastname">Last Name *</label><input class="form-input" id="f-lastname" type="text" placeholder="e.g. Nkosi" autocomplete="family-name" required /></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label" for="f-phone">Phone Number *</label><input class="form-input" id="f-phone" type="tel" placeholder="e.g. 071 234 5678" autocomplete="tel" required /></div><div class="form-group"><label class="form-label" for="f-idnumber">ID Number (optional)</label><input class="form-input" id="f-idnumber" type="text" placeholder="13-digit SA ID" maxlength="13" /></div></div>
-      <div class="form-group"><label class="form-label" for="f-reason">Reason for Visit</label><input class="form-input" id="f-reason" type="text" placeholder="e.g. General checkup, chronic medication, etc." /></div>
-      <div class="form-group"><label class="form-label" for="f-notes">Additional Notes (optional)</label><input class="form-input" id="f-notes" type="text" placeholder="Anything the clinic should know…" /></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="f-firstname">First Name *</label>
+          <input class="form-input" id="f-firstname" type="text" placeholder="e.g. Thabo" autocomplete="given-name" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-lastname">Last Name *</label>
+          <input class="form-input" id="f-lastname" type="text" placeholder="e.g. Nkosi" autocomplete="family-name" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="f-phone">Phone Number *</label>
+          <input class="form-input" id="f-phone" type="tel" placeholder="e.g. 071 234 5678" autocomplete="tel" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-doctor">Preferred Doctor</label>
+          <select class="form-input" id="f-doctor">
+            ${this.buildDoctorOptions()}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f-reason">Reason for Visit</label>
+        <input class="form-input" id="f-reason" type="text" placeholder="e.g. General checkup, chronic medication, etc." />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f-notes">Additional Notes (optional)</label>
+        <input class="form-input" id="f-notes" type="text" placeholder="Anything the clinic should know…" />
+      </div>
       <div id="form-error" style="color:var(--accent2);font-size:11px;margin-bottom:8px;display:none;"></div>
-      <div class="step-actions"><button class="btn-back" id="btn-back-3">← Change Time</button><button class="btn-next" id="btn-submit">Confirm Booking</button></div>
+      <div class="step-actions">
+        <button class="btn-back" id="btn-back-3">← Change Time</button>
+        <button class="btn-next" id="btn-submit">Confirm Booking</button>
+      </div>
     `;
+
+    // Keep doctor selection in sync with controller state
+    const doctorSelect = document.getElementById('f-doctor');
+    doctorSelect.addEventListener('change', () => {
+      const chosen = doctorSelect.options[doctorSelect.selectedIndex];
+      this.selectedDoctorID   = doctorSelect.value || null;
+      this.selectedDoctorName = doctorSelect.value ? chosen.dataset.name : null;
+    });
+
     document.getElementById('btn-back-3').addEventListener('click', () => this.renderStep(2));
     document.getElementById('btn-submit').addEventListener('click', () => this.submitBooking());
   }
 
   async submitBooking() {
     const firstName = document.getElementById('f-firstname').value.trim();
-    const lastName = document.getElementById('f-lastname').value.trim();
-    const phone = document.getElementById('f-phone').value.trim();
-    const reason = document.getElementById('f-reason').value.trim();
-    const notes = document.getElementById('f-notes').value.trim();
-    const errEl = document.getElementById('form-error');
+    const lastName  = document.getElementById('f-lastname').value.trim();
+    const phone     = document.getElementById('f-phone').value.trim();
+    const reason    = document.getElementById('f-reason').value.trim();
+    const notes     = document.getElementById('f-notes').value.trim();
+    const errEl     = document.getElementById('form-error');
     const submitBtn = document.getElementById('btn-submit');
+
     if (!firstName || !lastName || !phone) {
       errEl.textContent = 'Please fill in your first name, last name and phone number.';
       errEl.style.display = 'block';
       return;
     }
+
     const { data: { session } } = await this.sb.auth.getSession();
     if (!session) {
       errEl.textContent = 'Please log in before booking an appointment.';
       errEl.style.display = 'block';
       return;
     }
+
     submitBtn.disabled = true;
     submitBtn.textContent = 'Booking...';
     errEl.style.display = 'none';
-    const dateStr = [this.selectedDate.getFullYear(), String(this.selectedDate.getMonth() + 1).padStart(2, '0'), String(this.selectedDate.getDate()).padStart(2, '0')].join('-');
-    const userId = session.user.id;
-    const userEmail = session.user.email;
+
+    const dateStr = [
+      this.selectedDate.getFullYear(),
+      String(this.selectedDate.getMonth() + 1).padStart(2, '0'),
+      String(this.selectedDate.getDate()).padStart(2, '0')
+    ].join('-');
+
+    const userId        = session.user.id;
+    const userEmail     = session.user.email;
     const appointmentId = crypto.randomUUID();
     const formattedDate = this.selectedDate.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
     const record = {
-      id: appointmentId, ClinicID: this.clinicID, appointment_date: dateStr, appointment_time: this.selectedSlot,
-      patient_name: firstName + " " + lastName, patient_email: userEmail, PatientID: userId,
-      reason: reason || null, notes: notes || null, status: 'waiting'
+      id:               appointmentId,
+      ClinicID:         this.clinicID,
+      appointment_date: dateStr,
+      appointment_time: this.selectedSlot,
+      patient_name:     `${firstName} ${lastName}`,
+      patient_email:    userEmail,
+      PatientID:        userId,
+      reason:           reason || null,
+      notes:            notes  || null,
+      status:           'waiting',
+      // Doctor fields — null when no doctor was selected
+      staffid:          this.selectedDoctorID   || null,
+      doctor_name:      this.selectedDoctorName || null,
     };
+
     const { error: insertError } = await this.sb.from('Appointments').insert([record]);
     if (insertError) {
       errEl.textContent = 'Failed to book. Please try again.';
@@ -242,15 +346,60 @@ export class BookingController {
       submitBtn.textContent = 'Confirm Booking';
       return;
     }
-    const emailHtml = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"><h2 style="color: #00e5a0;">Appointment Confirmed ✓</h2><p>Dear <strong>${firstName} ${lastName}</strong>,</p><p>Your appointment has been successfully booked with <strong>${this.esc(this.clinicName)}</strong>.</p><div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;"><h3 style="margin-top: 0;">Appointment Details:</h3><p><strong>Facility:</strong> ${this.esc(this.clinicName)}</p><p><strong>Date:</strong> ${formattedDate}</p><p><strong>Time:</strong> ${this.selectedSlot}</p><p><strong>Reason:</strong> ${reason || 'General consultation'}</p></div><div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;"><h3 style="margin-top: 0;">📋 Important Information:</h3><ul><li>Please arrive 10 minutes before your appointment time</li><li>Bring your ID document/passport</li><li>Bring any relevant medical records</li><li>If you need to cancel or reschedule, please contact the facility directly</li></ul></div><p>Reference: <strong>BK-${appointmentId.slice(-6).toUpperCase()}</strong></p><hr style="margin: 30px 0; border-color: #ddd;"><p style="color: #666; font-size: 12px;">This is an automated message from SA HealthMap. Please do not reply to this email.</p></div>`;
-    await NotificationService.sendEmailNotification(userEmail, `Appointment Confirmed - ${this.esc(this.clinicName)}`, emailHtml);
-    await NotificationService.createDatabaseNotification(userId, appointmentId, `Appointment booked at ${this.esc(this.clinicName)} on ${formattedDate} at ${this.selectedSlot}`, 'appointment');
+
+    const doctorLine = this.selectedDoctorName
+      ? `<p><strong>Doctor:</strong> ${this.selectedDoctorName}</p>`
+      : '';
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #00e5a0;">Appointment Confirmed ✓</h2>
+        <p>Dear <strong>${firstName} ${lastName}</strong>,</p>
+        <p>Your appointment has been successfully booked with <strong>${this.esc(this.clinicName)}</strong>.</p>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Appointment Details:</h3>
+          <p><strong>Facility:</strong> ${this.esc(this.clinicName)}</p>
+          <p><strong>Date:</strong> ${formattedDate}</p>
+          <p><strong>Time:</strong> ${this.selectedSlot}</p>
+          ${doctorLine}
+          <p><strong>Reason:</strong> ${reason || 'General consultation'}</p>
+        </div>
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">📋 Important Information:</h3>
+          <ul>
+            <li>Please arrive 10 minutes before your appointment time</li>
+            <li>Bring your ID document/passport</li>
+            <li>Bring any relevant medical records</li>
+            <li>If you need to cancel or reschedule, please contact the facility directly</li>
+          </ul>
+        </div>
+        <p>Reference: <strong>BK-${appointmentId.slice(-6).toUpperCase()}</strong></p>
+        <hr style="margin: 30px 0; border-color: #ddd;">
+        <p style="color: #666; font-size: 12px;">This is an automated message from SA HealthMap. Please do not reply to this email.</p>
+      </div>`;
+
+    await NotificationService.sendEmailNotification(
+      userEmail,
+      `Appointment Confirmed - ${this.esc(this.clinicName)}`,
+      emailHtml
+    );
+    await NotificationService.createDatabaseNotification(
+      userId,
+      appointmentId,
+      `Appointment booked at ${this.esc(this.clinicName)} on ${formattedDate} at ${this.selectedSlot}`,
+      'appointment'
+    );
+
     this.renderConfirmation(firstName, lastName, dateStr, appointmentId);
   }
 
   renderConfirmation(firstName, lastName, dateStr, appointmentId) {
-    const refCode = `BK-${appointmentId.slice(-6).toUpperCase()}`;
+    const refCode   = `BK-${appointmentId.slice(-6).toUpperCase()}`;
     const dateLabel = this.selectedDate.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const doctorRow = this.selectedDoctorName
+      ? `<div class="summary-row"><span class="summary-key">Doctor</span><span class="summary-val">${this.esc(this.selectedDoctorName)}</span></div>`
+      : '';
+
     const bookingCard = document.getElementById('booking-card');
     bookingCard.innerHTML = `
       <div class="confirmation">
@@ -258,7 +407,13 @@ export class BookingController {
         <h2 class="confirm-title">Booking Confirmed!</h2>
         <p class="confirm-sub">Your appointment at <strong>${this.esc(this.clinicName)}</strong> has been booked.<br>A confirmation email has been sent to your inbox.</p>
         <div class="confirm-ref">Ref: <span>${refCode}</span></div>
-        <div class="summary-box" style="text-align:left; margin-bottom:24px;"><div class="summary-row"><span class="summary-key">Patient</span><span class="summary-val">${this.esc(firstName)} ${this.esc(lastName)}</span></div><div class="summary-row"><span class="summary-key">Facility</span><span class="summary-val">${this.esc(this.clinicName)}</span></div><div class="summary-row"><span class="summary-key">Date</span><span class="summary-val">${dateLabel}</span></div><div class="summary-row"><span class="summary-key">Time</span><span class="summary-val">${this.selectedSlot}</span></div></div>
+        <div class="summary-box" style="text-align:left; margin-bottom:24px;">
+          <div class="summary-row"><span class="summary-key">Patient</span><span class="summary-val">${this.esc(firstName)} ${this.esc(lastName)}</span></div>
+          <div class="summary-row"><span class="summary-key">Facility</span><span class="summary-val">${this.esc(this.clinicName)}</span></div>
+          <div class="summary-row"><span class="summary-key">Date</span><span class="summary-val">${dateLabel}</span></div>
+          <div class="summary-row"><span class="summary-key">Time</span><span class="summary-val">${this.selectedSlot}</span></div>
+          ${doctorRow}
+        </div>
         <a href="map.html" class="btn-next" style="display:inline-block; text-decoration:none; padding: 11px 28px;">← Back to Map</a>
       </div>
     `;
@@ -274,7 +429,8 @@ export class BookingController {
       return;
     }
     this.renderShell();
-    await this.loadHours();
+    // Load hours and doctors in parallel
+    await Promise.all([this.loadHours(), this.loadDoctors()]);
     this.renderStep(1);
   }
 }
