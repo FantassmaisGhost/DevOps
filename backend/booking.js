@@ -259,7 +259,7 @@ export class BookingController {
         <p class="confirm-sub">Your appointment at <strong>${this.esc(this.clinicName)}</strong> has been booked.<br>A confirmation email has been sent to your inbox.</p>
         <div class="confirm-ref">Ref: <span>${refCode}</span></div>
         <div class="summary-box" style="text-align:left; margin-bottom:24px;"><div class="summary-row"><span class="summary-key">Patient</span><span class="summary-val">${this.esc(firstName)} ${this.esc(lastName)}</span></div><div class="summary-row"><span class="summary-key">Facility</span><span class="summary-val">${this.esc(this.clinicName)}</span></div><div class="summary-row"><span class="summary-key">Date</span><span class="summary-val">${dateLabel}</span></div><div class="summary-row"><span class="summary-key">Time</span><span class="summary-val">${this.selectedSlot}</span></div></div>
-        <a href="index.html" class="btn-next" style="display:inline-block; text-decoration:none; padding: 11px 28px;">← Back to Map</a>
+        <a href="map.html" class="btn-next" style="display:inline-block; text-decoration:none; padding: 11px 28px;">← Back to Map</a>
       </div>
     `;
   }
