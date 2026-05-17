@@ -144,6 +144,7 @@ export class AdminFacilitiesController {
       .from('pending_receptionists')
       .select('*')
       .eq('status', 'pending')
+      .eq('clinicid', this.clinicID)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -162,7 +163,6 @@ export class AdminFacilitiesController {
         receptionist_id: receptionistId,
         email: pending.email,
         full_name: pending.full_name,
-        occupation: pending.occupation || 'Receptionist',
         contacts: pending.phone_number,
         clinicid: pending.clinicid || this.clinicID,
         clinicname: pending.clinicname,

@@ -42,19 +42,27 @@ export class RedirectController {
       .eq('email', email)
       .maybeSingle();
 
+    // ADD THIS - PENDING RECEPTIONIST CHECK
+    const { data: pendingRec } = await supabase
+      .from('pending_receptionists')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
     let actualRole = 'patient';
 
     if (admin) actualRole = 'admin';
     else if (receptionist) actualRole = 'receptionist';
+    else if (pendingRec) actualRole = 'pending_receptionist';  // ADD THIS
     else if (staff) actualRole = 'staff';
     else if (pending) actualRole = 'pending';
-
 
     // Log AFTER actualRole is defined
     console.log('Session user email:', email);
     console.log('Admin record:', admin);
     console.log('Staff record:', staff);
     console.log('Pending record:', pending);
+    console.log('Pending Receptionist record:', pendingRec);
     console.log('Selected role:', this.selectedRole);
     console.log('Actual role:', actualRole);
 
@@ -104,6 +112,13 @@ export class RedirectController {
         return;
       }
 
+      // ADD THIS - PENDING RECEPTIONIST
+      if (actualRole === 'pending_receptionist') {
+        localStorage.setItem('userRole', 'pending');
+        window.location.href = '/pages/pending-approval.html';
+        return;
+      }
+
       await ensurePatientRecord();
       localStorage.setItem('userRole', 'patient');
       window.location.href = '/pages/dashboard.html';
@@ -121,6 +136,13 @@ export class RedirectController {
       localStorage.setItem('clinicid', receptionist.clinicid);
       localStorage.setItem('clinicname', receptionist.clinicname);
       window.location.href = '/pages/receptionist-dashboard.html';
+      return;
+    }
+
+    // ADD THIS - RECEPTIONIST PENDING
+    if (this.selectedRole === 'receptionist' && actualRole === 'pending_receptionist') {
+      localStorage.setItem('userRole', 'pending');
+      window.location.href = '/pages/pending-approval.html';
       return;
     }
 
