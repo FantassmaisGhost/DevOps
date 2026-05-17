@@ -7,30 +7,14 @@ export class RedirectController {
   }
 
   async handleRedirect() {
-    // ========== DEBUG ALERTS ==========
-    alert('1. Redirect page loaded');
-    alert('2. URL: ' + window.location.href);
-    alert('3. Selected role from URL: ' + this.selectedRole);
     
     const { data: { session }, error } = await supabase.auth.getSession();
     
-    alert('4. Session exists? ' + (session ? 'YES' : 'NO'));
-    if (session) {
-      alert('5. User email: ' + session.user.email);
-    }
-    if (error) {
-      alert('6. Error message: ' + error.message);
-    }
-    // ========== END DEBUG ==========
-    
     if (!session) {
-      alert('7. NO SESSION - Redirecting to login page');
       localStorage.removeItem('userRole');
       window.location.href = '/pages/index.html';
       return;
     }
-
-    alert('8. SESSION FOUND! Continuing...');
     
     const email = session.user.email;
     const userId = session.user.id;
@@ -48,10 +32,6 @@ export class RedirectController {
     else if (staff) actualRole = 'staff';
     else if (pending) actualRole = 'pending';
 
-    alert('9. Actual role: ' + actualRole);
-    alert('10. Admin found: ' + (admin ? 'YES' : 'NO'));
-    alert('11. Staff found: ' + (staff ? 'YES' : 'NO'));
-    alert('12. Pending found: ' + (pending ? 'YES' : 'NO'));
 
     // Log AFTER actualRole is defined
     console.log('Session user email:', email);
@@ -121,11 +101,9 @@ export class RedirectController {
     }
 
     if (isValid) {
-      alert('15. Valid role! Redirecting to: ' + targetUrl);
       localStorage.setItem('userRole', this.selectedRole);
       window.location.href = targetUrl;
     } else {
-      alert('16. Role mismatch! Falling back to patient dashboard');
       console.warn('Role mismatch, falling back to patient dashboard');
       localStorage.setItem('userRole', 'patient');
       window.location.href = '/pages/dashboard.html';
