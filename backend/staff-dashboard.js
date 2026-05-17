@@ -248,6 +248,14 @@ async function loadStaffDashboard() {
             openRescheduleModal(btn.dataset.id, btn.dataset.patient, btn.dataset.date, btn.dataset.time);
         });
     });
+    //-------------------
+    // Notes button event listeners
+    document.querySelectorAll('.view-notes-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            showPatientNotes(btn.dataset.patientId, btn.dataset.appointmentId, btn.dataset.patientName);
+        });
+    });
+    //-------------------
     document.getElementById('refreshBtn')?.addEventListener('click', loadStaffDashboard);
 }
 
