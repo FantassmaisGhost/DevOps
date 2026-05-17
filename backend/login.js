@@ -269,12 +269,14 @@ export class LoginController {
 
   async handleGoogleLogin() {
     const selectedRole = document.querySelector('input[name="role"]:checked').value;
+    const APP_ORIGIN = 'https://healthflow-b8hsefc2asehbagm.southafricanorth-01.azurewebsites.net';
+
     this.setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/pages/redirect.html?role=' + selectedRole
+          redirectTo: `${APP_ORIGIN}/pages/redirect.html?role=${selectedRole}`
         }
       });
       if (error) throw error;
