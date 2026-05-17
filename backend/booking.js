@@ -69,15 +69,14 @@ export class BookingController {
 
   /**
    * Fetches all staff members assigned to this clinic from the Staff table.
-   * Assumes columns: staffid, clinicid, first_name, last_name, role
-   * Adjust column names below if your schema differs.
+   * Columns: id, full_name, Occupation, ClinicID
    */
   async loadDoctors() {
     const { data, error } = await this.sb
       .from('Staff')
-      .select('staffid, first_name, last_name, role')
-      .eq('clinicid', this.clinicID)
-      .order('last_name', { ascending: true });
+      .select('id, full_name, Occupation')
+      .eq('ClinicID', this.clinicID)
+      .order('full_name', { ascending: true });
 
     if (error || !data) {
       this.doctors = [];
@@ -219,9 +218,9 @@ export class BookingController {
     }
     const placeholder = `<option value="">— Select a doctor (optional) —</option>`;
     const options = this.doctors.map(doc => {
-      const name = `Dr. ${this.esc(doc.first_name)} ${this.esc(doc.last_name)}${doc.role ? ` · ${this.esc(doc.role)}` : ''}`;
-      const selected = doc.staffid === this.selectedDoctorID ? 'selected' : '';
-      return `<option value="${this.esc(doc.staffid)}" data-name="${this.esc(`Dr. ${doc.first_name} ${doc.last_name}`)}" ${selected}>${name}</option>`;
+      const name = `${this.esc(doc.full_name)}${doc.Occupation ? ` · ${this.esc(doc.Occupation)}` : ''}`;
+      const selected = doc.id === this.selectedDoctorID ? 'selected' : '';
+      return `<option value="${this.esc(doc.id)}" data-name="${this.esc(doc.full_name)}" ${selected}>${name}</option>`;
     }).join('');
     return placeholder + options;
   }
