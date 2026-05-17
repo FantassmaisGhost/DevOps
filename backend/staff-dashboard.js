@@ -174,7 +174,17 @@ async function loadStaffDashboard() {
             ${todaysAppointments.length === 0 
                 ? '<p style="text-align:center; padding:32px; color:var(--ink-3);">✨ No appointments scheduled for today.</p>'
                 : `<table class="appointments-table">
-                    <thead><tr><th>Patient</th><th>Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Time</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    
                     <tbody>
                         ${todaysAppointments.map(apt => {
                             const status = (apt.status || '').toLowerCase();
@@ -201,6 +211,17 @@ async function loadStaffDashboard() {
                                         <td>${esc(apt.appointment_time?.slice(0,5)) || 'N/A'}</td>
                                         <td>${esc(apt.reason || 'N/A')}</td>
                                         <td>${statusBadge}</td>
+
+                                        <td class="notes-cell">
+                                            <button class="view-notes-btn" 
+                                                data-patient-id="${apt.PatientID}" 
+                                                data-appointment-id="${apt.id}"
+                                                data-patient-name="${esc(apt.patient_name)}">
+                                                📝 Notes
+                                                ${noteCount > 0 ? `<span class="note-count-badge">${noteCount}</span>` : ''}
+                                            </button>
+                                        </td>
+                                        
                                         <td>${actionHtml}</td>
                                      </tr>`;
                         }).join('')}
