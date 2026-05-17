@@ -174,16 +174,7 @@ async function loadStaffDashboard() {
             ${todaysAppointments.length === 0 
                 ? '<p style="text-align:center; padding:32px; color:var(--ink-3);">✨ No appointments scheduled for today.</p>'
                 : `<table class="appointments-table">
-                    <thead>
-                        <tr>
-                            <th>Patient</th>
-                            <th>Time</th>
-                            <th>Reason</th>
-                            <th>Status</th>
-                            <th>Notes</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Patient</th><th>Time</th><th>Reason</th><th>Status</th><th>Notes</th><th>Action</th></tr></thead>
                     
                     <tbody>
                         ${todaysAppointments.map(apt => {
