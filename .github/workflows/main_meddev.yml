@@ -44,6 +44,10 @@ jobs:
           path: |
             backend/
             pages/
+            styles/
+            coverage/
+            .vscode/
+            __tests__/
             server.js
             web.config
             iisnode.yml
@@ -51,6 +55,9 @@ jobs:
             babel.config.js
             package.json
             package-lock.json
+            server.js
+            supabase.js
+            iisnode.yml
           retention-days: 1
 
   deploy:
