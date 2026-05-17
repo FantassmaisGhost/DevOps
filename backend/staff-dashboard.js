@@ -220,14 +220,14 @@ async function loadStaffDashboard() {
                                         <td>${esc(apt.appointment_time?.slice(0,5)) || 'N/A'}</td>
                                         <td>${esc(apt.reason || 'N/A')}</td>
                                         <td>${statusBadge}</td>
-
+                                        
                                         <td class="notes-cell">
                                             <button class="view-notes-btn" 
                                                 data-patient-id="${apt.PatientID}" 
                                                 data-appointment-id="${apt.id}"
                                                 data-patient-name="${esc(apt.patient_name)}">
                                                 📝 Notes
-                                                ${noteCount > 0 ? `<span class="note-count-badge">${noteCount}</span>` : ''}
+                                                ${noteCounts[apt.PatientID] > 0 ? `<span class="note-count-badge">${noteCounts[apt.PatientID]}</span>` : ''}
                                             </button>
                                         </td>
                                         
