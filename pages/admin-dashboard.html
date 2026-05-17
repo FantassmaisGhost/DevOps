@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard | Health-Flow</title>
+
   <link rel="stylesheet" href="shared.css" />
+
   <style>
     .admin-grid {
       display: grid;
@@ -12,6 +14,7 @@
       gap: 14px;
       margin-top: 24px;
     }
+
     .admin-card {
       background: var(--surface);
       border: 1.5px solid var(--border-md);
@@ -20,32 +23,54 @@
       transition: border-color 0.15s, box-shadow 0.2s, transform 0.15s;
       box-shadow: var(--shadow-sm);
     }
+
     .admin-card:hover {
       border-color: var(--teal);
       box-shadow: var(--shadow-md);
       transform: translateY(-2px);
     }
+
     .admin-card-head {
       padding: 16px 20px 14px;
-      display: flex; align-items: center; gap: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
       border-bottom: 1px solid var(--border);
       background: var(--surface2);
     }
+
     .admin-card-icon {
-      width: 38px; height: 38px;
+      width: 38px;
+      height: 38px;
       background: var(--teal-light);
       border: 1.5px solid rgba(0,137,123,0.2);
       border-radius: var(--radius-sm);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin: 0;
     }
+
     .admin-card-title {
       font-family: var(--font-disp);
-      font-size: 15px; font-weight: 700;
+      font-size: 15px;
+      font-weight: 700;
       color: var(--ink);
+      margin: 0;
     }
-    .admin-card-body { padding: 16px 20px; }
-    .admin-card-desc { font-size: 12px; color: var(--ink-3); line-height: 1.55; margin-bottom: 16px; }
+
+    .admin-card-body {
+      padding: 16px 20px;
+    }
+
+    .admin-card-desc {
+      font-size: 12px;
+      color: var(--ink-3);
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
 
     .portal-banner {
       background: var(--obsidian);
@@ -56,113 +81,213 @@
       overflow: hidden;
       box-shadow: var(--shadow-md);
     }
+
     .portal-banner::before {
       content: '';
-      position: absolute; inset: 0;
+      position: absolute;
+      inset: 0;
       background-image:
         linear-gradient(rgba(247,244,238,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(247,244,238,0.03) 1px, transparent 1px);
       background-size: 28px 28px;
     }
+
     .portal-banner::after {
       content: '';
       position: absolute;
-      bottom: 0; left: 0; right: 0; height: 3px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
       background: linear-gradient(90deg, var(--ochre-mid), var(--teal));
     }
+
     .portal-title {
       font-family: var(--font-disp);
-      font-size: 22px; font-weight: 700;
+      font-size: 22px;
+      font-weight: 700;
       letter-spacing: -0.02em;
       margin-bottom: 4px;
       color: #F7F4EE;
-      position: relative; z-index: 1;
+      position: relative;
+      z-index: 1;
     }
+
     .portal-sub {
       font-size: 11px;
       color: rgba(247,244,238,0.4);
-      position: relative; z-index: 1;
+      position: relative;
+      z-index: 1;
       letter-spacing: 0.04em;
     }
   </style>
 </head>
+
 <body>
 
   <header class="topbar">
-    <span class="brand">
+
+    <h1 class="brand">
       <span class="brand-icon">✚</span>
       <strong class="brand-name">Health-Flow</strong>
-    </span>
-    <div class="topbar-right">
-      <span id="userEmail" style="font-size:11px;color:rgba(247,244,238,0.4);">Loading…</span>
-      <span class="role-badge badge-admin">Admin</span>
-      <button class="btn btn-ghost" id="logoutBtn">Sign out</button>
-    </div>
+    </h1>
+
+    <nav class="topbar-right" aria-label="Admin navigation">
+      <p id="userEmail"
+         style="font-size:11px;color:rgba(247,244,238,0.4);">
+        Loading…
+      </p>
+
+      <p class="role-badge badge-admin">
+        Admin
+      </p>
+
+      <button class="btn btn-ghost" id="logoutBtn">
+        Sign out
+      </button>
+    </nav>
+
   </header>
 
   <main class="page-wide">
-    <div class="section-label">Admin Portal</div>
 
-    <div class="portal-banner">
-      <div class="portal-title">Admin Dashboard</div>
-      <div class="portal-sub">Manage clinics, staff, and system settings</div>
-    </div>
+    <header>
+      <h2 class="section-label">Admin Portal</h2>
+    </header>
 
-    <div class="section-label">Management</div>
-    <div class="admin-grid">
-      <div class="admin-card">
-        <div class="admin-card-head">
-          <div class="admin-card-icon">🗺️</div>
-          <div class="admin-card-title">Clinic Map</div>
-        </div>
-        <div class="admin-card-body">
-          <div class="admin-card-desc">View all clinic locations on an interactive map and manage facility data.</div>
-          <a href="map.html" class="btn btn-warn">Open Map →</a>
-        </div>
-      </div>
-      <div class="admin-card">
-        <div class="admin-card-head">
-          <div class="admin-card-icon">🏥</div>
-          <div class="admin-card-title">Facilities</div>
-        </div>
-        <div class="admin-card-body">
-          <div class="admin-card-desc">View, approve and manage clinic facilities and staff assignments.</div>
-          <a href="SeeFacilities.html" class="btn btn-warn">Manage Facilities →</a>
-        </div>
-      </div>
-      <div class="admin-card">
-        <div class="admin-card-head">
-          <div class="admin-card-icon">⏰</div>
-          <div class="admin-card-title">Operating Hours</div>
-        </div>
-        <div class="admin-card-body">
-          <div class="admin-card-desc">Update clinic opening and closing times for each day of the week.</div>
-          <a href="Changetime.html" class="btn btn-warn">Edit Hours →</a>
-        </div>
-      </div>
-      <div class="admin-card">
-        <div class="admin-card-head">
-          <div class="admin-card-icon">⚙️</div>
-          <div class="admin-card-title">Settings</div>
-        </div>
-        <div class="admin-card-body">
-          <div class="admin-card-desc">Update system settings, preferences, and global configurations.</div>
-          <a href="settings.html" class="btn btn-warn">Manage Settings →</a>
-        </div>
-      </div>
-      <div class="admin-card">
-        <div class="admin-card-head">
-          <div class="admin-card-icon">⏰</div>
-          <div class="admin-card-title">Queue Management Sytem</div>
-        </div>
-        <div class="admin-card-body">
-          <div class="admin-card-desc">Access the Queue Management System.</div>
-          <a href="admin.html" class="btn btn-warn">Manage Queue →</a>
-        </div>
-      </div>
-    </div>
+    <section class="portal-banner">
+      <h2 class="portal-title">Admin Dashboard</h2>
+
+      <p class="portal-sub">
+        Manage clinics, staff, and system settings
+      </p>
+    </section>
+
+    <section aria-labelledby="management-heading">
+
+      <h2 class="section-label" id="management-heading">
+        Management
+      </h2>
+
+      <section class="admin-grid">
+
+        <article class="admin-card">
+
+          <header class="admin-card-head">
+            <p class="admin-card-icon">🗺️</p>
+
+            <h3 class="admin-card-title">
+              Clinic Map
+            </h3>
+          </header>
+
+          <section class="admin-card-body">
+            <p class="admin-card-desc">
+              View all clinic locations on an interactive map and manage facility data.
+            </p>
+
+            <a href="map.html" class="btn btn-warn">
+              Open Map →
+            </a>
+          </section>
+
+        </article>
+
+        <article class="admin-card">
+
+          <header class="admin-card-head">
+            <p class="admin-card-icon">🏥</p>
+
+            <h3 class="admin-card-title">
+              Facilities
+            </h3>
+          </header>
+
+          <section class="admin-card-body">
+            <p class="admin-card-desc">
+              View, approve and manage clinic facilities and staff assignments.
+            </p>
+
+            <a href="SeeFacilities.html" class="btn btn-warn">
+              Manage Facilities →
+            </a>
+          </section>
+
+        </article>
+
+        <article class="admin-card">
+
+          <header class="admin-card-head">
+            <p class="admin-card-icon">⏰</p>
+
+            <h3 class="admin-card-title">
+              Operating Hours
+            </h3>
+          </header>
+
+          <section class="admin-card-body">
+            <p class="admin-card-desc">
+              Update clinic opening and closing times for each day of the week.
+            </p>
+
+            <a href="Changetime.html" class="btn btn-warn">
+              Edit Hours →
+            </a>
+          </section>
+
+        </article>
+
+        <article class="admin-card">
+
+          <header class="admin-card-head">
+            <p class="admin-card-icon">⚙️</p>
+
+            <h3 class="admin-card-title">
+              Settings
+            </h3>
+          </header>
+
+          <section class="admin-card-body">
+            <p class="admin-card-desc">
+              Update system settings, preferences, and global configurations.
+            </p>
+
+            <a href="settings.html" class="btn btn-warn">
+              Manage Settings →
+            </a>
+          </section>
+
+        </article>
+
+        <article class="admin-card">
+
+          <header class="admin-card-head">
+            <p class="admin-card-icon">📋</p>
+
+            <h3 class="admin-card-title">
+              Queue Management System
+            </h3>
+          </header>
+
+          <section class="admin-card-body">
+            <p class="admin-card-desc">
+              Access the Queue Management System.
+            </p>
+
+            <a href="admin.html" class="btn btn-warn">
+              Manage Queue →
+            </a>
+          </section>
+
+        </article>
+
+      </section>
+
+    </section>
+
   </main>
 
   <script type="module" src="../backend/admin-dashboard.js"></script>
+
 </body>
 </html>
