@@ -291,46 +291,48 @@ openRegistrationModal(type) {
 
     regMessage.innerHTML = '<strong style="color:#069;">Registering...</strong>';
 
+    // ========== ONLY THIS PART CHANGED ==========
     if (registerType === 'receptionist') {
 
-      const { error } = await supabase.from('Receptionist').insert([{
-        receptionist_id: crypto.randomUUID(),
+      // Check if already exists in pending_receptionists
+      const { data: existing } = await supabase
+        .from('pending_receptionists')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      if (existing) {
+        regMessage.innerHTML = '<strong style="color:#c33;">This email is already registered as pending receptionist</strong>';
+        return;
+      }
+
+      const { error } = await supabase.from('pending_receptionists').insert([{
+        email: email,
+        full_name: fullName,
+        occupation: occupation,
+        phone_number: cleanedPhone,
         clinicid: clinicId,
         clinicname: clinicName,
-        email: email,
-        contacts: cleanedPhone
+        status: 'pending'
       }]);
 
       if (error) {
         regMessage.innerHTML = `<strong style="color:#c33;">Error: ${error.message}</strong>`;
       } else {
-
-        regMessage.innerHTML = `
-          <strong style="color:#3c3;">
-            ✅ Receptionist registered successfully!
-          </strong>
-        `;
-
+        regMessage.innerHTML = '<strong style="color:#3c3;">✅ Receptionist registration complete! Please wait for admin approval.</strong>';
         setTimeout(() => {
-
           this.staffDialog.close();
-
           document.getElementById('regEmail').value = '';
           document.getElementById('regName').value = '';
           document.getElementById('regPhone').value = '';
           document.getElementById('regClinicName').value = '';
-
-          document
-            .getElementById('regClinicName')
-            .removeAttribute('data-selected-id');
-
+          document.getElementById('regClinicName').removeAttribute('data-selected-id');
           regMessage.innerHTML = '';
-
-        }, 1500);
+        }, 2000);
       }
-
       return;
     }
+    // ========== END OF CHANGED PART ==========
 
     const { error } = await supabase.from('pending_staff').insert([{
       email: email,

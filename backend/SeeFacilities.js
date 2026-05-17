@@ -37,6 +37,7 @@ export class AdminFacilitiesController {
     return `STF-${paddedClinic}-${paddedNumber}`;
   }
 
+  // ========== STAFF MANAGEMENT ==========
   async loadStaff() {
     const { data, error } = await supabase.from('Staff').select('*').eq('ClinicID', this.clinicID);
     if (error) return [];
@@ -83,6 +84,7 @@ export class AdminFacilitiesController {
     });
   }
 
+  // ========== PENDING STAFF ==========
   async loadPendingStaff() {
     const { data, error } = await supabase.from('pending_staff').select('*').eq('clinicid', this.clinicID).eq('status', 'pending').order('created_at', { ascending: false });
     if (error) return [];
@@ -136,10 +138,161 @@ export class AdminFacilitiesController {
     });
   }
 
+  // ========== PENDING RECEPTIONISTS ==========
+  async loadPendingReceptionists() {
+    const { data, error } = await supabase
+      .from('pending_receptionists')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error loading pending receptionists:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async approveReceptionist(pending) {
+    const receptionistId = `REC-${pending.clinicid || this.clinicID}-${Date.now()}`;
+    
+    const { error: insertError } = await supabase
+      .from('Receptionist')
+      .insert([{
+        receptionist_id: receptionistId,
+        email: pending.email,
+        full_name: pending.full_name,
+        occupation: pending.occupation || 'Receptionist',
+        contacts: pending.phone_number,
+        clinicid: pending.clinicid || this.clinicID,
+        clinicname: pending.clinicname,
+        created_at: new Date()
+      }]);
+    
+    if (insertError) {
+      this.showToast('Failed to approve receptionist: ' + insertError.message, 'error');
+      return false;
+    }
+    
+    await supabase
+      .from('pending_receptionists')
+      .update({ status: 'approved' })
+      .eq('email', pending.email);
+    
+    this.showToast(`✅ ${pending.full_name} approved as receptionist!`, 'success');
+    return true;
+  }
+
+  async renderPendingReceptionists() {
+    const pending = await this.loadPendingReceptionists();
+    const container = document.getElementById('pending-receptionists-container');
+    
+    if (!container) return;
+    
+    if (pending.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No pending receptionist requests.</p>';
+      return;
+    }
+    
+    container.innerHTML = pending.map(p => `
+      <article style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #252b3d;">
+        <header>
+          <strong>${this.escapeHtml(p.full_name)}</strong><br>
+          <small style="color: #5a6280;">${this.escapeHtml(p.email)}</small><br>
+          <small style="color: #5a6280;">Occupation: ${this.escapeHtml(p.occupation || 'Receptionist')}</small><br>
+          <small style="color: #5a6280;">Clinic: ${this.escapeHtml(p.clinicname || 'Not specified')}</small>
+          ${p.phone_number ? `<br><small style="color: #5a6280;">Phone: ${this.escapeHtml(p.phone_number)}</small>` : ''}
+        </header>
+        <button class="approve-rec-btn" data-email="${p.email}" 
+                style="background: #00e5a0; color: #0b0e14; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer;">
+          Approve
+        </button>
+      </article>
+    `).join('');
+    
+    document.querySelectorAll('.approve-rec-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const email = btn.getAttribute('data-email');
+        const pendingItem = pending.find(p => p.email === email);
+        if (pendingItem && await this.approveReceptionist(pendingItem)) {
+          this.renderPendingReceptionists();
+        }
+      });
+    });
+  }
+
+  // ========== CURRENT RECEPTIONISTS ==========
+  async loadReceptionists() {
+    const { data, error } = await supabase
+      .from('Receptionist')
+      .select('*')
+      .eq('clinicid', this.clinicID);
+    
+    if (error) {
+      console.error('Error loading receptionists:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async removeReceptionist(receptionistId, name) {
+    if (!confirm(`Remove ${name} from receptionists? They will lose access.`)) return false;
+    
+    const { error } = await supabase
+      .from('Receptionist')
+      .delete()
+      .eq('receptionist_id', receptionistId);
+    
+    if (error) {
+      this.showToast('Failed to remove receptionist', 'error');
+      return false;
+    }
+    
+    this.showToast(`Removed ${name} from receptionists`, 'success');
+    return true;
+  }
+
+  async renderReceptionistList() {
+    const receptionists = await this.loadReceptionists();
+    const container = document.getElementById('receptionist-list-container');
+    
+    if (!container) return;
+    
+    if (receptionists.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #5a6280; padding: 20px;">No receptionists for this clinic.</p>';
+      return;
+    }
+    
+    container.innerHTML = receptionists.map(r => `
+      <article style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #252b3d;">
+        <header>
+          <strong>${this.escapeHtml(r.full_name)}</strong><br>
+          <small style="color: #5a6280;">${this.escapeHtml(r.email)} • ${this.escapeHtml(r.occupation || 'Receptionist')}</small><br>
+          <small style="color: #5a6280;">Phone: ${this.escapeHtml(r.contacts || 'N/A')}</small>
+        </header>
+        <button class="remove-rec-btn" data-id="${r.receptionist_id}" data-name="${this.escapeHtml(r.full_name)}" 
+                style="background:#ff6b6b;color:white;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;">
+          Remove
+        </button>
+      </article>
+    `).join('');
+    
+    document.querySelectorAll('.remove-rec-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const success = await this.removeReceptionist(id, name);
+        if (success) this.renderReceptionistList();
+      });
+    });
+  }
+
+  // ========== UI RENDERING ==========
   renderClinicHeader() {
     const typeLabel = this.type === 'hospital' ? 'HOSPITAL' : 'CLINIC / CHC';
     const typeClass = this.type === 'hospital' ? 'chip-hosp' : 'chip-clinic';
     const sectClass = this.sector === 'public' ? 'chip-public' : 'chip-private';
+    
     const headerHtml = `
       <div class="clinic-header">
         <a href="admin-dashboard.html" class="back-link">← Back to Admin Dashboard</a>
@@ -155,6 +308,12 @@ export class AdminFacilitiesController {
     `;
     const container = document.getElementById('dynamic-content');
     container.innerHTML = headerHtml;
+    
+    // Update clinic display for receptionist section
+    const clinicDisplayRec = document.getElementById('current-clinic-display-rec');
+    if (clinicDisplayRec) {
+      clinicDisplayRec.textContent = this.clinicID;
+    }
   }
 
   renderActionCards() {
@@ -185,6 +344,8 @@ export class AdminFacilitiesController {
     this.renderActionCards();
     await this.renderStaffList();
     await this.renderPendingStaff();
+    await this.renderPendingReceptionists();
+    await this.renderReceptionistList();
   }
 }
 

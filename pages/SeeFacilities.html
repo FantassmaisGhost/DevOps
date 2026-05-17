@@ -198,6 +198,7 @@
 
     </section>
 
+    <!-- Pending Staff Approvals Section -->
     <section class="panel">
 
       <header class="panel-head">
@@ -224,6 +225,34 @@
 
     </section>
 
+    <!-- Pending Receptionist Approvals Section -->
+    <section class="panel">
+
+      <header class="panel-head">
+
+        <h2 class="panel-title">
+          Pending Receptionist Approvals
+        </h2>
+
+        <p class="panel-sub">
+          Receptionists awaiting approval
+        </p>
+
+      </header>
+
+      <section id="pending-receptionists-container" class="panel-body">
+
+        <section class="loading-state" style="padding:28px 0;">
+
+          <progress class="spinner" aria-label="Loading pending receptionists"></progress>
+
+        </section>
+
+      </section>
+
+    </section>
+
+    <!-- Current Staff Members Section -->
     <section class="panel">
 
       <header class="panel-head">
@@ -255,6 +284,39 @@
       </section>
 
     </section>
+
+    <!-- Current Receptionists Section -->
+<section class="panel">
+
+  <header class="panel-head">
+
+    <h2 class="panel-title">
+      Current Receptionists
+    </h2>
+
+    <output
+      class="panel-sub"
+      id="current-clinic-display-rec"
+      style="font-family:var(--font-mono);"
+    ></output>
+
+  </header>
+
+  <p style="padding:12px 18px 0;font-size:11px;color:var(--ink-3);">
+    Receptionists are added when they register and are approved. Remove to revoke access.
+  </p>
+
+  <section id="receptionist-list-container">
+
+    <section class="loading-state" style="padding:28px 0;">
+
+      <progress class="spinner" aria-label="Loading receptionist list"></progress>
+
+    </section>
+
+  </section>
+
+</section>
 
   </main>
 
