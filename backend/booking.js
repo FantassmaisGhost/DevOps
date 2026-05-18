@@ -373,7 +373,7 @@ export class BookingController {
     if (this.availableStaff.length === 0) {
       return `<option value="">— No staff available for this slot —</option>`;
     }
-    const placeholder = `<option value="">— Leave blank to auto-assign —</option>`;
+    const placeholder = `<option value="">—Select a doctor—</option>`;
     const options = this.availableStaff.map(doc => {
       const label    = `${this.esc(doc.full_name)}${doc.Occupation ? ` · ${this.esc(doc.Occupation)}` : ''}`;
       const selected = doc.id === this.selectedDoctorID ? 'selected' : '';
