@@ -179,7 +179,11 @@ html, body {
 .badge-admin   { background: rgba(154,92,0,0.18);   color: var(--ochre-mid);  border: 1px solid rgba(154,92,0,0.25); }
 .badge-staff   { background: rgba(0,137,123,0.15);  color: var(--teal);       border: 1px solid rgba(0,137,123,0.25); }
 .badge-patient { background: rgba(27,79,138,0.15);  color: var(--cerulean);   border: 1px solid rgba(27,79,138,0.25); }
-
+.badge-receptionist {
+  background: rgba(0,137,123,0.15);
+  color: var(--teal);
+  border: 1px solid rgba(0,137,123,0.25);
+}
 /* ── BUTTONS ── */
 .btn {
   font-family: var(--font-body);
@@ -458,12 +462,20 @@ select.input {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── MODAL ── */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(24,22,15,0.65);
-  backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 2000;
+dialog.modal-overlay {
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+dialog.modal-overlay:not([open]) {
+  display: none;
+}
+
+dialog.modal-overlay[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .modal-overlay.hidden { display: none; }
 .modal-box {
