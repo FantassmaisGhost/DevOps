@@ -133,7 +133,7 @@ export class DirectoryController {
     if (!bookBtn) {
       bookBtn = document.createElement('button');
       bookBtn.id = 'dc-book';
-      bookBtn.className = 'btn-book';
+      bookBtn.className = 'btn-directions';
       bookBtn.textContent = this.userRole === 'patient' ? '📅 Book Appointment' : '📅 See Facility';
       document.getElementById('dc-directions').insertAdjacentElement('afterend', bookBtn);
     }
