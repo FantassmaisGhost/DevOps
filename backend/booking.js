@@ -333,8 +333,7 @@ export class BookingController {
       notes:            notes  || null,
       status:           'waiting',
       // Doctor fields — null when no doctor was selected
-      staffid:          this.selectedDoctorID   || null,
-      doctor_name:      this.selectedDoctorName || null,
+      staffid:          this.selectedDoctorID   || null
     };
 
     const { error: insertError } = await this.sb.from('Appointments').insert([record]);
