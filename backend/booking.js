@@ -182,29 +182,35 @@ export class BookingController {
     const typeClass = this.clinicType === 'hospital' ? 'chip-hosp' : 'chip-clinic';
     const sectClass = this.clinicSector === 'public' ? 'chip-public' : 'chip-private';
     this.app.innerHTML = `
-      <div class="clinic-header">
-        <a href="index.html" class="back-link">← Back to map</a>
-        <h1 class="clinic-name" id="clinic-name">${this.esc(this.clinicName)}</h1>
-        <div class="clinic-meta">
-          <span>${this.esc(this.clinicCity)}${this.clinicCity && this.clinicProvince ? ' · ' : ''}${this.esc(this.clinicProvince)}</span>
+      <div class="booking-layout">
+        <aside class="booking-sidebar">
+          <div class="clinic-header">
+            <a href="map.html" class="back-link">← Back to map</a>
+            <h1 class="clinic-name" id="clinic-name">${this.esc(this.clinicName)}</h1>
+            <div class="clinic-meta">
+              <span>${this.esc(this.clinicCity)}${this.clinicCity && this.clinicProvince ? ' · ' : ''}${this.esc(this.clinicProvince)}</span>
+            </div>
+            <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="chip ${typeClass}">${typeLabel}</span>
+              <span class="chip ${sectClass}">${this.clinicSector.toUpperCase()}</span>
+              <span class="chip chip-prov">${this.esc(this.clinicProvince).toUpperCase()}</span>
+            </div>
+          </div>
+          <div class="hours-panel" id="hours-panel">
+            <p class="section-label">Operating Hours</p>
+            <div class="hours-grid" id="hours-grid"><div class="hours-loading">Loading hours…</div></div>
+          </div>
+        </aside>
+        <div class="booking-main">
+          <div class="booking-card" id="booking-card">
+            <div class="booking-steps" id="booking-steps">
+              <div class="step-tab active" id="tab-1">1. DATE</div>
+              <div class="step-tab" id="tab-2">2. TIME</div>
+              <div class="step-tab" id="tab-3">3. DETAILS</div>
+            </div>
+            <div class="booking-body" id="booking-body"></div>
+          </div>
         </div>
-        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
-          <span class="chip ${typeClass}">${typeLabel}</span>
-          <span class="chip ${sectClass}">${this.clinicSector.toUpperCase()}</span>
-          <span class="chip chip-prov">${this.esc(this.clinicProvince).toUpperCase()}</span>
-        </div>
-      </div>
-      <div class="hours-panel" id="hours-panel">
-        <p class="section-label">Operating Hours</p>
-        <div class="hours-grid" id="hours-grid"><div class="hours-loading">Loading hours…</div></div>
-      </div>
-      <div class="booking-card" id="booking-card">
-        <div class="booking-steps" id="booking-steps">
-          <div class="step-tab active" id="tab-1">1. DATE</div>
-          <div class="step-tab" id="tab-2">2. TIME</div>
-          <div class="step-tab" id="tab-3">3. DETAILS</div>
-        </div>
-        <div class="booking-body" id="booking-body"></div>
       </div>
     `;
   }
@@ -693,7 +699,7 @@ export class BookingController {
         <h2>${this.esc(title)}</h2>
         <p>${this.esc(msg)}</p>
         <br>
-        <a href="index.html" class="btn-outline" style="margin-top:16px; display:inline-block;">← Back to Map</a>
+        <a href="map.html" class="btn-outline" style="margin-top:16px; display:inline-block;">← Back to Map</a>
       </div>`;
   }
 
