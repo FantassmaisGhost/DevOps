@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { "Content-Type": "application/json", "api-key": BREVO_API_KEY },
           body: JSON.stringify({
-            sender: { email: "2672572@students.wits.ac.za", name: "SA HealthMap" },
+            sender: { email: "2672572@students.wits.ac.za", name: "Health Flow" },
             to: [{ email: apt.patient_email }],
             subject: "Appointment Reminder - Tomorrow",
             htmlContent: emailHtml,
