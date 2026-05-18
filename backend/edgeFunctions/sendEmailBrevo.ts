@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         sender: {
           email: "2672572@students.wits.ac.za", // this is just the email account that is verifies by brevo (my student email. dont email me. im a busy guy😂)
-          name: "SA HealthMap", //we can always change this later, i wasnt sure yet what we would decide to call it.
+          name: "Health Flow", //we can always change this later, i wasnt sure yet what we would decide to call it.
         },
         to: [{ email }],
         subject,
