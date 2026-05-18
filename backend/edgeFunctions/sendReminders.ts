@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
               <p><strong>📋 Please remember to:</strong></p>
               <ul><li>Arrive 10 minutes early</li><li>Bring your ID</li><li>Bring medical records</li></ul>
             </div>
-            <hr><p style="color: #666; font-size: 12px;">SA HealthMap</p>
+            <hr><p style="color: #666; font-size: 12px;">Health Flow</p>
           </div>
         `;
         
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
               <div style="background: #ff6b6b20; padding: 15px; border-radius: 8px;">
                 <p><strong>🚗 Please don't be late!</strong></p>
               </div>
-              <hr><p style="color: #666; font-size: 12px;">SA HealthMap</p>
+              <hr><p style="color: #666; font-size: 12px;">Health Flow</p>
             </div>
           `;
           
