@@ -135,7 +135,81 @@
 
 <aside class="modal-backdrop"
        id="reviewModal"
+       <!-- aria-hidden="true"> -->
+<aside class="modal-backdrop"
+       id="reviewModal"
        aria-hidden="true">
+
+  <section class="modal-panel">
+
+    <header class="modal-top-bar"></header>
+
+    <section class="modal-body">
+
+      <button class="modal-close-btn"
+              id="closeModalBtn"
+              aria-label="Close review modal">
+        ✕
+      </button>
+
+      <h2 class="modal-heading">
+        Submit a Review
+      </h2>
+
+      <p class="modal-sub"
+         id="reviewClinicName">
+      </p>
+
+      <section class="star-group"
+               id="starContainer"
+               aria-label="Review rating">
+
+        <button class="star"
+                data-rating="1"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="2"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="3"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="4"
+                type="button">
+          ★
+        </button>
+
+        <button class="star"
+                data-rating="5"
+                type="button">
+          ★
+        </button>
+
+      </section>
+
+      <textarea class="modal-textarea"
+                id="reviewComment"
+                rows="4"
+                placeholder="Describe your experience at this facility…">
+      </textarea>
+
+      <button class="modal-submit"
+              id="submitReviewBtn">
+        Submit Review
+      </button>
+
+    </section>
+
+  </section>
 
   <section class="modal-panel">
 
