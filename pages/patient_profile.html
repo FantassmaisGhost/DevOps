@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Portal | SA Health-Flow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #f8fafc; }
+    .required-label::after { content: " *"; color: #dc2626; }
+    .optional-label::after { content: " (optional)"; color: #6b7280; font-weight: normal; font-size: 0.7rem; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
+    .toast-notify {
+      position: fixed; top: 20px; right: 20px; z-index: 100; padding: 1rem 1.5rem;
+      border-radius: 0.75rem; color: white; display: none; align-items: center; gap: 10px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transition: all 0.3s ease;
+    }
+    fieldset > legend { float: left; width: 100%; }
+    fieldset > legend + * { clear: both; }
+    .saving-indicator { display: none; }
+    .saving-indicator.active { display: flex; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <output id="toast" role="status" aria-live="polite" class="toast-notify bg-slate-800"></output>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-slate-500 text-sm">Loading your profile…</p>
+    </div>
+  </div>
+
+  <main class="max-w-6xl mx-auto p-4 md:p-8">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <hgroup>
+        <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Patient Admission Portal</h1>
+        <p class="text-slate-500">POPIA Compliant Medical Profile Management</p>
+      </hgroup>
+      <div class="flex items-center gap-3">
+        <aside class="bg-white border border-green-100 p-3 rounded-xl flex items-center gap-3 shadow-sm" aria-label="Compliance status">
+          <span class="bg-green-100 p-2 rounded-full" aria-hidden="true"><i class="fas fa-user-shield text-green-700"></i></span>
+          <p class="text-xs">
+            <strong class="block font-bold text-slate-800 uppercase">POPIA Verified</strong>
+            Data hosted in RSA
+          </p>
+        </aside>
+        <a href="patient_dashboard.html" class="text-sm text-slate-500 hover:text-blue-600 flex items-center gap-1">
+          <i class="fas fa-arrow-left text-xs"></i> Dashboard
+        </a>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- Sidebar -->
+      <aside class="lg:col-span-4 space-y-6" aria-label="Patient summary">
+
+        <article class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden" aria-label="Patient card">
+          <header class="p-8 text-center bg-gradient-to-b from-slate-50 to-white">
+            <span id="avatar" class="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold shadow-inner" aria-hidden="true">?</span>
+            <h2 id="summaryName" class="text-xl font-bold text-slate-800">New Patient</h2>
+            <p id="summaryID" class="text-sm text-slate-400">ID: —</p>
+            <p id="summaryEmail" class="text-xs text-slate-400 mt-1 truncate"></p>
+          </header>
+          <dl class="p-6 border-t border-slate-100 grid grid-cols-2 gap-y-4 items-center text-sm">
+            <dt class="text-slate-500">Medical Aid</dt>
+            <dd id="summaryMedAid" class="font-semibold text-blue-700 uppercase text-right">—</dd>
+            <dt class="text-slate-500">Occupation</dt>
+            <dd id="summaryOccupation" class="font-medium text-slate-700 text-right">—</dd>
+            <dt class="text-slate-500">Blood Group</dt>
+            <dd id="summaryBlood" class="px-2 py-1 bg-red-50 text-red-700 rounded-md font-bold text-right justify-self-end">—</dd>
+            <dt class="text-slate-500">Province</dt>
+            <dd id="summaryProvince" class="font-medium text-slate-700 text-right">—</dd>
+          </dl>
+        </article>
+
+        <section class="bg-blue-900 text-white rounded-3xl p-6 shadow-lg" aria-label="Clinical snapshot">
+          <h2 class="font-bold mb-4 flex items-center gap-2"><i class="fas fa-notes-medical" aria-hidden="true"></i> Clinical Snapshot</h2>
+          <dl class="space-y-4 text-sm">
+            <dt class="opacity-70 text-xs uppercase font-bold tracking-wider">Allergies</dt>
+            <dd id="alertAllergies" class="font-semibold text-rose-300">None Known</dd>
+            <dt class="opacity-70 text-xs uppercase font-bold tracking-wider">Conditions</dt>
+            <dd id="alertConditions" class="font-semibold">None Reported</dd>
+            <dt class="opacity-70 text-xs uppercase font-bold tracking-wider">Medications</dt>
+            <dd id="alertMedications" class="font-semibold text-blue-200">None Listed</dd>
+          </dl>
+        </section>
+
+        <!-- Last updated -->
+        <p id="lastUpdated" class="text-xs text-slate-400 text-center hidden">
+          <i class="fas fa-clock mr-1"></i> Last updated: <span id="lastUpdatedTime"></span>
+        </p>
+
+      </aside>
+
+      <!-- Main form -->
+      <div class="lg:col-span-8">
+        <form id="saPatientForm" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden" novalidate>
+
+          <!-- Personal Information -->
+          <fieldset class="border-0">
+            <legend class="p-6 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 flex items-center gap-2">
+              <i class="fas fa-user text-blue-500 text-sm"></i> Personal Information
+            </legend>
+            <ul class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 list-none">
+              <li class="md:col-span-2">
+                <label for="fullName" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Full Name (As per ID)</label>
+                <input type="text" id="fullName" name="fullName" required autocomplete="name"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 transition-colors"
+                  placeholder="e.g. Sipho Nkosi">
+              </li>
+              <li>
+                <label for="saID" class="block text-xs font-bold text-slate-500 uppercase mb-2 optional-label">South African ID Number</label>
+                <input type="text" id="saID" name="saID" maxlength="13" inputmode="numeric"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="13-digit number (optional)">
+                <p id="idError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid 13-digit SA ID number (if provided).</p>
+                <p id="idHint" class="text-slate-400 text-xs mt-1">Optional field — can be skipped or added later</p>
+              </li>
+              <li>
+                <label for="dob" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Date of Birth</label>
+                <input type="date" id="dob" name="dob" required autocomplete="bday"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+              </li>
+              <li>
+                <label for="gender" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Gender</label>
+                <select id="gender" name="gender" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                  <option value="">Select</option>
+                  <option>Male</option><option>Female</option><option>Non-binary</option><option>Other</option>
+                </select>
+              </li>
+              <li>
+                <label for="occupation" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Occupation</label>
+                <input type="text" id="occupation" name="occupation" required autocomplete="organization-title"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="e.g. Teacher, Engineer">
+              </li>
+              <li>
+                <label for="email" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Email Address</label>
+                <input type="email" id="email" name="email" required autocomplete="email"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="patient@example.com">
+              </li>
+              <li>
+                <label for="cell" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Contact Number</label>
+                <input type="tel" id="cell" name="cell" required autocomplete="tel"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="082 123 4567">
+              </li>
+              <li class="md:col-span-2">
+                <label for="resAddress" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Residential Address</label>
+                <textarea id="resAddress" name="resAddress" required rows="2" autocomplete="street-address"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="Street, Suburb, City, Code"></textarea>
+              </li>
+              <li>
+                <label for="province" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Province</label>
+                <select id="province" name="province" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                  <option value="">Select Province</option>
+                  <option>Gauteng</option><option>KwaZulu-Natal</option><option>Western Cape</option>
+                  <option>Eastern Cape</option><option>Free State</option><option>Limpopo</option>
+                  <option>Mpumalanga</option><option>North West</option><option>Northern Cape</option>
+                </select>
+              </li>
+            </ul>
+          </fieldset>
+
+          <!-- Next of Kin -->
+          <fieldset class="border-0">
+            <legend class="p-6 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 flex items-center gap-2">
+              <i class="fas fa-users text-blue-500 text-sm"></i> Next of Kin
+            </legend>
+            <ul class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 list-none">
+              <li>
+                <label for="nextOfKinName" class="block text-xs font-bold text-slate-500 uppercase mb-2">Full Name</label>
+                <input type="text" id="nextOfKinName" name="nextOfKinName"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="e.g. Thabo Nkosi">
+              </li>
+              <li>
+                <label for="nextOfKinRelationship" class="block text-xs font-bold text-slate-500 uppercase mb-2">Relationship</label>
+                <input type="text" id="nextOfKinRelationship" name="nextOfKinRelationship"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="e.g. Spouse, Parent">
+              </li>
+              <li>
+                <label for="nextOfKinPhone" class="block text-xs font-bold text-slate-500 uppercase mb-2">Contact Number</label>
+                <input type="tel" id="nextOfKinPhone" name="nextOfKinPhone"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="082 123 4567">
+              </li>
+              <li>
+                <label for="nextOfKinEmail" class="block text-xs font-bold text-slate-500 uppercase mb-2">Email Address</label>
+                <input type="email" id="nextOfKinEmail" name="nextOfKinEmail"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="kin@example.com">
+              </li>
+            </ul>
+          </fieldset>
+
+          <!-- Funding / Medical Aid -->
+          <fieldset class="border-0">
+            <legend class="p-6 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 flex items-center gap-2">
+              <i class="fas fa-id-card text-blue-500 text-sm"></i> Funding / Medical Aid
+            </legend>
+            <ul class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 list-none">
+              <li>
+                <label for="medAidName" class="block text-xs font-bold text-slate-500 uppercase mb-2">Medical Aid Name</label>
+                <input type="text" id="medAidName" name="medAidName" autocomplete="organization"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="e.g. Discovery, Bonitas">
+              </li>
+              <li>
+                <label for="medAidNumber" class="block text-xs font-bold text-slate-500 uppercase mb-2">Member Number</label>
+                <input type="text" id="medAidNumber" name="medAidNumber"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+              </li>
+            </ul>
+          </fieldset>
+
+          <!-- Clinical Data -->
+          <fieldset class="border-0">
+            <legend class="p-6 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-800 flex items-center gap-2">
+              <i class="fas fa-heartbeat text-blue-500 text-sm"></i> Clinical Data
+            </legend>
+            <ul class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 list-none">
+              <li>
+                <label for="bloodType" class="block text-xs font-bold text-slate-500 uppercase mb-2">Blood Type</label>
+                <select id="bloodType" name="bloodType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                  <option value="">Unknown</option>
+                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                  <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+                </select>
+              </li>
+              <li>
+                <label for="allergies" class="block text-xs font-bold text-slate-500 uppercase mb-2">Known Allergies</label>
+                <input type="text" id="allergies" name="allergies"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="e.g. Penicillin, Nuts">
+              </li>
+              <li>
+                <label for="medicalConditions" class="block text-xs font-bold text-slate-500 uppercase mb-2">Medical Condition(s)</label>
+                <textarea id="medicalConditions" name="medicalConditions" rows="2"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="e.g. Hypertension, Diabetes"></textarea>
+              </li>
+              <li>
+                <label for="currentMedication" class="block text-xs font-bold text-slate-500 uppercase mb-2">Current Medication</label>
+                <textarea id="currentMedication" name="currentMedication" rows="2"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  placeholder="e.g. Metformin 500mg daily"></textarea>
+              </li>
+            </ul>
+          </fieldset>
+
+          <!-- POPIA Consent -->
+          <fieldset class="border-0 p-6 bg-blue-50 border-t border-blue-100">
+            <legend class="sr-only">POPIA Consent</legend>
+            <label for="popiaConsent" class="flex items-start gap-3 cursor-pointer text-xs text-slate-600 leading-relaxed">
+              <input type="checkbox" id="popiaConsent" name="popiaConsent" required
+                class="mt-1 w-5 h-5 rounded border-blue-300 text-blue-600">
+              I hereby consent to the processing of my personal and health information in accordance with the
+              <strong>Protection of Personal Information Act (POPIA)</strong> for medical treatment and billing purposes.
+            </label>
+          </fieldset>
+
+          <!-- Footer -->
+          <footer class="p-6 bg-white flex justify-between items-center gap-3 border-t border-slate-100">
+            <div class="saving-indicator items-center gap-2 text-sm text-slate-400" id="savingIndicator">
+              <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              Saving…
+            </div>
+            <div class="flex gap-3 ml-auto">
+              <button type="reset" class="px-6 py-3 text-slate-500 font-bold text-sm hover:text-slate-700 transition-colors">
+                Reset Form
+              </button>
+              <button type="submit" id="submitBtn"
+                class="bg-blue-600 text-white px-10 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                Save Profile
+              </button>
+            </div>
+          </footer>
+
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ── SUPABASE CONFIG ──
+    const SUPABASE_URL = 'https://ixikhufrylaugpdxokwu.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4aWtodWZyeWxhdWdwZHhva3d1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTQ0NTIsImV4cCI6MjA5MTIzMDQ1Mn0.F7g_bNWAsxjWtkHihVNYPicghiKOisgHGV9-zaBjXvQ';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const form = document.getElementById('saPatientForm');
+
+    // ── TOAST ──
+    function showToast(msg, color = 'bg-slate-800') {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.className = `toast-notify ${color} flex`;
+      t.style.display = 'flex';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    // ── SUMMARY SIDEBAR ──
+    function updateSummary(data) {
+      document.getElementById('summaryName').innerText = data.full_name || 'New Patient';
+      const idDisplay = data.id_number && data.id_number.trim() !== '' ? data.id_number : '—';
+      document.getElementById('summaryID').innerText = `ID: ${idDisplay}`;
+      document.getElementById('summaryEmail').innerText = data.email || '';
+      document.getElementById('summaryMedAid').innerText = data.medical_aid_name || 'PRIVATE';
+      document.getElementById('summaryOccupation').innerText = data.occupation || '—';
+      document.getElementById('summaryBlood').innerText = data.blood_type || '—';
+      document.getElementById('summaryProvince').innerText = data.province || '—';
+      document.getElementById('alertAllergies').innerText = data.allergies || 'None Known';
+      document.getElementById('alertConditions').innerText = data.medical_conditions || 'None Reported';
+      document.getElementById('alertMedications').innerText = data.current_medications || 'None Listed';
+
+      const initials = data.full_name
+        ? data.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+        : '?';
+      document.getElementById('avatar').innerText = initials;
+    }
+
+    // ── POPULATE FORM FROM DATA ──
+    function populateForm(data) {
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+      set('fullName',              data.full_name);
+      set('saID',                  data.id_number);
+      set('dob',                   data.date_of_birth);
+      set('gender',                data.gender);
+      set('occupation',            data.occupation);
+      set('email',                 data.email);
+      set('cell',                  data.phone);
+      set('resAddress',            data.address);
+      set('province',              data.province);
+      set('nextOfKinName',         data.next_of_kin_name);
+      set('nextOfKinRelationship', data.next_of_kin_relationship);
+      set('nextOfKinPhone',        data.next_of_kin_phone);
+      set('nextOfKinEmail',        data.next_of_kin_email);
+      set('medAidName',            data.medical_aid_name);
+      set('medAidNumber',          data.medical_aid_number);
+      set('bloodType',             data.blood_type);
+      set('allergies',             data.allergies);
+      set('medicalConditions',     data.medical_conditions);
+      set('currentMedication',     data.current_medications);
+      if (data.popia_consent) document.getElementById('popiaConsent').checked = true;
+
+      if (data.updated_at) {
+        document.getElementById('lastUpdated').classList.remove('hidden');
+        document.getElementById('lastUpdatedTime').innerText =
+          new Date(data.updated_at).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+    }
+
+    // ── LOAD PROFILE FROM SUPABASE ──
+    async function loadProfile() {
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) {
+          showToast('⚠️ Please log in to view your profile.', 'bg-amber-600');
+          document.getElementById('loadingOverlay').style.display = 'none';
+          return;
+        }
+
+        // Fetch from both tables in parallel
+        const [patientRes, profileRes] = await Promise.all([
+          sb.from('Patients').select('*').eq('id', user.id).single(),
+          sb.from('patient_profiles').select('*').eq('user_id', user.id).single()
+        ]);
+
+        const patient = patientRes.data;
+        const profile = profileRes.data;
+
+        if (patientRes.error && patientRes.error.code !== 'PGRST116') {
+          console.error('Patients load error:', patientRes.error);
+        }
+        if (profileRes.error && profileRes.error.code !== 'PGRST116') {
+          console.error('Profile load error:', profileRes.error);
+        }
+
+        // Merge: patient_profiles takes priority, fall back to Patients table
+        const merged = {
+          full_name: profile?.full_name || patient?.full_name || '',
+          email:     profile?.email     || patient?.email     || user.email || '',
+          phone:     profile?.phone     || patient?.contact   || '',
+          ...(profile || {})
+        };
+
+        if (patient || profile) {
+          populateForm(merged);
+          updateSummary(merged);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }
+    }
+
+    // ── LIVE PREVIEW ──
+    ['fullName', 'saID', 'occupation', 'medAidName', 'bloodType', 'allergies', 'medicalConditions', 'currentMedication', 'province'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => {
+        updateSummary({
+          full_name:          document.getElementById('fullName')?.value,
+          id_number:          document.getElementById('saID')?.value,
+          occupation:         document.getElementById('occupation')?.value,
+          medical_aid_name:   document.getElementById('medAidName')?.value,
+          blood_type:         document.getElementById('bloodType')?.value,
+          allergies:          document.getElementById('allergies')?.value,
+          medical_conditions: document.getElementById('medicalConditions')?.value,
+          current_medications:document.getElementById('currentMedication')?.value,
+          province:           document.getElementById('province')?.value,
+          email:              document.getElementById('email')?.value,
+        });
+      });
+    });
+
+    // ── SA ID VALIDATION (optional: only validate if value is provided) ──
+    const saIdInput = document.getElementById('saID');
+    const idError = document.getElementById('idError');
+    
+    saIdInput.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      if (val.length > 13) val = val.slice(0, 13);
+      e.target.value = val;
+      
+      // Only validate if user has entered something
+      if (val.length > 0 && val.length !== 13) {
+        idError.classList.remove('hidden');
+        idError.textContent = 'SA ID number must be exactly 13 digits (if provided).';
+      } else if (val.length === 13) {
+        idError.classList.add('hidden');
+      } else if (val.length === 0) {
+        idError.classList.add('hidden');
+      } else {
+        idError.classList.remove('hidden');
+        idError.textContent = 'SA ID number must be exactly 13 digits (if provided).';
+      }
+    });
+
+    // ── SUBMIT (ID validation only if value is provided) ──
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const saId = saIdInput.value.trim();
+      // Only validate if ID is not empty
+      if (saId !== '' && saId.length !== 13) {
+        showToast('⚠️ SA ID number must be exactly 13 digits (or leave empty).', 'bg-amber-600');
+        return;
+      }
+
+      if (!document.getElementById('popiaConsent').checked) {
+        showToast('⚠️ Please accept the POPIA consent to continue.', 'bg-amber-600');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      const savingIndicator = document.getElementById('savingIndicator');
+      submitBtn.disabled = true;
+      savingIndicator.classList.add('active');
+
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) {
+          showToast('⚠️ Please log in to save your profile.', 'bg-amber-600');
+          return;
+        }
+
+        const payload = {
+          user_id:                  user.id,
+          full_name:                document.getElementById('fullName').value,
+          id_number:                saId === '' ? null : saId,
+          date_of_birth:            document.getElementById('dob').value || null,
+          gender:                   document.getElementById('gender').value || null,
+          occupation:               document.getElementById('occupation').value || null,
+          email:                    document.getElementById('email').value || null,
+          phone:                    document.getElementById('cell').value || null,
+          address:                  document.getElementById('resAddress').value || null,
+          province:                 document.getElementById('province').value || null,
+          next_of_kin_name:         document.getElementById('nextOfKinName').value || null,
+          next_of_kin_relationship: document.getElementById('nextOfKinRelationship').value || null,
+          next_of_kin_phone:        document.getElementById('nextOfKinPhone').value || null,
+          next_of_kin_email:        document.getElementById('nextOfKinEmail').value || null,
+          medical_aid_name:         document.getElementById('medAidName').value || null,
+          medical_aid_number:       document.getElementById('medAidNumber').value || null,
+          blood_type:               document.getElementById('bloodType').value || null,
+          allergies:                document.getElementById('allergies').value || null,
+          medical_conditions:       document.getElementById('medicalConditions').value || null,
+          current_medications:      document.getElementById('currentMedication').value || null,
+          popia_consent:            document.getElementById('popiaConsent').checked,
+          updated_at:               new Date().toISOString()
+        };
+
+        const { error } = await sb
+          .from('patient_profiles')
+          .upsert(payload, { onConflict: 'user_id' });
+
+        if (error) {
+          showToast('❌ Error saving profile: ' + error.message, 'bg-red-600');
+        } else {
+          updateSummary(payload);
+          showToast('✅ Profile saved successfully under POPIA standards.', 'bg-green-700');
+          document.getElementById('lastUpdated').classList.remove('hidden');
+          document.getElementById('lastUpdatedTime').innerText =
+            new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+      } catch (err) {
+        showToast('❌ Unexpected error: ' + err.message, 'bg-red-600');
+      } finally {
+        submitBtn.disabled = false;
+        savingIndicator.classList.remove('active');
+      }
+    });
+
+    // ── INIT ──
+    loadProfile();
+  </script>
+</body>
+</html>

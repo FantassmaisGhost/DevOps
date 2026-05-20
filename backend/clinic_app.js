@@ -240,7 +240,7 @@ async function viewClinicDetail(clinicId) {
         </div>
 
         <div style="grid-column:1/-1;">
-          <button class="write-review-btn" id="writeReviewBtn" data-clinic-id="${clinic.ClinicID}" data-clinic-name="${clinic.Name.replace(/'/g,"\\'")}">
+          <button class="write-review-btn" id="writeReviewBtn" data-clinic-id="${clinic.ClinicID}" data-clinic-name="${clinic.Name.replace(/'/g, '&apos;')}">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Submit a Patient Review
           </button>
@@ -254,11 +254,11 @@ async function viewClinicDetail(clinicId) {
     }
     const writeReviewBtn = document.getElementById('writeReviewBtn');
     if (writeReviewBtn) {
-      writeReviewBtn.addEventListener('click', () => {
+      writeReviewBtn.onclick = () => {
         const id = writeReviewBtn.dataset.clinicId;
         const name = writeReviewBtn.dataset.clinicName;
         openReviewModal(id, name);
-      });
+      };
     }
     loadGoogleData(clinic, reviews||[]);
   } catch(e) { c.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
@@ -499,17 +499,21 @@ function displayBookings() {
 
 // ── REVIEWS MODAL ──
 function openReviewModal(clinicId, name) {
-  console.log('Opening modal with:', clinicId, name);
   currentClinicId = clinicId;
   selectedRating = 0;
-  document.getElementById('reviewClinicName').textContent = name;
+  const decodedName = name.replace(/&apos;/g, "'");
+  document.getElementById('reviewClinicName').textContent = decodedName;
   document.getElementById('reviewComment').value = '';
   document.querySelectorAll('#starContainer .star').forEach(s => s.classList.remove('lit'));
-  document.getElementById('reviewModal').classList.add('open');
+  const modal = document.getElementById('reviewModal');
+  modal.removeAttribute('inert');
+  modal.classList.add('open');
 }
 
 function closeReviewModal() {
-  document.getElementById('reviewModal').classList.remove('open');
+  const modal = document.getElementById('reviewModal');
+  modal.setAttribute('inert', '');
+  modal.classList.remove('open');
   currentClinicId = null;
   selectedRating = 0;
 }
@@ -524,19 +528,74 @@ function setupStarContainer() {
   });
 }
 
+// ── CONTENT FILTER ──
+const BANNED_WORDS = [
+  'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'piss',
+  'cock', 'pussy', 'nigger', 'nigga', 'kaffir', 'whore', 'slut', 'retard',
+  'faggot', 'fag', 'twat', 'wanker', 'poes', 'doos', 'naai', 'moer',
+  'bliksem', 'hoer'
+];
+
+function containsOffensiveContent(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return BANNED_WORDS.some(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    return regex.test(lower);
+  });
+}
+
+async function checkRateLimit(userId) {
+  const now = new Date();
+  const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: dailyReviews } = await sb
+    .from('clinic_reviews')
+    .select('id')
+    .eq('patient_id', userId)
+    .gte('created_at', oneDayAgo);
+
+  if (dailyReviews?.length >= 1) {
+    return 'You have already submitted a review today. Please come back tomorrow.';
+  }
+
+  const { data: weeklyReviews } = await sb
+    .from('clinic_reviews')
+    .select('id')
+    .eq('patient_id', userId)
+    .gte('created_at', sevenDaysAgo);
+
+  if (weeklyReviews?.length >= 3) {
+    return 'You have reached your limit of 3 reviews this week. Please try again next week.';
+  }
+
+  return null;
+}
+
 async function submitReview() {
   if (!selectedRating) { alert('Please select a star rating.'); return; }
+  if (selectedRating < 1 || selectedRating > 5) { alert('Rating must be between 1 and 5 stars.'); return; }
+  const comment = document.getElementById('reviewComment').value.trim();
+  if (containsOffensiveContent(comment)) {
+    alert('Your review contains inappropriate language. Please keep feedback respectful and constructive.');
+    return;
+  }
+  if (comment.length > 1000) { alert('Review must be under 1000 characters.'); return; }
   const { data:{ user } } = await sb.auth.getUser();
   if (!user) { alert('Please log in to submit a review.'); return; }
+  const rateLimitMsg = await checkRateLimit(user.id);
+  if (rateLimitMsg) { alert(rateLimitMsg); return; }
+  const savedClinicId = currentClinicId;
   const { error } = await sb.from('clinic_reviews').upsert({
-    clinic_id: currentClinicId,
+    clinic_id: savedClinicId,
     patient_id: user.id,
     rating: selectedRating,
-    comment: document.getElementById('reviewComment').value,
+    comment: comment,
     created_at: new Date().toISOString()
   });
   if (error) alert('Error: ' + error.message);
-  else { closeReviewModal(); viewClinicDetail(currentClinicId); }
+  else { closeReviewModal(); viewClinicDetail(savedClinicId); }
 }
 
 // ── NAVIGATION ──

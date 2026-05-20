@@ -242,12 +242,13 @@
             }
         }
 
-        /* Patient Notes System Styles (starts here) */
-        .view-notes-btn {
+    /* Patient Notes System Styles (starts here) */
+    /* Patient Notes System Styles */
+    .view-notes-btn {
         background: none;
         border: 1px solid var(--teal);
         color: var(--teal);
-        padding: 2px 8px;
+        padding: 4px 10px;
         border-radius: var(--radius-sm);
         cursor: pointer;
         font-size: 11px;
@@ -271,11 +272,6 @@
         padding: 2px 6px;
         border-radius: 10px;
         margin-left: 4px;
-    }
-
-    .notes-modal .modal-box {
-        max-width: 550px;
-        width: 90%;
     }
 
     .notes-history {
@@ -328,9 +324,38 @@
     }
         
     .notes-cell {
-    text-align: left;
-    white-space: nowrap;
-    padding-left: 8px;
+        text-align: left;
+        white-space: nowrap;
+        padding-left: 8px;
+    }
+
+    /* Modal positioning */
+    dialog#notesModal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: none;
+        padding: 0;
+        background: transparent;
+        max-width: 90vw;
+        max-height: 90vh;
+        margin: 0;
+    }
+
+    dialog#notesModal::backdrop {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+    }
+
+    dialog#notesModal .modal-box {
+        max-width: 550px;
+        width: 100%;
+        background: var(--surface);
+        border: 1.5px solid var(--border-md);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
     /* Patient Notes System Styles (ends here)*/
 

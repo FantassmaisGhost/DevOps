@@ -50,7 +50,7 @@ async function handleAddPatient() {
 function handleAddDoctor() {
   const name = document.getElementById("doc-name").value.trim();
   const dept = document.getElementById("doc-dept").value;
-  const room = document.getElementById("doc-room").value.trim() || "Room ?";
+  //const room = document.getElementById("doc-room").value.trim() || "Room ?";
 
   if (!name) {
     document.getElementById("doc-name").focus();
@@ -171,7 +171,7 @@ function renderDoctors(s) {
           <h3 class="doctor-name">${escHtml(d.name)}</h3>
 
           <p class="doctor-room-line">
-            ${escHtml(d.room)}
+           
             <mark class="badge badge-${d.dept.toLowerCase()}">${d.dept}</mark>
           </p>
         </section>

@@ -335,12 +335,12 @@ window.QueueStore = (() => {
               row.Type ||
               row.type
           ),
-          room:
+         /* room:
             row.Room ||
             row.room ||
             row.RoomNo ||
             row.room_number ||
-            "Room ?",
+            "Room ?",*/
           status: doctorStatus,
           available: doctorStatus === "Available",
           currentPatient: null,
