@@ -85,4 +85,4 @@ server.listen(port, () => {
   console.log(`Server running on port ${port}`)
 })
 
-module.exports = { resolveFile, createHandler, mimeTypes }
+module.exports = { resolveFile, createHandler, mimeTypes, server }

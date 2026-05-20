@@ -3,27 +3,55 @@
 /**
  * __tests__/admin.test.js
  * Tests for:
- *   backend/AdminFacilitiesController.js  — generateStaffId, loadStaff,
- *                                           loadPendingStaff, approveStaff
+ *   backend/SeeFacilities.js              — escapeHtml, generateStaffId, loadStaff,
+ *                                           loadPendingStaff, approveStaff,
+ *                                           removeStaff, loadPendingReceptionists,
+ *                                           approveReceptionist, loadReceptionists,
+ *                                           removeReceptionist
  *   backend/AdminHoursController.js       — isRowChanged, discardChanges,
  *                                           loadHours
  *
- * Both files are browser-global scripts (no exports) that reference a global
- * `supabase` variable.  We set global.supabase before each test that needs it.
+ * SeeFacilities.js is loaded via require() so Jest/Istanbul instruments it for
+ * coverage.  babel-jest (configured in package.json) transforms its ES module
+ * import/export syntax to CommonJS.  We mock the supabase module with a getter
+ * so each test can swap global.supabase independently.
  */
 
 const fs   = require('fs')
 const path = require('path')
 
-// ─── Shared globals both controllers need ───────────────────────────────────
-global.supabase = null   // overridden per test
-global.confirm  = jest.fn(() => true)   // auto-accept confirmation dialogs
+// ─── Supabase module mock ────────────────────────────────────────────────────
+// jest.mock is hoisted to the top of the file by babel-jest.
+// The getter reads global.supabase at call time so each test can inject its own
+// mock without needing to reset the module.
+jest.mock('../backend/supabase.js', () => {
+  const m = {}
+  Object.defineProperty(m, 'supabase', { get: () => global.supabase, enumerable: true })
+  return m
+})
 
+// ─── Browser globals needed by SeeFacilities.js ─────────────────────────────
+// The file has auto-execute code at the bottom that runs on first require().
+// Supply the minimal browser APIs it touches so the module loads without error.
+global.location       = { search: '' }
+global.URLSearchParams = URLSearchParams   // available in Node ≥18
+global.document = {
+  getElementById:      jest.fn(() => ({ innerHTML: '', insertAdjacentHTML: jest.fn() })),
+  querySelectorAll:    jest.fn(() => []),
+}
+global.supabase = null   // overridden per test
+global.confirm  = jest.fn(() => true)
+
+// ─── Load SeeFacilities.js ──────────────────────────────────────────────────
+// babel-jest transforms import/export → CommonJS so a plain require() works.
+// The auto-execute block runs here; clinicID is null so renderError() fires but
+// hits our document stub harmlessly.
+const { AdminFacilitiesController } = require('../backend/SeeFacilities.js')
+
+// ─── Load AdminHoursController (browser-global script, no exports) ───────────
 global.DAY_NAMES = [
   'Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday',
 ]
-// Fallback row used in AdminHoursController.loadHours when a day is missing
-// from the Supabase result set.
 global.defaultRow = {
   operatingid: null, clinicid: null, day: null,
   opentime: '08:00:00', closingtime: '17:00:00', isopen: true,
@@ -38,18 +66,6 @@ global.defaultHoursMap = jest.fn(() => ({
   Saturday:  { isopen: false, opentime: null,       closingtime: null },
 }))
 
-// ─── Load controllers ────────────────────────────────────────────────────────
-// Evaluate each browser-global script inside an IIFE so classes are returned
-// into this module's scope.  Method closures resolve `supabase`, `DAY_NAMES`,
-// etc. through the scope chain at call time (→ global).
-const _facCode = fs.readFileSync(
-  path.join(__dirname, '../backend/AdminFacilitiesController.js'), 'utf8'
-)
-// eslint-disable-next-line no-eval
-const AdminFacilitiesController = eval(
-  `(function() { ${_facCode}; return AdminFacilitiesController; })()`
-)
-
 const _hoursCode = fs.readFileSync(
   path.join(__dirname, '../backend/AdminHoursController.js'), 'utf8'
 )
@@ -59,8 +75,6 @@ const AdminHoursController = eval(
 )
 
 // ─── Supabase chain helper ───────────────────────────────────────────────────
-// Returns a mock chain object that is "thenable" — awaiting it resolves to
-// `resolvedValue` regardless of which builder method is last.
 function makeChain(resolvedValue) {
   const then = (resolve) => Promise.resolve(resolvedValue).then(resolve)
   const chain = { then }
@@ -71,7 +85,7 @@ function makeChain(resolvedValue) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  AdminFacilitiesController
+//  AdminFacilitiesController (SeeFacilities.js)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('AdminFacilitiesController', () => {
@@ -81,7 +95,36 @@ describe('AdminFacilitiesController', () => {
     )
   }
 
-  beforeEach(() => { jest.clearAllMocks() })
+  beforeEach(() => {
+    jest.clearAllMocks()
+    global.confirm = jest.fn(() => true)
+  })
+
+  // ── escapeHtml ──────────────────────────────────────────────────────────────
+  describe('escapeHtml', () => {
+    test('returns empty string for falsy values', () => {
+      const ctrl = makeCtrl()
+      expect(ctrl.escapeHtml(null)).toBe('')
+      expect(ctrl.escapeHtml(undefined)).toBe('')
+      expect(ctrl.escapeHtml('')).toBe('')
+    })
+
+    test('escapes ampersand', () => {
+      expect(makeCtrl().escapeHtml('a & b')).toBe('a &amp; b')
+    })
+
+    test('escapes less-than and greater-than', () => {
+      expect(makeCtrl().escapeHtml('<script>')).toBe('&lt;script&gt;')
+    })
+
+    test('escapes double quotes', () => {
+      expect(makeCtrl().escapeHtml('"hello"')).toBe('&quot;hello&quot;')
+    })
+
+    test('returns plain strings unchanged', () => {
+      expect(makeCtrl().escapeHtml('hello world')).toBe('hello world')
+    })
+  })
 
   // ── generateStaffId ─────────────────────────────────────────────────────────
   describe('generateStaffId', () => {
@@ -156,6 +199,32 @@ describe('AdminFacilitiesController', () => {
     })
   })
 
+  // ── removeStaff ─────────────────────────────────────────────────────────────
+  describe('removeStaff', () => {
+    test('returns false when user cancels confirmation', async () => {
+      global.confirm = jest.fn(() => false)
+      expect(await makeCtrl().removeStaff('STF-001', 'Dr. A')).toBe(false)
+    })
+
+    test('returns false when Supabase delete fails', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ error: { message: 'Delete failed' } })),
+      }
+      const ctrl = makeCtrl()
+      ctrl.showToast = jest.fn()
+      expect(await ctrl.removeStaff('STF-001', 'Dr. A')).toBe(false)
+    })
+
+    test('returns true when delete succeeds', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ error: null })),
+      }
+      const ctrl = makeCtrl()
+      ctrl.showToast = jest.fn()
+      expect(await ctrl.removeStaff('STF-001', 'Dr. A')).toBe(true)
+    })
+  })
+
   // ── loadPendingStaff ────────────────────────────────────────────────────────
   describe('loadPendingStaff', () => {
     test('returns pending staff filtered to "pending" status', async () => {
@@ -181,9 +250,6 @@ describe('AdminFacilitiesController', () => {
   // ── approveStaff ────────────────────────────────────────────────────────────
   describe('approveStaff', () => {
     test('returns true and updates pending_staff status on success', async () => {
-      // First from('Staff') call: generateStaffId query (no existing)
-      // Second from('Staff') call: insert
-      // Third from('pending_staff'): update status to approved
       let fromCallCount = 0
       global.supabase = {
         from: jest.fn(() => {
@@ -192,7 +258,6 @@ describe('AdminFacilitiesController', () => {
           if (fromCallCount === 2) return makeChain({ data: null, error: null }) // insert
           return makeChain({ data: null, error: null }) // pending update
         }),
-        showToast: jest.fn(),
       }
       const ctrl = makeCtrl()
       ctrl.showToast = jest.fn()
@@ -221,6 +286,560 @@ describe('AdminFacilitiesController', () => {
         email: 'x@clinic.com', full_name: 'X', clinicid: '42',
       })
       expect(result).toBe(false)
+    })
+  })
+
+  // ── loadPendingReceptionists ────────────────────────────────────────────────
+  describe('loadPendingReceptionists', () => {
+    test('returns pending receptionist rows from Supabase', async () => {
+      const rows = [
+        { email: 'r@clinic.com', full_name: 'Rhonda', status: 'pending', clinicid: '42' },
+      ]
+      global.supabase = {
+        from: jest.fn(() => makeChain({ data: rows, error: null })),
+      }
+      const result = await makeCtrl().loadPendingReceptionists()
+      expect(result).toHaveLength(1)
+      expect(result[0].email).toBe('r@clinic.com')
+    })
+
+    test('returns empty array on Supabase error', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ data: null, error: { message: 'DB error' } })),
+      }
+      expect(await makeCtrl().loadPendingReceptionists()).toEqual([])
+    })
+
+    test('returns empty array when data is null', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ data: null, error: null })),
+      }
+      expect(await makeCtrl().loadPendingReceptionists()).toEqual([])
+    })
+  })
+
+  // ── approveReceptionist ─────────────────────────────────────────────────────
+  describe('approveReceptionist', () => {
+    test('returns true on successful insert and status update', async () => {
+      let fromCallCount = 0
+      global.supabase = {
+        from: jest.fn(() => {
+          fromCallCount++
+          if (fromCallCount === 1) return makeChain({ error: null }) // Receptionist insert
+          return makeChain({ error: null }) // pending_receptionists update
+        }),
+      }
+      const ctrl = makeCtrl()
+      ctrl.showToast = jest.fn()
+
+      const result = await ctrl.approveReceptionist({
+        email: 'r@clinic.com', full_name: 'Rhonda',
+        phone_number: '083000000', clinicid: '42', clinicname: 'Test Clinic',
+      })
+      expect(result).toBe(true)
+    })
+
+    test('returns false when Receptionist insert fails', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ error: { message: 'Insert failed' } })),
+      }
+      const ctrl = makeCtrl()
+      ctrl.showToast = jest.fn()
+
+      const result = await ctrl.approveReceptionist({
+        email: 'r@clinic.com', full_name: 'Rhonda', clinicid: '42',
+      })
+      expect(result).toBe(false)
+    })
+  })
+
+  // ── loadReceptionists ───────────────────────────────────────────────────────
+  describe('loadReceptionists', () => {
+    test('returns receptionist rows from Supabase', async () => {
+      const rows = [
+        { receptionist_id: 'REC-42-1', full_name: 'Rhonda', email: 'r@clinic.com' },
+      ]
+      global.supabase = {
+        from: jest.fn(() => makeChain({ data: rows, error: null })),
+      }
+      const result = await makeCtrl().loadReceptionists()
+      expect(result).toHaveLength(1)
+      expect(result[0].full_name).toBe('Rhonda')
+    })
+
+    test('returns empty array on Supabase error', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ data: null, error: { message: 'DB error' } })),
+      }
+      expect(await makeCtrl().loadReceptionists()).toEqual([])
+    })
+
+    test('returns empty array when data is null', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ data: null, error: null })),
+      }
+      expect(await makeCtrl().loadReceptionists()).toEqual([])
+    })
+  })
+
+  // ── removeReceptionist ──────────────────────────────────────────────────────
+  describe('removeReceptionist', () => {
+    test('returns false when user cancels confirmation', async () => {
+      global.confirm = jest.fn(() => false)
+      expect(await makeCtrl().removeReceptionist('REC-42-1', 'Rhonda')).toBe(false)
+    })
+
+    test('returns false when Supabase delete fails', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ error: { message: 'Delete failed' } })),
+      }
+      const ctrl = makeCtrl()
+      ctrl.showToast = jest.fn()
+      expect(await ctrl.removeReceptionist('REC-42-1', 'Rhonda')).toBe(false)
+    })
+
+    test('returns true when delete succeeds', async () => {
+      global.supabase = {
+        from: jest.fn(() => makeChain({ error: null })),
+      }
+      const ctrl = makeCtrl()
+      ctrl.showToast = jest.fn()
+      expect(await ctrl.removeReceptionist('REC-42-1', 'Rhonda')).toBe(true)
+    })
+  })
+
+  // ── renderStaffList ─────────────────────────────────────────────────────────
+  describe('renderStaffList', () => {
+    test('returns early when container element is null', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      global.document.getElementById = jest.fn(() => null)
+      await expect(makeCtrl().renderStaffList()).resolves.toBeUndefined()
+    })
+
+    test('shows empty-state message when staff list is empty', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderStaffList()
+      expect(container.innerHTML).toContain('No staff members')
+    })
+
+    test('renders staff row HTML when staff data exists', async () => {
+      const staffRows = [
+        { id: 'STF-001', full_name: 'Dr. Alpha', email: 'alpha@test.com', Occupation: 'Doctor', contact: '083111111' },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: staffRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderStaffList()
+      expect(container.innerHTML).toContain('Dr. Alpha')
+      expect(container.innerHTML).toContain('STF-001')
+      expect(container.innerHTML).toContain('083111111')
+    })
+
+    test('renders N/A for contact when contact is falsy', async () => {
+      const staffRows = [
+        { id: 'STF-002', full_name: 'Nurse B', email: 'b@test.com', Occupation: 'Nurse', contact: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: staffRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderStaffList()
+      expect(container.innerHTML).toContain('N/A')
+    })
+
+    test('attaches click listener to each remove-staff-btn', async () => {
+      const staffRows = [
+        { id: 'STF-001', full_name: 'Dr. A', email: 'a@test.com', Occupation: 'Doctor', contact: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: staffRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      const mockBtn = { getAttribute: jest.fn(), addEventListener: jest.fn() }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      await makeCtrl().renderStaffList()
+      expect(global.document.querySelectorAll).toHaveBeenCalledWith('.remove-staff-btn')
+      expect(mockBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+    })
+
+    test('re-renders after successful remove', async () => {
+      const staffRows = [
+        { id: 'STF-001', full_name: 'Dr. A', email: 'a@test.com', Occupation: 'Doctor', contact: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: staffRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      let clickFn
+      const mockBtn = {
+        getAttribute: jest.fn(attr => attr === 'data-id' ? 'STF-001' : 'Dr. A'),
+        addEventListener: jest.fn((evt, fn) => { clickFn = fn }),
+      }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      const ctrl = makeCtrl()
+      ctrl.removeStaff = jest.fn(() => Promise.resolve(true))
+      const spy = jest.spyOn(ctrl, 'renderStaffList')
+      await ctrl.renderStaffList()  // call #1 — attaches listener
+      await clickFn()               // remove succeeds → renderStaffList() called again
+      expect(spy).toHaveBeenCalledTimes(2)
+    })
+
+    test('does not re-render when remove returns false', async () => {
+      const staffRows = [
+        { id: 'STF-001', full_name: 'Dr. A', email: 'a@test.com', Occupation: 'Doctor', contact: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: staffRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      let clickFn
+      const mockBtn = {
+        getAttribute: jest.fn(attr => attr === 'data-id' ? 'STF-001' : 'Dr. A'),
+        addEventListener: jest.fn((evt, fn) => { clickFn = fn }),
+      }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      const ctrl = makeCtrl()
+      ctrl.removeStaff = jest.fn(() => Promise.resolve(false))
+      const spy = jest.spyOn(ctrl, 'renderStaffList')
+      await ctrl.renderStaffList()  // call #1
+      await clickFn()               // remove cancelled/failed → no re-render
+      expect(spy).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  // ── renderPendingStaff ──────────────────────────────────────────────────────
+  describe('renderPendingStaff', () => {
+    test('returns early when container element is null', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      global.document.getElementById = jest.fn(() => null)
+      await expect(makeCtrl().renderPendingStaff()).resolves.toBeUndefined()
+    })
+
+    test('shows empty-state message when no pending requests', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderPendingStaff()
+      expect(container.innerHTML).toContain('No pending staff requests')
+    })
+
+    test('renders pending staff rows with occupation and phone number', async () => {
+      const pendingRows = [
+        { email: 'a@test.com', full_name: 'Alice', occupation: 'Nurse', phone_number: '083000000', clinicid: '42' },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderPendingStaff()
+      expect(container.innerHTML).toContain('Alice')
+      expect(container.innerHTML).toContain('Nurse')
+      expect(container.innerHTML).toContain('083000000')
+    })
+
+    test('omits phone row when phone_number is null', async () => {
+      const pendingRows = [
+        { email: 'a@test.com', full_name: 'Alice', occupation: 'Nurse', phone_number: null, clinicid: '42' },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderPendingStaff()
+      expect(container.innerHTML).not.toContain('Phone:')
+    })
+
+    test('attaches click listener to each approve-staff-btn', async () => {
+      const pendingRows = [
+        { email: 'a@test.com', full_name: 'Alice', occupation: 'Nurse', phone_number: null, clinicid: '42' },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      const mockBtn = { getAttribute: jest.fn(() => 'a@test.com'), addEventListener: jest.fn() }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      await makeCtrl().renderPendingStaff()
+      expect(global.document.querySelectorAll).toHaveBeenCalledWith('.approve-staff-btn')
+      expect(mockBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+    })
+
+    test('calls approveStaff with matched item and re-renders on click', async () => {
+      const pendingRows = [
+        { email: 'a@test.com', full_name: 'Alice', occupation: 'Nurse', phone_number: null, clinicid: '42' },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      let clickFn
+      const mockBtn = {
+        getAttribute: jest.fn(() => 'a@test.com'),
+        addEventListener: jest.fn((evt, fn) => { clickFn = fn }),
+      }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      const ctrl = makeCtrl()
+      ctrl.approveStaff = jest.fn(() => Promise.resolve(true))
+      ctrl.renderStaffList = jest.fn(() => Promise.resolve())
+      const pendingSpy = jest.spyOn(ctrl, 'renderPendingStaff')
+      await ctrl.renderPendingStaff()  // call #1
+      await clickFn()
+      expect(ctrl.approveStaff).toHaveBeenCalledWith(pendingRows[0])
+      expect(pendingSpy).toHaveBeenCalledTimes(2)
+      expect(ctrl.renderStaffList).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  // ── renderPendingReceptionists ──────────────────────────────────────────────
+  describe('renderPendingReceptionists', () => {
+    test('returns early when container element is null', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      global.document.getElementById = jest.fn(() => null)
+      await expect(makeCtrl().renderPendingReceptionists()).resolves.toBeUndefined()
+    })
+
+    test('shows empty-state message when no pending receptionist requests', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderPendingReceptionists()
+      expect(container.innerHTML).toContain('No pending receptionist requests')
+    })
+
+    test('renders pending receptionist rows with clinic name and phone', async () => {
+      const pendingRows = [
+        { email: 'r@test.com', full_name: 'Rhonda', occupation: 'Receptionist', phone_number: '083999999', clinicid: '42', clinicname: 'Test Clinic' },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderPendingReceptionists()
+      expect(container.innerHTML).toContain('Rhonda')
+      expect(container.innerHTML).toContain('083999999')
+      expect(container.innerHTML).toContain('Test Clinic')
+    })
+
+    test('omits phone row when phone_number is null', async () => {
+      const pendingRows = [
+        { email: 'r@test.com', full_name: 'Rhonda', occupation: null, phone_number: null, clinicid: '42', clinicname: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderPendingReceptionists()
+      expect(container.innerHTML).not.toContain('Phone:')
+    })
+
+    test('attaches click listener to each approve-rec-btn', async () => {
+      const pendingRows = [
+        { email: 'r@test.com', full_name: 'Rhonda', occupation: null, phone_number: null, clinicid: '42', clinicname: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      const mockBtn = { getAttribute: jest.fn(() => 'r@test.com'), addEventListener: jest.fn() }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      await makeCtrl().renderPendingReceptionists()
+      expect(global.document.querySelectorAll).toHaveBeenCalledWith('.approve-rec-btn')
+      expect(mockBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+    })
+
+    test('calls approveReceptionist with matched item and re-renders on click', async () => {
+      const pendingRows = [
+        { email: 'r@test.com', full_name: 'Rhonda', occupation: null, phone_number: null, clinicid: '42', clinicname: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: pendingRows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      let clickFn
+      const mockBtn = {
+        getAttribute: jest.fn(() => 'r@test.com'),
+        addEventListener: jest.fn((evt, fn) => { clickFn = fn }),
+      }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      const ctrl = makeCtrl()
+      ctrl.approveReceptionist = jest.fn(() => Promise.resolve(true))
+      const spy = jest.spyOn(ctrl, 'renderPendingReceptionists')
+      await ctrl.renderPendingReceptionists()  // call #1
+      await clickFn()
+      expect(ctrl.approveReceptionist).toHaveBeenCalledWith(pendingRows[0])
+      expect(spy).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  // ── renderReceptionistList ──────────────────────────────────────────────────
+  describe('renderReceptionistList', () => {
+    test('returns early when container element is null', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      global.document.getElementById = jest.fn(() => null)
+      await expect(makeCtrl().renderReceptionistList()).resolves.toBeUndefined()
+    })
+
+    test('shows empty-state message when no receptionists', async () => {
+      global.supabase = { from: jest.fn(() => makeChain({ data: [], error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderReceptionistList()
+      expect(container.innerHTML).toContain('No receptionists')
+    })
+
+    test('renders receptionist rows with contacts', async () => {
+      const rows = [
+        { receptionist_id: 'REC-42-1', full_name: 'Rhonda', email: 'r@test.com', contacts: '083777777', occupation: 'Receptionist' },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: rows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderReceptionistList()
+      expect(container.innerHTML).toContain('Rhonda')
+      expect(container.innerHTML).toContain('083777777')
+    })
+
+    test('renders N/A for contacts when contacts is falsy', async () => {
+      const rows = [
+        { receptionist_id: 'REC-42-2', full_name: 'Jane', email: 'j@test.com', contacts: null, occupation: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: rows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      global.document.querySelectorAll = jest.fn(() => [])
+      await makeCtrl().renderReceptionistList()
+      expect(container.innerHTML).toContain('N/A')
+    })
+
+    test('attaches click listener to each remove-rec-btn', async () => {
+      const rows = [
+        { receptionist_id: 'REC-42-1', full_name: 'Rhonda', email: 'r@test.com', contacts: null, occupation: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: rows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      const mockBtn = { getAttribute: jest.fn(), addEventListener: jest.fn() }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      await makeCtrl().renderReceptionistList()
+      expect(global.document.querySelectorAll).toHaveBeenCalledWith('.remove-rec-btn')
+      expect(mockBtn.addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+    })
+
+    test('re-renders after successful remove', async () => {
+      const rows = [
+        { receptionist_id: 'REC-42-1', full_name: 'Rhonda', email: 'r@test.com', contacts: null, occupation: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: rows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      let clickFn
+      const mockBtn = {
+        getAttribute: jest.fn(attr => attr === 'data-id' ? 'REC-42-1' : 'Rhonda'),
+        addEventListener: jest.fn((evt, fn) => { clickFn = fn }),
+      }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      const ctrl = makeCtrl()
+      ctrl.removeReceptionist = jest.fn(() => Promise.resolve(true))
+      const spy = jest.spyOn(ctrl, 'renderReceptionistList')
+      await ctrl.renderReceptionistList()  // call #1
+      await clickFn()                       // remove succeeds → renderReceptionistList() again
+      expect(spy).toHaveBeenCalledTimes(2)
+    })
+
+    test('does not re-render when remove returns false', async () => {
+      const rows = [
+        { receptionist_id: 'REC-42-1', full_name: 'Rhonda', email: 'r@test.com', contacts: null, occupation: null },
+      ]
+      global.supabase = { from: jest.fn(() => makeChain({ data: rows, error: null })) }
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(() => container)
+      let clickFn
+      const mockBtn = {
+        getAttribute: jest.fn(attr => attr === 'data-id' ? 'REC-42-1' : 'Rhonda'),
+        addEventListener: jest.fn((evt, fn) => { clickFn = fn }),
+      }
+      global.document.querySelectorAll = jest.fn(() => [mockBtn])
+      const ctrl = makeCtrl()
+      ctrl.removeReceptionist = jest.fn(() => Promise.resolve(false))
+      const spy = jest.spyOn(ctrl, 'renderReceptionistList')
+      await ctrl.renderReceptionistList()  // call #1
+      await clickFn()                       // remove cancelled → no re-render
+      expect(spy).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  // ── renderClinicHeader ──────────────────────────────────────────────────────
+  describe('renderClinicHeader', () => {
+    test('renders HOSPITAL chip when type is "hospital"', () => {
+      const ctrl = new AdminFacilitiesController('42', 'City Hospital', 'hospital', 'public', null, 'Gauteng')
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(id => id === 'dynamic-content' ? container : null)
+      ctrl.renderClinicHeader()
+      expect(container.innerHTML).toContain('HOSPITAL')
+      expect(container.innerHTML).toContain('chip-hosp')
+    })
+
+    test('renders CLINIC / CHC chip when type is not "hospital"', () => {
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(id => id === 'dynamic-content' ? container : null)
+      makeCtrl().renderClinicHeader()
+      expect(container.innerHTML).toContain('CLINIC / CHC')
+      expect(container.innerHTML).toContain('chip-clinic')
+    })
+
+    test('renders chip-public when sector is "public"', () => {
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(id => id === 'dynamic-content' ? container : null)
+      makeCtrl().renderClinicHeader()
+      expect(container.innerHTML).toContain('chip-public')
+      expect(container.innerHTML).toContain('PUBLIC')
+    })
+
+    test('renders chip-private when sector is not "public"', () => {
+      const ctrl = new AdminFacilitiesController('42', 'Private Clinic', 'clinic', 'private', null, 'Gauteng')
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(id => id === 'dynamic-content' ? container : null)
+      ctrl.renderClinicHeader()
+      expect(container.innerHTML).toContain('chip-private')
+    })
+
+    test('includes subtype in header when subtype is truthy', () => {
+      const ctrl = new AdminFacilitiesController('42', 'Test Clinic', 'clinic', 'public', 'CHC', 'Gauteng')
+      const container = { innerHTML: '' }
+      global.document.getElementById = jest.fn(id => id === 'dynamic-content' ? container : null)
+      ctrl.renderClinicHeader()
+      expect(container.innerHTML).toContain('CHC')
+    })
+
+    test('updates current-clinic-display-rec textContent when element exists', () => {
+      const container = { innerHTML: '' }
+      const recDisplay = { textContent: '' }
+      global.document.getElementById = jest.fn(id => {
+        if (id === 'dynamic-content') return container
+        if (id === 'current-clinic-display-rec') return recDisplay
+        return null
+      })
+      makeCtrl().renderClinicHeader()
+      expect(recDisplay.textContent).toBe('42')
+    })
+  })
+
+  // ── renderActionCards ───────────────────────────────────────────────────────
+  describe('renderActionCards', () => {
+    test('calls insertAdjacentHTML with action card containing "Manage Hours"', () => {
+      const container = { innerHTML: '', insertAdjacentHTML: jest.fn() }
+      global.document.getElementById = jest.fn(() => container)
+      makeCtrl().renderActionCards()
+      expect(container.insertAdjacentHTML).toHaveBeenCalledWith('beforeend', expect.stringContaining('Manage Hours'))
+    })
+
+    test('includes clinic ID in the hours link href', () => {
+      const container = { innerHTML: '', insertAdjacentHTML: jest.fn() }
+      global.document.getElementById = jest.fn(() => container)
+      makeCtrl().renderActionCards()
+      const [, html] = container.insertAdjacentHTML.mock.calls[0]
+      expect(html).toContain('clinicID=42')
     })
   })
 })
@@ -294,7 +913,7 @@ describe('AdminHoursController', () => {
       const ctrl = makeHoursCtrl()
       ctrl.originalHours = [{ opentime: '08:00:00', closingtime: '17:00:00', isopen: true }]
       ctrl.currentHours  = [{ opentime: '10:00:00', closingtime: '15:00:00', isopen: false }]
-      ctrl.renderHours   = jest.fn()  // stub DOM-touching method
+      ctrl.renderHours   = jest.fn()
 
       ctrl.discardChanges()
 
@@ -376,7 +995,6 @@ describe('AdminHoursController', () => {
 
       await ctrl.loadHours()
 
-      // defaultHoursMap stub provides 7 days → 7 rows in a map structure
       expect(ctrl.originalHours).toHaveLength(7)
     })
 

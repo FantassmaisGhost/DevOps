@@ -10,7 +10,8 @@ const path = require('path')
 const fs   = require('fs')
 const os   = require('os')
 
-const { resolveFile, createHandler, mimeTypes } = require('../server')
+jest.spyOn(console, 'log').mockImplementation(() => {})
+const { resolveFile, createHandler, mimeTypes, server: appServer } = require('../server')
 
 // ── Temp directory fixture ───────────────────────────────────
 let tmpDir
@@ -29,6 +30,7 @@ beforeAll(() => {
 
 afterAll(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true })
+  return new Promise(r => appServer.close(r))
 })
 
 // ────────────────────────────────────────────────────────────

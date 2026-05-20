@@ -38,7 +38,15 @@
     "testMatch": [
       "**/__tests__/**/*.test.js"
     ],
+    "setupFilesAfterEnv": [
+      "./jest.setup.js"
+    ],
     "collectCoverageFrom": [
+      "backend/SeeFacilities.js",
+      "backend/receptionist-dashboard.js",
+      "backend/receptionist-appointments.js",
+      "backend/staff-dashboard.js",
+      "backend/staff-unavailability.js",
       "backend/utils.js",
       "backend/notificationService.js",
       "server.js"
