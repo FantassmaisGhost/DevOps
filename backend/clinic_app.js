@@ -524,6 +524,24 @@ function setupStarContainer() {
   });
 }
 
+// async function submitReview() {
+//   console.log('1. selectedRating:', selectedRating);
+//   console.log('2. currentClinicId:', currentClinicId);
+//   if (!selectedRating) { alert('Please select a star rating.'); return; }
+//   const { data:{ user } } = await sb.auth.getUser();
+//   console.log('3. user:', user);
+//   if (!user) { alert('Please log in to submit a review.'); return; }
+//   const { error } = await sb.from('clinic_reviews').upsert({
+//     clinic_id: currentClinicId,
+//     patient_id: user.id,
+//     rating: selectedRating,
+//     comment: document.getElementById('reviewComment').value,
+//     created_at: new Date().toISOString()
+//   });
+//   console.log('4. error:', error);
+//   if (error) alert('Error: ' + error.message);
+//   else { closeReviewModal(); viewClinicDetail(currentClinicId); }
+// }
 async function submitReview() {
   console.log('1. selectedRating:', selectedRating);
   console.log('2. currentClinicId:', currentClinicId);
@@ -531,8 +549,9 @@ async function submitReview() {
   const { data:{ user } } = await sb.auth.getUser();
   console.log('3. user:', user);
   if (!user) { alert('Please log in to submit a review.'); return; }
+  const savedClinicId = currentClinicId; // ← save before closing modal
   const { error } = await sb.from('clinic_reviews').upsert({
-    clinic_id: currentClinicId,
+    clinic_id: savedClinicId,
     patient_id: user.id,
     rating: selectedRating,
     comment: document.getElementById('reviewComment').value,
@@ -540,7 +559,7 @@ async function submitReview() {
   });
   console.log('4. error:', error);
   if (error) alert('Error: ' + error.message);
-  else { closeReviewModal(); viewClinicDetail(currentClinicId); }
+  else { closeReviewModal(); viewClinicDetail(savedClinicId); } // ← use saved ID
 }
 
 // ── NAVIGATION ──
