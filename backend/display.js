@@ -32,7 +32,7 @@ function renderServing(s) {
     return `
     <div class="serving-card ${busy ? 'active' : ''}">
       <span class="sc-dot ${busy ? 'active' : 'idle'}"></span>
-      <div class="sc-room">${d.room} · ${d.name}</div>
+      <div class="sc-room"> ${d.name}</div>
       ${busy ? `
         <div class="sc-num mono">#${String(d.currentPatient.num).padStart(3,'0')}</div>
         <div class="sc-name">${escHtml(d.currentPatient.name)}</div>
@@ -72,17 +72,17 @@ function checkFlash(s) {
 
     if (cur && (!prev || prev.id !== cur.id)) {
       // New patient just called for this doctor
-      showFlash(cur.num, cur.name, d.room, d.name);
+      showFlash(cur.num, cur.name, d.name);
     }
 
     lastServingSnapshot[d.id] = cur ? { id: cur.id } : null;
   });
 }
 
-function showFlash(num, name, room, doctor) {
+function showFlash(num, name, doctor) {
   document.getElementById('flash-num').textContent  = '#' + String(num).padStart(3,'0');
   document.getElementById('flash-name').textContent = name;
-  document.getElementById('flash-room').textContent = `Please proceed to ${room} · ${doctor}`;
+  document.getElementById('flash-room').textContent = `Please proceed to Dr.${doctor}'s room`;
 
   const overlay = document.getElementById('flash-overlay');
   overlay.classList.add('show');
