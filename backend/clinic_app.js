@@ -545,6 +545,34 @@ function containsOffensiveContent(text) {
   });
 }
 
+async function checkRateLimit(userId) {
+  const now = new Date();
+  const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: dailyReviews } = await sb
+    .from('clinic_reviews')
+    .select('id')
+    .eq('patient_id', userId)
+    .gte('created_at', oneDayAgo);
+
+  if (dailyReviews?.length >= 1) {
+    return 'You have already submitted a review today. Please come back tomorrow.';
+  }
+
+  const { data: weeklyReviews } = await sb
+    .from('clinic_reviews')
+    .select('id')
+    .eq('patient_id', userId)
+    .gte('created_at', sevenDaysAgo);
+
+  if (weeklyReviews?.length >= 3) {
+    return 'You have reached your limit of 3 reviews this week. Please try again next week.';
+  }
+
+  return null;
+}
+
 async function submitReview() {
   if (!selectedRating) { alert('Please select a star rating.'); return; }
   if (selectedRating < 1 || selectedRating > 5) { alert('Rating must be between 1 and 5 stars.'); return; }
@@ -556,6 +584,8 @@ async function submitReview() {
   if (comment.length > 1000) { alert('Review must be under 1000 characters.'); return; }
   const { data:{ user } } = await sb.auth.getUser();
   if (!user) { alert('Please log in to submit a review.'); return; }
+  const rateLimitMsg = await checkRateLimit(user.id);
+  if (rateLimitMsg) { alert(rateLimitMsg); return; }
   const savedClinicId = currentClinicId;
   const { error } = await sb.from('clinic_reviews').upsert({
     clinic_id: savedClinicId,
