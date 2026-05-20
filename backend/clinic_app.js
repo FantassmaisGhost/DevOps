@@ -499,6 +499,7 @@ function displayBookings() {
 
 // ── REVIEWS MODAL ──
 function openReviewModal(clinicId, name) {
+  console.log('Opening modal with:', clinicId, name);
   currentClinicId = clinicId;
   selectedRating = 0;
   document.getElementById('reviewClinicName').textContent = name;
