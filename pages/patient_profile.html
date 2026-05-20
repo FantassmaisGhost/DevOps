@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Patient Portal | SA Health-Flow</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../node_modules/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -13,6 +12,7 @@
     * { font-family: 'Inter', sans-serif; }
     body { background: #f8fafc; }
     .required-label::after { content: " *"; color: #dc2626; }
+    .optional-label::after { content: " (optional)"; color: #6b7280; font-weight: normal; font-size: 0.7rem; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
     .toast-notify {
       position: fixed; top: 20px; right: 20px; z-index: 100; padding: 1rem 1.5rem;
@@ -117,11 +117,12 @@
                   placeholder="e.g. Sipho Nkosi">
               </li>
               <li>
-                <label for="saID" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">South African ID Number</label>
-                <input type="text" id="saID" name="saID" required pattern="[0-9]{13}" maxlength="13" inputmode="numeric"
+                <label for="saID" class="block text-xs font-bold text-slate-500 uppercase mb-2 optional-label">South African ID Number</label>
+                <input type="text" id="saID" name="saID" maxlength="13" inputmode="numeric"
                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
-                  placeholder="13-digit number">
-                <p id="idError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid 13-digit SA ID number.</p>
+                  placeholder="13-digit number (optional)">
+                <p id="idError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid 13-digit SA ID number (if provided).</p>
+                <p id="idHint" class="text-slate-400 text-xs mt-1">Optional field — can be skipped or added later</p>
               </li>
               <li>
                 <label for="dob" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Date of Birth</label>
@@ -312,7 +313,8 @@
     // ── SUMMARY SIDEBAR ──
     function updateSummary(data) {
       document.getElementById('summaryName').innerText = data.full_name || 'New Patient';
-      document.getElementById('summaryID').innerText = `ID: ${data.id_number || '—'}`;
+      const idDisplay = data.id_number && data.id_number.trim() !== '' ? data.id_number : '—';
+      document.getElementById('summaryID').innerText = `ID: ${idDisplay}`;
       document.getElementById('summaryEmail').innerText = data.email || '';
       document.getElementById('summaryMedAid').innerText = data.medical_aid_name || 'PRIVATE';
       document.getElementById('summaryOccupation').innerText = data.occupation || '—';
@@ -423,25 +425,37 @@
       });
     });
 
-    // ── SA ID VALIDATION ──
-    document.getElementById('saID').addEventListener('input', (e) => {
-      const val = e.target.value.replace(/\D/g, '');
+    // ── SA ID VALIDATION (optional: only validate if value is provided) ──
+    const saIdInput = document.getElementById('saID');
+    const idError = document.getElementById('idError');
+    
+    saIdInput.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      if (val.length > 13) val = val.slice(0, 13);
       e.target.value = val;
-      const err = document.getElementById('idError');
+      
+      // Only validate if user has entered something
       if (val.length > 0 && val.length !== 13) {
-        err.classList.remove('hidden');
+        idError.classList.remove('hidden');
+        idError.textContent = 'SA ID number must be exactly 13 digits (if provided).';
+      } else if (val.length === 13) {
+        idError.classList.add('hidden');
+      } else if (val.length === 0) {
+        idError.classList.add('hidden');
       } else {
-        err.classList.add('hidden');
+        idError.classList.remove('hidden');
+        idError.textContent = 'SA ID number must be exactly 13 digits (if provided).';
       }
     });
 
-    // ── SUBMIT ──
+    // ── SUBMIT (ID validation only if value is provided) ──
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const saId = document.getElementById('saID').value;
-      if (saId && saId.length !== 13) {
-        showToast('⚠️ SA ID number must be exactly 13 digits.', 'bg-amber-600');
+      const saId = saIdInput.value.trim();
+      // Only validate if ID is not empty
+      if (saId !== '' && saId.length !== 13) {
+        showToast('⚠️ SA ID number must be exactly 13 digits (or leave empty).', 'bg-amber-600');
         return;
       }
 
@@ -465,7 +479,7 @@
         const payload = {
           user_id:                  user.id,
           full_name:                document.getElementById('fullName').value,
-          id_number:                document.getElementById('saID').value || null,
+          id_number:                saId === '' ? null : saId,
           date_of_birth:            document.getElementById('dob').value || null,
           gender:                   document.getElementById('gender').value || null,
           occupation:               document.getElementById('occupation').value || null,
