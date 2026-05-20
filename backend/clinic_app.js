@@ -240,7 +240,7 @@ async function viewClinicDetail(clinicId) {
         </div>
 
         <div style="grid-column:1/-1;">
-          <button class="write-review-btn" id="writeReviewBtn" data-clinic-id="${clinic.ClinicID}" data-clinic-name="${clinic.Name.replace(/'/g,"\\'")}">
+          <button class="write-review-btn" id="writeReviewBtn" data-clinic-id="${clinic.ClinicID}" data-clinic-name="${clinic.Name.replace(/'/g, '&apos;')}">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Submit a Patient Review
           </button>
@@ -254,11 +254,11 @@ async function viewClinicDetail(clinicId) {
     }
     const writeReviewBtn = document.getElementById('writeReviewBtn');
     if (writeReviewBtn) {
-      writeReviewBtn.addEventListener('click', () => {
+      writeReviewBtn.onclick = () => {
         const id = writeReviewBtn.dataset.clinicId;
         const name = writeReviewBtn.dataset.clinicName;
         openReviewModal(id, name);
-      });
+      };
     }
     loadGoogleData(clinic, reviews||[]);
   } catch(e) { c.innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
@@ -499,17 +499,21 @@ function displayBookings() {
 
 // ── REVIEWS MODAL ──
 function openReviewModal(clinicId, name) {
-  console.log('Opening modal with:', clinicId, name);
   currentClinicId = clinicId;
   selectedRating = 0;
-  document.getElementById('reviewClinicName').textContent = name;
+  const decodedName = name.replace(/&apos;/g, "'");
+  document.getElementById('reviewClinicName').textContent = decodedName;
   document.getElementById('reviewComment').value = '';
   document.querySelectorAll('#starContainer .star').forEach(s => s.classList.remove('lit'));
-  document.getElementById('reviewModal').classList.add('open');
+  const modal = document.getElementById('reviewModal');
+  modal.removeAttribute('inert');
+  modal.classList.add('open');
 }
 
 function closeReviewModal() {
-  document.getElementById('reviewModal').classList.remove('open');
+  const modal = document.getElementById('reviewModal');
+  modal.setAttribute('inert', '');
+  modal.classList.remove('open');
   currentClinicId = null;
   selectedRating = 0;
 }
@@ -524,32 +528,11 @@ function setupStarContainer() {
   });
 }
 
-// async function submitReview() {
-//   console.log('1. selectedRating:', selectedRating);
-//   console.log('2. currentClinicId:', currentClinicId);
-//   if (!selectedRating) { alert('Please select a star rating.'); return; }
-//   const { data:{ user } } = await sb.auth.getUser();
-//   console.log('3. user:', user);
-//   if (!user) { alert('Please log in to submit a review.'); return; }
-//   const { error } = await sb.from('clinic_reviews').upsert({
-//     clinic_id: currentClinicId,
-//     patient_id: user.id,
-//     rating: selectedRating,
-//     comment: document.getElementById('reviewComment').value,
-//     created_at: new Date().toISOString()
-//   });
-//   console.log('4. error:', error);
-//   if (error) alert('Error: ' + error.message);
-//   else { closeReviewModal(); viewClinicDetail(currentClinicId); }
-// }
 async function submitReview() {
-  console.log('1. selectedRating:', selectedRating);
-  console.log('2. currentClinicId:', currentClinicId);
   if (!selectedRating) { alert('Please select a star rating.'); return; }
   const { data:{ user } } = await sb.auth.getUser();
-  console.log('3. user:', user);
   if (!user) { alert('Please log in to submit a review.'); return; }
-  const savedClinicId = currentClinicId; // ← save before closing modal
+  const savedClinicId = currentClinicId;
   const { error } = await sb.from('clinic_reviews').upsert({
     clinic_id: savedClinicId,
     patient_id: user.id,
@@ -557,9 +540,8 @@ async function submitReview() {
     comment: document.getElementById('reviewComment').value,
     created_at: new Date().toISOString()
   });
-  console.log('4. error:', error);
   if (error) alert('Error: ' + error.message);
-  else { closeReviewModal(); viewClinicDetail(savedClinicId); } // ← use saved ID
+  else { closeReviewModal(); viewClinicDetail(savedClinicId); }
 }
 
 // ── NAVIGATION ──
