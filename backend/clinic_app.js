@@ -528,8 +528,32 @@ function setupStarContainer() {
   });
 }
 
+// ── CONTENT FILTER ──
+const BANNED_WORDS = [
+  'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'piss',
+  'cock', 'pussy', 'nigger', 'nigga', 'kaffir', 'whore', 'slut', 'retard',
+  'faggot', 'fag', 'twat', 'wanker', 'poes', 'doos', 'naai', 'moer',
+  'bliksem', 'hoer'
+];
+
+function containsOffensiveContent(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return BANNED_WORDS.some(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    return regex.test(lower);
+  });
+}
+
 async function submitReview() {
   if (!selectedRating) { alert('Please select a star rating.'); return; }
+  if (selectedRating < 1 || selectedRating > 5) { alert('Rating must be between 1 and 5 stars.'); return; }
+  const comment = document.getElementById('reviewComment').value.trim();
+  if (containsOffensiveContent(comment)) {
+    alert('Your review contains inappropriate language. Please keep feedback respectful and constructive.');
+    return;
+  }
+  if (comment.length > 1000) { alert('Review must be under 1000 characters.'); return; }
   const { data:{ user } } = await sb.auth.getUser();
   if (!user) { alert('Please log in to submit a review.'); return; }
   const savedClinicId = currentClinicId;
@@ -537,7 +561,7 @@ async function submitReview() {
     clinic_id: savedClinicId,
     patient_id: user.id,
     rating: selectedRating,
-    comment: document.getElementById('reviewComment').value,
+    comment: comment,
     created_at: new Date().toISOString()
   });
   if (error) alert('Error: ' + error.message);
