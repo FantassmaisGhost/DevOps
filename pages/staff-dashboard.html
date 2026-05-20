@@ -243,6 +243,7 @@
         }
 
         /* Patient Notes System Styles (starts here) */
+        /*
         .view-notes-btn {
         background: none;
         border: 1px solid var(--teal);
@@ -332,6 +333,124 @@
     white-space: nowrap;
     padding-left: 8px;
     }
+    */
+
+    /* Patient Notes System Styles */
+    .view-notes-btn {
+        background: none;
+        border: 1px solid var(--teal);
+        color: var(--teal);
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        transition: all 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .view-notes-btn:hover {
+        background: var(--teal);
+        color: #fff;
+    }
+
+    .note-count-badge {
+        background: var(--teal);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 4px;
+    }
+
+    .notes-history {
+        max-height: 350px;
+        overflow-y: auto;
+        margin: 16px 0;
+        background: var(--surface2);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+    }
+
+    .note-item {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 8px;
+    }
+
+    .note-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .note-text {
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 6px;
+        color: var(--ink);
+    }
+
+    .note-meta {
+        font-size: 10px;
+        color: var(--ink-3);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .new-note-input {
+        width: 100%;
+        padding: 10px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border-md);
+        background: var(--surface2);
+        color: var(--ink);
+        font-family: var(--font-body);
+        font-size: 12px;
+        resize: vertical;
+        margin-bottom: 12px;
+    }
+        
+    .notes-cell {
+        text-align: center;
+        white-space: nowrap;
+        padding: 12px 8px;
+        vertical-align: middle;
+    }
+
+    /* Modal positioning */
+    dialog#notesModal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: none;
+        padding: 0;
+        background: transparent;
+        max-width: 90vw;
+        max-height: 90vh;
+        margin: 0;
+    }
+
+    dialog#notesModal::backdrop {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+    }
+
+    dialog#notesModal .modal-box {
+        max-width: 550px;
+        width: 100%;
+        background: var(--surface);
+        border: 1.5px solid var(--border-md);
+        border-radius: var(--radius-md);
+        padding: 24px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+    
     /* Patient Notes System Styles (ends here)*/
 
     </style>
