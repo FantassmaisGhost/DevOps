@@ -216,7 +216,7 @@ function init() {
   document.body.appendChild(drawer);
 
   // Toggle button injected into topbar
-  const topbar = document.querySelector('.topbar');
+  const topbar = document.querySelector('.topbar, .hf-topbar');
   if (topbar) {
     const toggle = document.createElement('button');
     toggle.id = 'rnav-toggle';
