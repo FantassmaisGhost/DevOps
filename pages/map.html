@@ -18,7 +18,7 @@
       <small>Source: NDoH Data Dictionary · dsfsi/covid19za · HOTOSM · WHO</small>
     </p>
     <nav aria-label="Site navigation">
-      <a href="dashboard.html" class="btn-outline">← Health-Flow</a>
+      <a id="back-btn" href="dashboard.html" class="btn-outline">← Health-Flow</a>
     </nav>
   </header>
 
@@ -115,5 +115,10 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module" src="../backend/facilities.js"></script>
   <script type="module" src="../backend/directory.js"></script>
+  <script>
+    const dashboards = { admin: 'admin-dashboard.html', receptionist: 'receptionist-dashboard.html', staff: 'staff-dashboard.html', pending: 'pending-approval.html' };
+    const role = localStorage.getItem('userRole');
+    if (dashboards[role]) document.getElementById('back-btn').href = dashboards[role];
+  </script>
 </body>
 </html>
