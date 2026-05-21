@@ -27,11 +27,6 @@
    ```
    Then open your browser at `http://localhost:<Port number written on terminal>`.
 
-   Or, to just serve the HTML pages without the Node server:
-   ```
-   npm run dev
-   ```
-
 4. Run the tests
    ```
    npm test
