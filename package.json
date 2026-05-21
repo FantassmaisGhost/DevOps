@@ -42,13 +42,20 @@
       "./jest.setup.js"
     ],
     "collectCoverageFrom": [
+      "backend/login.js",
       "backend/SeeFacilities.js",
       "backend/receptionist-dashboard.js",
       "backend/receptionist-appointments.js",
       "backend/staff-dashboard.js",
       "backend/staff-unavailability.js",
+      "backend/redirect.js",
+      "backend/dashboard.js",
+      "backend/pending-approval.js",
       "backend/utils.js",
       "backend/notificationService.js",
+      "backend/Admin.js",
+      "backend/booking.js",
+      "backend/tableAdmin.js",
       "server.js"
     ],
     "coverageThreshold": {
