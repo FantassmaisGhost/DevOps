@@ -41,31 +41,37 @@
 
     <fieldset class="sidebar-section filter-row" aria-label="Type and sector filters">
       <legend class="sr-only">Type and sector filters</legend>
-      <section>
+      <div>
         <label class="field-label" for="filter-type">Type</label>
         <select id="filter-type" aria-label="Filter by facility type">
           <option value="">All Types</option>
           <option value="hospital">Hospital</option>
           <option value="clinic">Clinic / CHC</option>
         </select>
-      </section>
-      <section>
+      </div>
+      <div>
         <label class="field-label" for="filter-sector">Sector</label>
         <select id="filter-sector" aria-label="Filter by sector">
           <option value="">All</option>
           <option value="public">Public</option>
           <option value="private">Private</option>
         </select>
-      </section>
+      </div>
     </fieldset>
 
     <dl class="stats-strip" aria-label="Facility counts">
-      <dd class="stat-val" id="stat-showing">—</dd>
-      <dt class="stat-key">Shown</dt>
-      <dd class="stat-val" id="stat-total">—</dd>
-      <dt class="stat-key">Total</dt>
-      <dd class="stat-val" id="stat-provinces">9</dd>
-      <dt class="stat-key">Provinces</dt>
+      <div class="stat">
+        <dd class="stat-val" id="stat-showing">—</dd>
+        <dt class="stat-key">Shown</dt>
+      </div>
+      <div class="stat">
+        <dd class="stat-val" id="stat-total">—</dd>
+        <dt class="stat-key">Total</dt>
+      </div>
+      <div class="stat">
+        <dd class="stat-val" id="stat-provinces">9</dd>
+        <dt class="stat-key">Provinces</dt>
+      </div>
     </dl>
 
     <ol class="facility-list" id="facility-list" aria-label="Matching facilities" aria-live="polite"></ol>

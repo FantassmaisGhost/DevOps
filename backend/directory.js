@@ -184,7 +184,13 @@ export class DirectoryController {
     filtered.forEach(f => {
       const marker = L.circleMarker([f.lat, f.lng], this.markerOptions(f));
       marker.bindTooltip(f._distKm != null ? `${f.name} (${f._distKm < 1 ? '<1' : Math.round(f._distKm)} km)` : f.name, { permanent: false, direction: 'top', className: 'fac-tooltip', offset: [0, -4] });
-      marker.on('click', () => this.openDetail(f));
+      marker.on('click', () => {
+        this.openDetail(f);
+        this.map.flyTo([f.lat, f.lng], 13, { duration: 1.2 });
+        marker.openTooltip();
+        const listItem = document.querySelector(`.facility-item[data-index="${f._index}"]`);
+        if (listItem) listItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
       this.markerLayer.addLayer(marker);
       this.markerRefs[f._index] = marker;
     });
