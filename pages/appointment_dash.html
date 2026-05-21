@@ -59,6 +59,17 @@
     #statScheduled { color: var(--cerulean); }
     #statCancelled { color: var(--rust); }
 
+    #cancelModal:not(.hidden) {
+      position: fixed;
+      inset: 0;
+      background: rgba(31,29,20,0.5);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+
     .stat-card {
       cursor: pointer;
       transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
