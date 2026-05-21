@@ -58,6 +58,24 @@
     #statCompleted { color: var(--forest); }
     #statScheduled { color: var(--cerulean); }
     #statCancelled { color: var(--rust); }
+
+    .stat-card {
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+      user-select: none;
+    }
+    .stat-card:hover { border-color: var(--teal); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .stat-card.stat-active { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,137,123,0.12), var(--shadow-md); }
+    .stat-card.stat-active-completed  { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(26,92,58,0.12), var(--shadow-md); }
+    .stat-card.stat-active-cancelled  { border-color: var(--rust);   box-shadow: 0 0 0 3px rgba(185,74,30,0.12), var(--shadow-md); }
+    .stat-filter-hint {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--teal);
+      margin-top: 4px; display: none;
+    }
+    .stat-card.stat-active .stat-filter-hint,
+    .stat-card.stat-active-completed .stat-filter-hint,
+    .stat-card.stat-active-cancelled .stat-filter-hint { display: block; }
   </style>
 </head>
 <body>
@@ -83,10 +101,26 @@
     <div class="section-label" style="margin-bottom:16px;">My Bookings</div>
 
     <div class="stats-grid" style="margin-bottom:24px;">
-      <div class="stat-card"><div class="stat-val" id="statTotal">—</div><div class="stat-key">Total</div></div>
-      <div class="stat-card"><div class="stat-val" id="statCompleted">—</div><div class="stat-key">Completed</div></div>
-      <div class="stat-card"><div class="stat-val" id="statScheduled">—</div><div class="stat-key">Scheduled</div></div>
-      <div class="stat-card"><div class="stat-val" id="statCancelled">—</div><div class="stat-key">Cancelled</div></div>
+      <div class="stat-card" id="cardTotal"     data-filter="all">
+        <div class="stat-val" id="statTotal">—</div>
+        <div class="stat-key">Total</div>
+        <div class="stat-filter-hint">Showing all</div>
+      </div>
+      <div class="stat-card" id="cardCompleted" data-filter="completed">
+        <div class="stat-val" id="statCompleted">—</div>
+        <div class="stat-key">Completed</div>
+        <div class="stat-filter-hint">Filtered ✓</div>
+      </div>
+      <div class="stat-card" id="cardScheduled" data-filter="scheduled">
+        <div class="stat-val" id="statScheduled">—</div>
+        <div class="stat-key">Scheduled</div>
+        <div class="stat-filter-hint">Filtered ✓</div>
+      </div>
+      <div class="stat-card" id="cardCancelled" data-filter="cancelled">
+        <div class="stat-val" id="statCancelled">—</div>
+        <div class="stat-key">Cancelled</div>
+        <div class="stat-filter-hint">Filtered ✓</div>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -115,7 +149,7 @@
   <script type="module">
     import { supabase } from '../backend/supabase.js';
 
-    let allData = [], filteredData = [], columns = [], sortCol = null, sortAsc = true;
+    let allData = [], filteredData = [], columns = [], sortCol = null, sortAsc = true, activeFilter = 'all';
 
     const columnLabels = {
       "Staff.full_name": "Doctor", "Facilities.Name": "Clinic",
@@ -156,17 +190,40 @@
 
     function updateStats() {
       const count = v => allData.filter(r => String(r.status || "").toLowerCase() === v).length;
+      // "scheduled" bucket includes "waiting" and "pending" — any non-terminal active status
+      const scheduledCount = allData.filter(r => {
+        const s = String(r.status || "").toLowerCase();
+        return s === "scheduled" || s === "waiting" || s === "pending" || s === "confirmed";
+      }).length;
       document.getElementById("statTotal").textContent = allData.length;
       document.getElementById("statCompleted").textContent = count("completed");
-      document.getElementById("statScheduled").textContent = count("scheduled");
+      document.getElementById("statScheduled").textContent = scheduledCount;
       document.getElementById("statCancelled").textContent = count("cancelled");
+    }
+
+    function setActiveFilter(filter) {
+      activeFilter = filter;
+      const cards = { all: 'cardTotal', completed: 'cardCompleted', scheduled: 'cardScheduled', cancelled: 'cardCancelled' };
+      const activeClasses = { all: 'stat-active', completed: 'stat-active-completed', scheduled: 'stat-active', cancelled: 'stat-active-cancelled' };
+      Object.entries(cards).forEach(([f, id]) => {
+        const el = document.getElementById(id);
+        el.classList.remove('stat-active', 'stat-active-completed', 'stat-active-cancelled');
+        if (f === filter) el.classList.add(activeClasses[f]);
+      });
+      applyFilters();
     }
 
     function applyFilters() {
       const q = document.getElementById("searchInput").value.trim().toLowerCase();
-      filteredData = allData.filter(row =>
-        !q || columns.some(c => c !== "actions" && String(getValue(row, c) ?? "").toLowerCase().includes(q))
-      );
+      filteredData = allData.filter(row => {
+        const s = String(row.status || "").toLowerCase();
+        if (activeFilter === 'scheduled') {
+          if (s !== 'scheduled' && s !== 'waiting' && s !== 'pending' && s !== 'confirmed') return false;
+        } else if (activeFilter !== 'all') {
+          if (s !== activeFilter) return false;
+        }
+        return !q || columns.some(c => c !== "actions" && String(getValue(row, c) ?? "").toLowerCase().includes(q));
+      });
       if (sortCol) {
         filteredData.sort((a, b) => {
           const va = String(getValue(a, sortCol) ?? "").toLowerCase();
@@ -278,6 +335,12 @@
       const btn = e.target.closest("button[data-appointment-id]");
       if (!btn || btn.disabled) return;
       openModal(btn.dataset.appointmentId, btn);
+    });
+
+    // Stat card filter clicks
+    ["cardTotal", "cardCompleted", "cardScheduled", "cardCancelled"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("click", () => setActiveFilter(el.dataset.filter));
     });
 
     boot();
