@@ -144,6 +144,28 @@
   border-color: rgba(185,74,30,0.4);
   background: rgba(185,74,30,0.1);
 }
+.hf-dash-btn {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1.5px solid rgba(247,244,238,0.18);
+  cursor: pointer;
+  background: transparent;
+  color: rgba(247,244,238,0.55);
+  transition: all 0.13s ease;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hf-dash-btn:hover {
+  color: #F7F4EE;
+  border-color: rgba(247,244,238,0.4);
+}
 </style>
 </head>
 
@@ -161,6 +183,7 @@
   <nav class="hf-topbar-right" aria-label="User controls">
     <span class="hf-user-email" id="userEmail">Loading…</span>
     <span class="hf-role-badge" id="roleBadge">Patient</span>
+    <a href="dashboard.html" class="hf-dash-btn">← Dashboard</a>
     <button class="hf-logout-btn" id="logoutBtn">Sign out</button>
   </nav>
 </header>
