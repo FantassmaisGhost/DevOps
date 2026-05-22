@@ -24,9 +24,10 @@ export class BookingController {
     this.calYear        = new Date().getFullYear();
     this.calMonth       = new Date().getMonth();
     this.selectedDate   = null;
-    this.selectedSlot   = null;
-    this.currentStep    = 1;
-    this.sb             = supabase;
+    this.selectedSlot      = null;
+    this.currentStep       = 1;
+    this._slotRenderToken  = 0;
+    this.sb                = supabase;
     this.app            = document.getElementById('app');
   }
 
@@ -175,6 +176,85 @@ export class BookingController {
     console.log('[filterAvailableStaff] Available:', this.availableStaff.map(s => `${s.full_name}(${s.id})`));
   }
 
+  // ─── Batch slot availability (2 queries for entire day) ──────────────────────
+
+  async getSlotAvailability(dateStr, slots) {
+    if (this.doctors.length === 0 || slots.length === 0) {
+      return Object.fromEntries(slots.map(s => [s, false]));
+    }
+    const staffIds = this.doctors.map(d => d.id).filter(Boolean);
+
+    const [{ data: unavailData }, { data: apptData }] = await Promise.all([
+      this.sb.from('staff_unavail').select('Staff_id, Start, End')
+        .eq('Date', dateStr).in('Staff_id', staffIds),
+      this.sb.from('Appointments').select('StaffID, appointment_time')
+        .eq('appointment_date', dateStr).in('StaffID', staffIds)
+        .not('status', 'in', '("cancelled","no-show","unavailable")')
+    ]);
+
+    const unavailByStaff = {};
+    for (const u of unavailData || []) {
+      (unavailByStaff[u.Staff_id] ??= []).push(u);
+    }
+    const bookedByStaff = {};
+    for (const a of apptData || []) {
+      (bookedByStaff[a.StaffID] ??= new Set()).add(a.appointment_time);
+    }
+
+    const result = {};
+    for (const slot of slots) {
+      const endTime = this.getEndTime(slot);
+      result[slot] = this.doctors.some(doc => {
+        if (!doc.id) return false;
+        const blocks = unavailByStaff[doc.id] || [];
+        if (blocks.some(u => !u.Start || (u.Start < endTime && u.End > slot))) return false;
+        if (bookedByStaff[doc.id]?.has(slot)) return false;
+        return true;
+      });
+    }
+    return result;
+  }
+
+  // ─── Auto-cancel expired waiting appointments ─────────────────────────────────
+
+  async cancelExpiredAppointments() {
+    try {
+      const { data: { session } } = await this.sb.auth.getSession();
+      if (!session) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+      const { data: expired } = await this.sb
+        .from('Appointments')
+        .select('id, appointment_date, appointment_time')
+        .eq('patient_email', session.user.email)
+        .eq('status', 'waiting')
+        .lt('appointment_date', todayStr);
+
+      if (!expired || expired.length === 0) return;
+
+      await this.sb.from('Appointments')
+        .update({ status: 'cancelled' })
+        .in('id', expired.map(a => a.id));
+
+      for (const appt of expired) {
+        const dateLabel = new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-ZA', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+        await NotificationService.createDatabaseNotification(
+          session.user.id,
+          appt.id,
+          `Your appointment on ${dateLabel} at ${this.fmtTime(appt.appointment_time)} was automatically cancelled as it has passed. Please book a new appointment.`,
+          'reschedule'
+        );
+      }
+    } catch (e) {
+      console.error('[cancelExpiredAppointments]', e);
+    }
+  }
+
   // ─── Shell & tabs ─────────────────────────────────────────────────────────────
 
   renderShell() {
@@ -315,9 +395,10 @@ export class BookingController {
 
   // ─── Step 2 – Time slots ─────────────────────────────────────────────────────
 
-  renderSlots(container) {
+  async renderSlots(container) {
     if (!this.selectedDate) { this.renderStep(1); return; }
 
+    const token    = ++this._slotRenderToken;
     const dayName  = DAY_NAMES[this.selectedDate.getDay()];
     const h        = this.hoursMap[dayName];
     const dateLabel = this.selectedDate.toLocaleDateString('en-ZA', {
@@ -339,17 +420,58 @@ export class BookingController {
       return;
     }
 
-    const slots    = this.generateSlots(h.opentime, h.closingtime);
-    const slotBtns = slots.map(slot =>
-      `<button class="slot-btn ${slot === this.selectedSlot ? 'selected' : ''}" data-slot="${slot}">${slot}</button>`
-    ).join('');
+    const dateStr = [
+      this.selectedDate.getFullYear(),
+      String(this.selectedDate.getMonth() + 1).padStart(2, '0'),
+      String(this.selectedDate.getDate()).padStart(2, '0')
+    ].join('-');
+
+    const slots = this.generateSlots(h.opentime, h.closingtime);
+
+    // Show skeleton while fetching availability
+    container.innerHTML = `
+      <p class="section-label">Select a time for <strong>${dateLabel}</strong></p>
+      <p class="slots-checking">Checking availability…</p>
+      <div class="slots-grid" id="slots-grid" style="opacity:0.35;pointer-events:none;">
+        ${slots.map(s => `<button class="slot-btn" disabled>${s}</button>`).join('')}
+      </div>
+      <div class="step-actions">
+        <button class="btn-back" id="btn-back-2">← Change Date</button>
+        <button class="btn-next" id="btn-next-2" disabled>Continue →</button>
+      </div>
+    `;
+    document.getElementById('btn-back-2').addEventListener('click', () => this.renderStep(1));
+
+    const availability = await this.getSlotAvailability(dateStr, slots);
+    if (this._slotRenderToken !== token) return; // user navigated away
+
+    // Mark past slots on today as unavailable
+    const now = new Date();
+    if (this.selectedDate.toDateString() === now.toDateString()) {
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      for (const slot of slots) {
+        const [sh, sm] = slot.split(':').map(Number);
+        if (sh * 60 + sm <= nowMins) availability[slot] = false;
+      }
+    }
+
+    // If previously selected slot is now unavailable, clear it
+    if (this.selectedSlot && !availability[this.selectedSlot]) {
+      this.selectedSlot = null;
+    }
+
+    const slotBtns = slots.map(slot => {
+      const avail = availability[slot];
+      const isSel = slot === this.selectedSlot;
+      return `<button class="slot-btn${isSel ? ' selected' : ''}" data-slot="${slot}" ${avail ? '' : 'disabled'}>${slot}</button>`;
+    }).join('');
 
     container.innerHTML = `
       <p class="section-label">Select a time for <strong>${dateLabel}</strong></p>
       <div class="slots-grid" id="slots-grid">${slotBtns}</div>
       <div class="step-actions">
         <button class="btn-back" id="btn-back-2">← Change Date</button>
-        <button class="btn-next" id="btn-next-2" ${!this.selectedSlot ? 'disabled' : ''}>Continue →</button>
+        <button class="btn-next" id="btn-next-2" ${this.selectedSlot ? '' : 'disabled'}>Continue →</button>
       </div>
     `;
 
@@ -360,7 +482,7 @@ export class BookingController {
         this.renderStep(3);
       }
     });
-    container.querySelectorAll('.slot-btn').forEach(btn => {
+    container.querySelectorAll('.slot-btn:not([disabled])').forEach(btn => {
       btn.addEventListener('click', () => {
         this.selectedSlot       = btn.dataset.slot;
         this.selectedDoctorID   = null;
@@ -713,6 +835,7 @@ export class BookingController {
     this.renderShell();
     await Promise.all([this.loadHours(), this.loadDoctors()]);
     this.renderStep(1);
+    this.cancelExpiredAppointments(); // fire-and-forget; runs in background
   }
 }
 
