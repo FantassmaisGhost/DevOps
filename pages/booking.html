@@ -309,6 +309,32 @@
       font-weight: 700;
     }
 
+    .slot-btn[disabled] {
+      opacity: 0.38;
+      cursor: not-allowed;
+      background: var(--surface);
+      color: var(--ink-4);
+      border-color: var(--border);
+      border-style: dashed;
+      font-size: 10px;
+    }
+    .slot-btn[disabled]::after {
+      content: ' Full';
+      display: block;
+      font-size: 8px;
+      letter-spacing: 0.06em;
+      opacity: 0.7;
+      margin-top: 1px;
+    }
+
+    .slots-checking {
+      font-size: 11px;
+      color: var(--ink-4);
+      text-align: center;
+      padding: 8px 0 4px;
+      letter-spacing: 0.04em;
+    }
+
     .slots-closed {
       text-align: center;
       padding: 28px;
@@ -546,7 +572,7 @@
 
     <h1 class="brand">
 
-      <span class="brand-icon">✚</span>
+      <em class="brand-icon">✚</em>
 
       <strong class="brand-name">
         Health-Flow

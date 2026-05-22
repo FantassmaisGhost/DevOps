@@ -10,10 +10,10 @@
 <body class="layout">
 
   <header class="topbar">
-    <span class="brand">
-      <span class="brand-icon" aria-hidden="true">✚</span>
+    <strong class="brand">
+      <em class="brand-icon" aria-hidden="true">✚</em>
       <strong class="brand-name">SA HealthMap</strong>
-    </span>
+    </strong>
     <p class="topbar-meta">
       <small>Source: NDoH Data Dictionary · dsfsi/covid19za · HOTOSM · WHO</small>
     </p>
@@ -41,22 +41,22 @@
 
     <fieldset class="sidebar-section filter-row" aria-label="Type and sector filters">
       <legend class="sr-only">Type and sector filters</legend>
-      <div>
+      <section>
         <label class="field-label" for="filter-type">Type</label>
         <select id="filter-type" aria-label="Filter by facility type">
           <option value="">All Types</option>
           <option value="hospital">Hospital</option>
           <option value="clinic">Clinic / CHC</option>
         </select>
-      </div>
-      <div>
+      </section>
+      <section>
         <label class="field-label" for="filter-sector">Sector</label>
         <select id="filter-sector" aria-label="Filter by sector">
           <option value="">All</option>
           <option value="public">Public</option>
           <option value="private">Private</option>
         </select>
-      </div>
+      </section>
     </fieldset>
 
     <dl class="stats-strip" aria-label="Facility counts">
@@ -107,14 +107,14 @@
     <figure class="map-legend" aria-label="Map legend">
       <figcaption class="sr-only">Facility type colour key</figcaption>
       <ul>
-        <li class="legend-item"><span class="dot dot-hospital" aria-hidden="true"></span>Hospital</li>
-        <li class="legend-item"><span class="dot dot-clinic" aria-hidden="true"></span>Clinic / CHC</li>
-        <li class="legend-item"><span class="dot dot-private" aria-hidden="true"></span>Private</li>
+        <li class="legend-item"><i class="dot dot-hospital" aria-hidden="true"></i>Hospital</li>
+        <li class="legend-item"><i class="dot dot-clinic" aria-hidden="true"></i>Clinic / CHC</li>
+        <li class="legend-item"><i class="dot dot-private" aria-hidden="true"></i>Private</li>
       </ul>
     </figure>
 
     <output class="map-hud" id="map-hud" aria-live="polite" aria-label="Visible facility count">
-      <span id="hud-count">— facilities on map</span>
+      <output id="hud-count">— facilities on map</output>
     </output>
   </main>
 

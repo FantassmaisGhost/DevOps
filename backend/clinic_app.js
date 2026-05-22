@@ -70,15 +70,15 @@ const stars = (n, tot=5) => '★'.repeat(n)+'☆'.repeat(tot-n);
 // ── CLINIC LIST ──
 async function loadClinics() {
   const c = document.getElementById('content');
-  c.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading facilities…</span></div>`;
+  c.innerHTML = `<figure class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading facilities…</span></figure>`;
   try {
     const { data, error } = await sb.from('Facilities').select('*').order('Name');
     if (error) { c.innerHTML = `<div class="alert alert-error">Database error: ${error.message}</div>`; return; }
     allClinics = data || [];
-    if (!allClinics.length) { c.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🏥</div><div class="empty-title">No clinics found</div></div>`; return; }
+    if (!allClinics.length) { c.innerHTML = `<figure class="empty-wrap"><div class="empty-icon">🏥</div><div class="empty-title">No clinics found</div></figure>`; return; }
     const provinces = [...new Set(allClinics.map(x=>x.Province).filter(Boolean))].sort();
     c.innerHTML = `
-      <div class="hero">
+      <section class="hero">
         <div class="hero-pattern"></div>
         <div class="hero-eyebrow">South Africa</div>
         <h1>Public Health Facility Directory</h1>
@@ -96,10 +96,10 @@ async function loadClinics() {
             </select>
           </div>
         </div>
-      </div>
+      </section>
       <div class="section-header">
-        <span class="section-title">Facilities</span>
-        <span class="result-count" id="resultCount">${allClinics.length} results</span>
+        <strong class="section-title">Facilities</strong>
+        <output class="result-count" id="resultCount">${allClinics.length} results</output>
       </div>
       <div class="clinics-grid" id="clinicsGrid"></div>`;
     const searchInput = document.getElementById('searchInput');
@@ -121,27 +121,27 @@ function filterClinics() {
   const grid = document.getElementById('clinicsGrid');
   if (!grid) return;
   if (!list.length) {
-    grid.innerHTML = `<div class="empty-wrap" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No results found</div><div class="empty-sub">Try adjusting your search or province filter</div></div>`;
+    grid.innerHTML = `<figure class="empty-wrap" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No results found</div><div class="empty-sub">Try adjusting your search or province filter</div></figure>`;
     return;
   }
   grid.innerHTML = list.map(cl=>`
     <div class="clinic-card" data-clinic-id="${cl.ClinicID}">
       <div class="card-header-strip"></div>
-      <div class="card-body">
+      <section class="card-body">
         <div class="card-top">
           <div class="facility-icon">${typeIcon(cl.Type)}</div>
-          <span class="type-chip">${cl.Type||'Clinic'}</span>
+          <b class="type-chip">${cl.Type||'Clinic'}</b>
         </div>
         <div class="clinic-name">${cl.Name||'Unnamed Facility'}</div>
         <div class="clinic-meta">
           <div class="meta-item">${I.pin} ${cl.Province||'Unknown'}</div>
           ${cl.district?`<div class="meta-item">${I.map} ${cl.district}</div>`:''}
         </div>
-      </div>
-      <div class="card-footer">
-        <div class="sector-label"><div class="sector-dot"></div>${cl.Sector||'N/A'}</div>
+      </section>
+      <footer class="card-footer">
+        <small class="sector-label"><div class="sector-dot"></div>${cl.Sector||'N/A'}</small>
         <button class="view-link">View ${I.arrow}</button>
-      </div>
+      </footer>
     </div>`).join('');
   // attach click listeners
   document.querySelectorAll('.clinic-card').forEach(card => {
@@ -162,7 +162,7 @@ async function viewClinicDetail(clinicId) {
     return;
   }
   const c = document.getElementById('content');
-  c.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading facility details…</span></div>`;
+  c.innerHTML = `<figure class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading facility details…</span></figure>`;
   try {
     const { data:clinic, error } = await sb.from('Facilities').select('*').eq('ClinicID', clinicId).single();
     if (error) { c.innerHTML = `<div class="alert alert-error">${error.message}</div>`; return; }
@@ -178,24 +178,24 @@ async function viewClinicDetail(clinicId) {
         <span>${clinic.Name}</span>
       </div>
 
-      <div class="detail-hero">
+      <section class="detail-hero">
         <div class="detail-hero-top"></div>
-        <div class="detail-hero-body">
+        <section class="detail-hero-body">
           <div class="detail-hero-left">
             <div class="detail-facility-icon">${typeIcon(clinic.Type)}</div>
             <div class="detail-name">${clinic.Name}</div>
             <div class="chip-row">
-              ${clinic.Type?`<span class="chip chip-blue">${clinic.Type}</span>`:''}
-              ${clinic.Sector?`<span class="chip chip-grey">${clinic.Sector}</span>`:''}
-              ${clinic.Province?`<span class="chip chip-grey">${clinic.Province}</span>`:''}
-              ${admin?`<span class="chip chip-amber">👑 Admin</span>`:''}
+              ${clinic.Type?`<b class="chip chip-blue">${clinic.Type}</b>`:''}
+              ${clinic.Sector?`<b class="chip chip-grey">${clinic.Sector}</b>`:''}
+              ${clinic.Province?`<b class="chip chip-grey">${clinic.Province}</b>`:''}
+              ${admin?`<b class="chip chip-amber">👑 Admin</b>`:''}
             </div>
           </div>
           ${admin?`<button class="edit-btn" id="editClinicBtn">${I.edit} Edit Details</button>`:''}
-        </div>
-      </div>
+        </section>
+      </section>
 
-      <div class="detail-grid">
+      <section class="detail-grid">
         <div class="detail-card">
           <div class="card-title-bar">
             <div class="card-title-icon icon-blue">📋</div>
@@ -245,7 +245,7 @@ async function viewClinicDetail(clinicId) {
             Submit a Patient Review
           </button>
         </div>
-      </div>`;
+      </section>`;
 
     document.getElementById('backToClinicsBtn').addEventListener('click', loadClinics);
     if (admin) {
@@ -275,7 +275,7 @@ async function loadGoogleData(clinic, patientReviews) {
     const web   = g?.websiteUri;
     const maps  = g?.googleMapsUri;
     let rows = '';
-    if (g) rows += `<div class="live-tag"><div class="live-dot"></div>Live · Google Places</div>`;
+    if (g) rows += `<b class="live-tag"><div class="live-dot"></div>Live · Google Places</b>`;
     if (phone) rows += `<div class="info-row"><span class="info-key">${I.phone} Phone</span><span class="info-val"><a href="tel:${phone}">${phone}</a></span></div>`;
     if (addr)  rows += `<div class="info-row"><span class="info-key">${I.pin} Address</span><span class="info-val">${addr}</span></div>`;
     if (web)   rows += `<div class="info-row"><span class="info-key">${I.globe} Website</span><span class="info-val"><a href="${web}" target="_blank">${web.replace(/^https?:\/\//,'').replace(/\/$/,'')}</a></span></div>`;
@@ -299,7 +299,7 @@ async function loadGoogleData(clinic, patientReviews) {
     if (oh?.openNow !== undefined) titleExtra = `<span class="status-pill ${oh.openNow?'pill-open':'pill-closed'}">${oh.openNow?'● Open Now':'● Closed'}</span>`;
     let body = '';
     if (oh?.weekdayDescriptions?.length) {
-      body += `<div class="live-tag"><div class="live-dot"></div>Live · Google Places</div><div class="hours-table">`;
+      body += `<b class="live-tag"><div class="live-dot"></div>Live · Google Places</b><div class="hours-table">`;
       const today = new Date().getDay();
       oh.weekdayDescriptions.forEach((desc,i) => {
         const jsDay = (i+1)%7, isToday = jsDay===today;
@@ -327,7 +327,7 @@ async function loadGoogleData(clinic, patientReviews) {
     const hasG = g?.reviews?.length>0;
     let body = '';
     if (g?.rating) {
-      body += `<div class="rating-block"><div class="rating-num">${g.rating}</div><div><div class="rating-stars">${stars(Math.round(g.rating))}</div><div class="rating-label">${g.userRatingCount?.toLocaleString()||''} Google reviews</div></div></div>`;
+      body += `<figure class="rating-block"><div class="rating-num">${g.rating}</div><div><div class="rating-stars">${stars(Math.round(g.rating))}</div><div class="rating-label">${g.userRatingCount?.toLocaleString()||''} Google reviews</div></div></figure>`;
     }
     if (hasP) {
       const avg = (patientReviews.reduce((a,b)=>a+b.rating,0)/patientReviews.length).toFixed(1);
@@ -336,10 +336,10 @@ async function loadGoogleData(clinic, patientReviews) {
     if (!hasP && !hasG) {
       body += `<div class="no-reviews"><div class="no-reviews-icon">💬</div>No reviews yet — be the first to submit one.</div>`;
     } else {
-      body += `<div class="review-tabs">
+      body += `<nav class="review-tabs">
         ${hasP?`<button class="rtab active" data-tab="P">🩺 Patient Reviews (${patientReviews.length})</button>`:''}
         ${hasG?`<button class="rtab ${!hasP?'active':''}" data-tab="G">🌐 Google Reviews (${g.reviews.length})</button>`:''}
-      </div>`;
+      </nav>`;
       if (hasP) body += `<div id="panelP" class="review-panel">${patientReviews.slice(0,5).map(r=>`
         <div class="review-item">
           <div class="review-top"><span class="r-name">🩺 Patient</span><span class="r-stars">${stars(r.rating)}</span></div>
@@ -347,7 +347,7 @@ async function loadGoogleData(clinic, patientReviews) {
           <div class="r-meta">${new Date(r.created_at).toLocaleDateString('en-ZA',{year:'numeric',month:'short',day:'numeric'})}</div>
         </div>`).join('')}</div>`;
       if (hasG) body += `<div id="panelG" class="review-panel" style="display:${hasP?'none':'block'}">
-        <div class="live-tag" style="margin-bottom:12px"><div class="live-dot"></div>Live · Google Places</div>
+        <b class="live-tag" style="margin-bottom:12px"><div class="live-dot"></div>Live · Google Places</b>
         ${g.reviews.slice(0,5).map(r=>`
         <div class="review-item">
           <div class="review-top"><span class="r-name">${r.authorAttribution?.displayName||'Google Reviewer'}</span><span class="r-stars">${stars(r.rating)}</span></div>
@@ -435,7 +435,7 @@ function cancelEdit() { document.getElementById('editForm')?.remove(); }
 // ── BOOKINGS ──
 async function loadBookings() {
   const c = document.getElementById('content');
-  c.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading bookings…</span></div>`;
+  c.innerHTML = `<figure class="loading-wrap"><div class="spinner"></div><span class="loading-label">Loading bookings…</span></figure>`;
   try {
     const { data:{ user } } = await sb.auth.getUser();
     if (!user) {
@@ -445,18 +445,18 @@ async function loadBookings() {
     const { data, error } = await sb.from('Appointments').select('*, Facilities!ClinicID(Name,Province)').eq('PatientID', user.id).order('appointment_date', { ascending:false });
     if (error) throw error;
     if (!data?.length) {
-      c.innerHTML = `<div class="empty-wrap"><div class="empty-icon">📅</div><div class="empty-title">No appointments found</div><div class="empty-sub">Your appointment history will appear here once bookings are made</div></div>`;
+      c.innerHTML = `<figure class="empty-wrap"><div class="empty-icon">📅</div><div class="empty-title">No appointments found</div><div class="empty-sub">Your appointment history will appear here once bookings are made</div></figure>`;
       return;
     }
     allBookings = data;
     c.innerHTML = `
       <div class="page-heading">My Appointments</div>
-      <div class="filter-bar">
+      <nav class="filter-bar">
         <button class="filter-pill" data-filter="all">All (${data.length})</button>
         <button class="filter-pill" data-filter="upcoming">Upcoming</button>
         <button class="filter-pill" data-filter="completed">Completed</button>
         <button class="filter-pill" data-filter="cancelled">Cancelled</button>
-      </div>
+      </nav>
       <div id="bookingsList"></div>`;
     document.querySelectorAll('.filter-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -485,14 +485,14 @@ function displayBookings() {
   el.innerHTML=list.map(a=>`
     <div class="booking-item">
       <div class="booking-icon-wrap ${sCls(a.status)}">${sIcon(a.status)}</div>
-      <div class="booking-info">
+      <section class="booking-info">
         <div class="booking-facility">${a.Facilities?.Name||'Unknown Facility'}</div>
         <div class="booking-sub">
           ${a.appointment_date?new Date(a.appointment_date).toLocaleDateString('en-ZA',{weekday:'short',year:'numeric',month:'short',day:'numeric'}):''}
           ${a.appointment_time?' · '+a.appointment_time:''}
           ${a.Facilities?.Province?' · '+a.Facilities.Province:''}
         </div>
-      </div>
+      </section>
       <span class="booking-badge ${bCls(a.status)}">${a.status||'Scheduled'}</span>
     </div>`).join('');
 }

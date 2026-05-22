@@ -59,16 +59,6 @@
     #statScheduled { color: var(--cerulean); }
     #statCancelled { color: var(--rust); }
 
-    #cancelModal:not(.hidden) {
-      position: fixed;
-      inset: 0;
-      background: rgba(31,29,20,0.5);
-      z-index: 500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(2px);
-    }
 
     .stat-card {
       cursor: pointer;
@@ -92,70 +82,70 @@
 <body>
 
   <header class="topbar">
-    <span class="brand">
-      <span class="brand-icon">✚</span>
+    <strong class="brand">
+      <em class="brand-icon">✚</em>
       <strong class="brand-name">Health-Flow</strong>
-    </span>
-    <div class="topbar-right topbar-inner">
-      <span class="search-wrap">
-        <span>⌕</span>
+    </strong>
+    <nav class="topbar-right topbar-inner">
+      <label class="search-wrap">
+        <i aria-hidden="true">⌕</i>
         <input id="searchInput" placeholder="Search…" />
-      </span>
-      <span id="userPill" style="font-size:10px;color:rgba(247,244,238,0.4);display:none;"></span>
+      </label>
+      <output id="userPill" style="font-size:10px;color:rgba(247,244,238,0.4);display:none;"></output>
       <button id="refreshBtn" class="btn btn-primary" style="background:rgba(247,244,238,0.1);color:#F7F4EE;border-color:rgba(247,244,238,0.2);">↺ Refresh</button>
       <button id="dashboardBtn" class="btn btn-outline">← Dashboard</button>
       <button id="logoutBtn" class="btn btn-ghost">Sign out</button>
-    </div>
+    </nav>
   </header>
 
   <main class="page-wide">
-    <div class="section-label" style="margin-bottom:16px;">My Bookings</div>
+    <p class="section-label" style="margin-bottom:16px;">My Bookings</p>
 
-    <div class="stats-grid" style="margin-bottom:24px;">
-      <div class="stat-card" id="cardTotal"     data-filter="all">
-        <div class="stat-val" id="statTotal">—</div>
-        <div class="stat-key">Total</div>
-        <div class="stat-filter-hint">Showing all</div>
-      </div>
-      <div class="stat-card" id="cardCompleted" data-filter="completed">
-        <div class="stat-val" id="statCompleted">—</div>
-        <div class="stat-key">Completed</div>
-        <div class="stat-filter-hint">Filtered ✓</div>
-      </div>
-      <div class="stat-card" id="cardScheduled" data-filter="scheduled">
-        <div class="stat-val" id="statScheduled">—</div>
-        <div class="stat-key">Scheduled</div>
-        <div class="stat-filter-hint">Filtered ✓</div>
-      </div>
-      <div class="stat-card" id="cardCancelled" data-filter="cancelled">
-        <div class="stat-val" id="statCancelled">—</div>
-        <div class="stat-key">Cancelled</div>
-        <div class="stat-filter-hint">Filtered ✓</div>
-      </div>
-    </div>
+    <section class="stats-grid" style="margin-bottom:24px;">
+      <article class="stat-card" id="cardTotal"     data-filter="all">
+        <strong class="stat-val" id="statTotal">—</strong>
+        <p class="stat-key">Total</p>
+        <small class="stat-filter-hint">Showing all</small>
+      </article>
+      <article class="stat-card" id="cardCompleted" data-filter="completed">
+        <strong class="stat-val" id="statCompleted">—</strong>
+        <p class="stat-key">Completed</p>
+        <small class="stat-filter-hint">Filtered ✓</small>
+      </article>
+      <article class="stat-card" id="cardScheduled" data-filter="scheduled">
+        <strong class="stat-val" id="statScheduled">—</strong>
+        <p class="stat-key">Scheduled</p>
+        <small class="stat-filter-hint">Filtered ✓</small>
+      </article>
+      <article class="stat-card" id="cardCancelled" data-filter="cancelled">
+        <strong class="stat-val" id="statCancelled">—</strong>
+        <p class="stat-key">Cancelled</p>
+        <small class="stat-filter-hint">Filtered ✓</small>
+      </article>
+    </section>
 
-    <div class="table-wrap">
+    <figure class="table-wrap">
       <table>
         <thead id="tableHead"></thead>
         <tbody id="tableBody">
-          <tr><td class="empty-state" colspan="8"><span class="spinner"></span> Checking session…</td></tr>
+          <tr><td class="empty-state" colspan="8"><progress class="spinner" aria-label="Loading"></progress> Checking session…</td></tr>
         </tbody>
       </table>
-      <div class="pagination" id="paginationBar"></div>
-    </div>
+      <footer class="pagination" id="paginationBar"></footer>
+    </figure>
   </main>
 
   <!-- Cancel confirmation modal -->
-  <div class="modal-overlay hidden" id="cancelModal">
-    <div class="modal-box">
-      <div class="modal-title">Cancel Appointment</div>
-      <div class="modal-body">Are you sure you want to cancel this appointment? This action cannot be undone.</div>
-      <div class="modal-actions">
+  <dialog class="modal-overlay" id="cancelModal">
+    <article class="modal-box">
+      <h2 class="modal-title">Cancel Appointment</h2>
+      <p class="modal-body">Are you sure you want to cancel this appointment? This action cannot be undone.</p>
+      <footer class="modal-actions">
         <button id="closeModalBtn" class="btn" style="background:var(--surface2);color:var(--ink-2);border:1.5px solid var(--border-md);">Keep it</button>
         <button id="confirmCancelBtn" class="btn btn-danger">Yes, cancel</button>
-      </div>
-    </div>
-  </div>
+      </footer>
+    </article>
+  </dialog>
 
   <script type="module">
     import { supabase } from '../backend/supabase.js';
@@ -181,8 +171,13 @@
 
     function statusPill(val) {
       const s = String(val).toLowerCase();
+<<<<<<< HEAD
       const map = { completed: 'pill-completed', complete: 'pill-completed', scheduled: 'pill-scheduled', cancelled: 'pill-cancelled', waiting: 'pill-waiting' };
       return `<span class="pill ${map[s] || 'pill-waiting'}">${escHtml(String(val))}</span>`;
+=======
+      const map = { completed: 'pill-completed', scheduled: 'pill-scheduled', cancelled: 'pill-cancelled', waiting: 'pill-waiting' };
+      return `<b class="pill ${map[s] || 'pill-waiting'}">${escHtml(String(val))}</b>`;
+>>>>>>> 148fe657431fb1192c719efd9f03b841f9e9abed
     }
 
     function renderAction(row) {
@@ -257,7 +252,7 @@
 
     function render() {
       if (!allData.length) {
-        document.getElementById("tableBody").innerHTML = `<tr><td class="empty-state" colspan="${columns.length}"><div class="empty-icon">📋</div>No appointments found for your account.</td></tr>`;
+        document.getElementById("tableBody").innerHTML = `<tr><td class="empty-state" colspan="${columns.length}"><figure class="empty-icon">📋</figure>No appointments found for your account.</td></tr>`;
         document.getElementById("paginationBar").textContent = "0 rows";
         return;
       }
@@ -284,7 +279,7 @@
         if (!session) { window.location.href = 'index.html'; return; }
         email = session.user.email;
       }
-      document.getElementById("tableBody").innerHTML = '<tr><td class="empty-state" colspan="8"><span class="spinner"></span>Loading…</td></tr>';
+      document.getElementById("tableBody").innerHTML = '<tr><td class="empty-state" colspan="8"><progress class="spinner" aria-label="Loading"></progress>Loading…</td></tr>';
       const { data, error } = await supabase.from("Appointments")
         .select("id, reason, status, appointment_date, appointment_time, ClinicID, Staff(full_name), Facilities(Name)")
         .eq("patient_email", email)
@@ -317,8 +312,9 @@
     // Modal logic
     let selId = null, selBtn = null;
     const modal = document.getElementById("cancelModal");
-    function openModal(id, btn) { selId = id; selBtn = btn; modal.classList.remove("hidden"); }
-    function closeModal() { selId = null; selBtn = null; modal.classList.add("hidden"); }
+    function openModal(id, btn) { selId = id; selBtn = btn; modal.showModal(); }
+    function closeModal() { selId = null; selBtn = null; modal.close(); }
+    modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
 
     async function boot() {
       const { data: { session } } = await supabase.auth.getSession();

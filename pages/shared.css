@@ -477,6 +477,11 @@ dialog.modal-overlay[open] {
   align-items: center;
   justify-content: center;
 }
+
+dialog.modal-overlay::backdrop {
+  background: rgba(31,29,20,0.5);
+  backdrop-filter: blur(2px);
+}
 .modal-overlay.hidden { display: none; }
 .modal-box {
   background: var(--surface);

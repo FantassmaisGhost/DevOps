@@ -248,7 +248,6 @@ select {
   background-position: right 12px center;
 }
 
-/* IMPORTANT: your HTML uses section tags inside .filter-row, not divs */
 .filter-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
