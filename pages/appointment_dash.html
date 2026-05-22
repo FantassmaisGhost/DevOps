@@ -171,13 +171,8 @@
 
     function statusPill(val) {
       const s = String(val).toLowerCase();
-<<<<<<< HEAD
-      const map = { completed: 'pill-completed', complete: 'pill-completed', scheduled: 'pill-scheduled', cancelled: 'pill-cancelled', waiting: 'pill-waiting' };
-      return `<span class="pill ${map[s] || 'pill-waiting'}">${escHtml(String(val))}</span>`;
-=======
       const map = { completed: 'pill-completed', scheduled: 'pill-scheduled', cancelled: 'pill-cancelled', waiting: 'pill-waiting' };
       return `<b class="pill ${map[s] || 'pill-waiting'}">${escHtml(String(val))}</b>`;
->>>>>>> 148fe657431fb1192c719efd9f03b841f9e9abed
     }
 
     function renderAction(row) {
