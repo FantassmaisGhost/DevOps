@@ -4,6 +4,9 @@
 > A POPIA-compliant public health clinic management system for South Africa. HealthFlow connects patients, clinical staff, receptionists, and administrators on a single platform — covering appointment booking, queue management, facility discovery, and patient profile management.
 
 ---
+## ADMIN CREDENTIALS TO USE FOR MARKING (Login with Google)
+- Gmail account : n64520746@gmail.com
+- Gmail account password : AdminTest123
 
 ## Table of Contents
 
