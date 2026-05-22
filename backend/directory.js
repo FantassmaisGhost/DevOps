@@ -44,7 +44,7 @@ export class DirectoryController {
     this.setLocationPin(lat, lng);
     this.map.flyTo([lat, lng], 12, { duration: 1.4 });
     const status = document.getElementById('loc-status');
-    status.className = 'loc-status';
+    status.className = 'loc-status active';
     status.textContent = `📍 ${label}`;
     document.getElementById('radius-row').classList.remove('hidden');
     this.render();
