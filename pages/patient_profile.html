@@ -625,6 +625,17 @@
 
     // ── INIT ──
     loadProfile();
+
+    // ── TOPBAR AUTH ──
+    sb.auth.getSession().then(({ data: { session } }) => {
+      const emailEl = document.getElementById('hfUserEmail');
+      if (emailEl) emailEl.textContent = session?.user?.email || '';
+    });
+    document.getElementById('hfLogoutBtn')?.addEventListener('click', async () => {
+      await sb.auth.signOut();
+      window.location.href = 'index.html';
+    });
   </script>
+  <script src="../backend/nav.js"></script>
 </body>
 </html>
