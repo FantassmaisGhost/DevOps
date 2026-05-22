@@ -121,9 +121,9 @@ export class DirectoryController {
     if (f._distKm != null) {
       const km = f._distKm;
       const display = km < 1 ? '<1 km' : km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
-      distChip = `<li class="chip chip-dist">${display} away</li>`;
+      distChip = `<li><b class="chip chip-dist">${display} away</b></li>`;
     }
-    document.getElementById('dc-chips').innerHTML = `<li class="chip ${typeClass}">${typeLabel}</li><li class="chip ${sectClass}">${f.sector.toUpperCase()}</li><li class="chip chip-prov">${f.province.toUpperCase()}</li>${distChip}`;
+    document.getElementById('dc-chips').innerHTML = `<li><b class="chip ${typeClass}">${typeLabel}</b></li><li><b class="chip ${sectClass}">${f.sector.toUpperCase()}</b></li><li><b class="chip chip-prov">${f.province.toUpperCase()}</b></li>${distChip}`;
     document.getElementById('dc-coords').textContent = `${f.lat.toFixed(5)}, ${f.lng.toFixed(5)}`;
     document.getElementById('dc-directions').onclick = () => {
       const origin = this.userLat != null ? `&origin=${this.userLat},${this.userLng}` : '';
@@ -209,9 +209,9 @@ export class DirectoryController {
           const km = f._distKm;
           const display = km < 1 ? '<1 km' : km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
           const cls = km <= 5 ? 'fac-dist nearby' : 'fac-dist';
-          distBadge = `<span class="${cls}">${display}</span>`;
+          distBadge = `<small class="${cls}">${display}</small>`;
         }
-        item.innerHTML = `<span class="fac-dot ${dotClass}" aria-hidden="true"></span><div class="fac-info"><span class="fac-name" title="${f.name}">${f.name}</span><span class="fac-sub">${f.city} · ${f.province}</span></div><span class="fac-badge ${f.sector}">${f.sector.toUpperCase()}</span>${distBadge}`;
+        item.innerHTML = `<span class="fac-dot ${dotClass}" aria-hidden="true"></span><div class="fac-info"><strong class="fac-name" title="${f.name}">${f.name}</strong><small class="fac-sub">${f.city} · ${f.province}</small></div><b class="fac-badge ${f.sector}">${f.sector.toUpperCase()}</b>${distBadge}`;
         item.addEventListener('click', () => {
           this.openDetail(f);
           this.map.flyTo([f.lat, f.lng], 13, { duration: 1.2 });

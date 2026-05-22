@@ -104,17 +104,17 @@ function renderAppointments(appointments) {
         <td>${formatTime(appointment.appointment_time)}</td>
         <td>${appointment.reason || '—'}</td>
         <td>
-          <span class="pill ${statusClass(status)}"> 
+          <b class="pill ${statusClass(status)}">
             ${status.replace('_', ' ')}
-          </span>
+          </b>
         </td>
         <td>
             <section class="appointment-actions">
                 ${
                 isCancelled
-                    ? `<span class="pill pill-cancelled">Cancelled</span>`
+                    ? `<b class="pill pill-cancelled">Cancelled</b>`
                     : isCompleted
-                    ? `<span class="pill pill-completed">Complete</span>`
+                    ? `<b class="pill pill-completed">Complete</b>`
                     : `
                         <button
                         class="btn btn-success"

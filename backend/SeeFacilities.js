@@ -299,10 +299,10 @@ export class AdminFacilitiesController {
         <h1 class="clinic-name">${this.escapeHtml(this.clinicName)}</h1>
         <div class="clinic-meta"><strong>${this.escapeHtml(this.province)}</strong> ${this.subtype ? `<strong>· ${this.escapeHtml(this.subtype)}</strong>` : ''}</div>
         <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
-          <strong class="chip ${typeClass}">${typeLabel}</strong>
-          <strong class="chip ${sectClass}">${this.sector.toUpperCase()}</strong>
-          <strong class="chip chip-prov">${this.escapeHtml(this.province).toUpperCase()}</strong>
-          <strong class="chip chip-id">ID: ${this.escapeHtml(this.clinicID)}</strong>
+          <b class="chip ${typeClass}">${typeLabel}</b>
+          <b class="chip ${sectClass}">${this.sector.toUpperCase()}</b>
+          <b class="chip chip-prov">${this.escapeHtml(this.province).toUpperCase()}</b>
+          <b class="chip chip-id">ID: ${this.escapeHtml(this.clinicID)}</b>
         </div>
       </div>
     `;

@@ -196,7 +196,7 @@ select {
 select:focus { border-color: var(--teal); }
 
 .filter-row { display: flex; gap: 12px; }
-.filter-row > div { flex: 1; }
+.filter-row > section { flex: 1; }
 
 dl, dt, dd, figure, figcaption { margin: 0; padding: 0; }
 address { font-style: normal; }

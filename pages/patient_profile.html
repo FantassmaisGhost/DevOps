@@ -128,13 +128,13 @@
 <body class="antialiased">
 
   <header class="hf-topbar">
-    <span class="hf-brand">
+    <strong class="hf-brand">
       <em class="hf-brand-icon">✚</em>
-      <strong class="hf-brand-name">Health-Flow</strong>
-    </span>
+      <b class="hf-brand-name">Health-Flow</b>
+    </strong>
     <nav class="hf-topbar-right" aria-label="User controls">
-      <span class="hf-user-email" id="hfUserEmail">Loading…</span>
-      <span class="hf-role-badge">Patient</span>
+      <small class="hf-user-email" id="hfUserEmail">Loading…</small>
+      <b class="hf-role-badge">Patient</b>
       <button class="hf-logout-btn" id="hfLogoutBtn">Sign out</button>
     </nav>
   </header>
@@ -142,12 +142,12 @@
   <output id="toast" role="status" aria-live="polite" class="toast-notify bg-slate-800"></output>
 
   <!-- Loading overlay -->
-  <div id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
-    <div class="text-center">
-      <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+  <section id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+    <figure class="text-center">
+      <i class="block w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" aria-hidden="true"></i>
       <p class="text-slate-500 text-sm">Loading your profile…</p>
-    </div>
-  </div>
+    </figure>
+  </section>
 
   <main class="max-w-6xl mx-auto p-4 md:p-8">
     <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -155,25 +155,23 @@
         <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Patient Admission Portal</h1>
         <p class="text-slate-500">POPIA Compliant Medical Profile Management</p>
       </hgroup>
-      <div class="flex items-center gap-3">
-        <aside class="bg-white border border-green-100 p-3 rounded-xl flex items-center gap-3 shadow-sm" aria-label="Compliance status">
-          <span class="bg-green-100 p-2 rounded-full" aria-hidden="true"><i class="fas fa-user-shield text-green-700"></i></span>
-          <p class="text-xs">
-            <strong class="block font-bold text-slate-800 uppercase">POPIA Verified</strong>
-            Data hosted in RSA
-          </p>
-        </aside>
-      </div>
+      <aside class="bg-white border border-green-100 p-3 rounded-xl flex items-center gap-3 shadow-sm" aria-label="Compliance status">
+        <figure class="bg-green-100 p-2 rounded-full" aria-hidden="true"><i class="fas fa-user-shield text-green-700"></i></figure>
+        <p class="text-xs">
+          <strong class="block font-bold text-slate-800 uppercase">POPIA Verified</strong>
+          Data hosted in RSA
+        </p>
+      </aside>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
       <!-- Sidebar -->
       <aside class="lg:col-span-4 space-y-6" aria-label="Patient summary">
 
         <article class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden" aria-label="Patient card">
           <header class="p-8 text-center bg-gradient-to-b from-slate-50 to-white">
-            <span id="avatar" class="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold shadow-inner" aria-hidden="true">?</span>
+            <figure id="avatar" class="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold shadow-inner" aria-hidden="true">?</figure>
             <h2 id="summaryName" class="text-xl font-bold text-slate-800">New Patient</h2>
             <p id="summaryID" class="text-sm text-slate-400">ID: —</p>
             <p id="summaryEmail" class="text-xs text-slate-400 mt-1 truncate"></p>
@@ -204,13 +202,13 @@
 
         <!-- Last updated -->
         <p id="lastUpdated" class="text-xs text-slate-400 text-center hidden">
-          <i class="fas fa-clock mr-1"></i> Last updated: <span id="lastUpdatedTime"></span>
+          <i class="fas fa-clock mr-1"></i> Last updated: <time id="lastUpdatedTime"></time>
         </p>
 
       </aside>
 
       <!-- Main form -->
-      <div class="lg:col-span-8">
+      <section class="lg:col-span-8">
         <form id="saPatientForm" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden" novalidate>
 
           <!-- Personal Information -->
@@ -382,11 +380,11 @@
 
           <!-- Footer -->
           <footer class="p-6 bg-white flex justify-between items-center gap-3 border-t border-slate-100">
-            <div class="saving-indicator items-center gap-2 text-sm text-slate-400" id="savingIndicator">
-              <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            <output class="saving-indicator items-center gap-2 text-sm text-slate-400" id="savingIndicator">
+              <i class="block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" aria-hidden="true"></i>
               Saving…
-            </div>
-            <div class="flex gap-3 ml-auto">
+            </output>
+            <menu class="flex gap-3 ml-auto">
               <button type="reset" class="px-6 py-3 text-slate-500 font-bold text-sm hover:text-slate-700 transition-colors">
                 Reset Form
               </button>
@@ -394,12 +392,12 @@
                 class="bg-blue-600 text-white px-10 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 Save Profile
               </button>
-            </div>
+            </menu>
           </footer>
 
         </form>
-      </div>
-    </div>
+      </section>
+    </section>
   </main>
 
   <script>

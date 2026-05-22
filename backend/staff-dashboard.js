@@ -38,8 +38,8 @@ async function showPatientNotes(patientId, appointmentId, patientName) {
     modal.id = 'notesModal';
     modal.className = 'notes-modal';
     modal.innerHTML = `
-        <div class="modal-box" style="max-width: 550px; width: 90%;">
-            <div class="modal-title">📋 Patient Medical Notes</div>
+        <article class="modal-box" style="max-width: 550px; width: 90%;">
+            <h2 class="modal-title">📋 Patient Medical Notes</h2>
             <div style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px;">
                 <strong>${Utils.esc(patientName)}</strong>
                 <span style="color: var(--ink-3); font-size: 11px; margin-left: 8px;">
@@ -61,11 +61,11 @@ async function showPatientNotes(patientId, appointmentId, patientName) {
                 }
             </div>
             <textarea id="newNoteInput" class="new-note-input" rows="3" placeholder="Add a new medical note..."></textarea>
-            <div class="modal-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px;">
+            <footer class="modal-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px;">
                 <button class="btn-secondary" id="closeNotesModal">Close</button>
                 <button class="btn-primary" id="addNoteBtn">➕ Add Note</button>
-            </div>
-        </div>
+            </footer>
+        </article>
     `;
     
     document.body.appendChild(modal);
@@ -162,19 +162,19 @@ async function loadStaffDashboard() {
 
     const main = document.getElementById('dashboardContent');
     main.innerHTML = `
-        <div class="welcome-banner">
+        <section class="welcome-banner">
             <h2>Welcome, ${esc(staff.full_name.split(' ')[0])}! 👋</h2>
             <p><strong>Staff ID:</strong> ${esc(staff.id)}</p>
-        </div>
+        </section>
 
-        <div class="stats-grid">
-            <div class="stat-card"><h3>${waitingCount}</h3><p>Waiting Patients</p></div>
-            <div class="stat-card"><h3>${completedCount}</h3><p>Completed Today</p></div>
-            <div class="stat-card"><h3>${todaysAppointments.length}</h3><p>Today's Appointments</p></div>
-        </div>
+        <section class="stats-grid">
+            <article class="stat-card"><h3>${waitingCount}</h3><p>Waiting Patients</p></article>
+            <article class="stat-card"><h3>${completedCount}</h3><p>Completed Today</p></article>
+            <article class="stat-card"><h3>${todaysAppointments.length}</h3><p>Today's Appointments</p></article>
+        </section>
 
         <!-- Action Bar: Manage Availability + Quick actions -->
-        <div class="action-bar">
+        <section class="action-bar">
             <div class="action-info">
                 <h4>📅 Availability Management</h4>
                 <p>Mark when you are not available — patients cannot book you then.</p>
@@ -182,9 +182,9 @@ async function loadStaffDashboard() {
             <div class="action-buttons-group">
                 <button class="btn-primary btn-small" id="manageAvailabilityBtn">Manage Availability</button>
             </div>
-        </div>
+        </section>
 
-        <div class="info-card">
+        <article class="info-card">
             <div class="section-header-actions">
                 <h3>📋 Today's Appointments</h3>
                 <button class="btn-primary btn-small" id="refreshBtn">🔄 Refresh</button>
@@ -237,7 +237,7 @@ async function loadStaffDashboard() {
                     </tbody>
                  </table>`
             }
-        </div>
+        </article>
     `;
 
     // Attach event listeners
@@ -273,7 +273,7 @@ function openRescheduleModal(id, patientName, currentDate, currentTime) {
     const modal = document.createElement('dialog');
     modal.id = 'rescheduleModal';
     modal.innerHTML = `
-        <div class="modal-box">
+        <article class="modal-box">
             <h3>Reschedule Appointment</h3>
             <p>Patient: <strong>${esc(patientName)}</strong></p>
             <p style="color:var(--ink-3);">Current: ${formatDate(currentDate)} at ${formatTime(currentTime)}</p>
@@ -282,11 +282,11 @@ function openRescheduleModal(id, patientName, currentDate, currentTime) {
                 <div class="form-group"><label>New Time (09:00 – 17:00)</label><input type="time" id="newTime" min="09:00" max="17:00" value="${currentTime}" class="input"></div>
             </div>
             <p class="modal-error" id="modalError"></p>
-            <div class="modal-actions">
+            <footer class="modal-actions">
                 <button class="btn-secondary" id="cancelModalBtn">Cancel</button>
                 <button class="btn-primary" id="confirmRescheduleBtn">Confirm Reschedule</button>
-            </div>
-        </div>
+            </footer>
+        </article>
     `;
     document.body.appendChild(modal);
     modal.showModal();
