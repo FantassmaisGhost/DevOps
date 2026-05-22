@@ -698,3 +698,7 @@ This is the path so you know where to put this edge function:
 `supabase/functions/send-reminders/index.ts`
 
 > i just named them as sendEmailBrevo.ts and sendReminders.ts for GitHub distinguishing purposes 🙏🏽
+
+
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/1e13ab1a-dce8-4751-8212-8e20fad03d42" />
