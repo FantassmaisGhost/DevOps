@@ -190,16 +190,18 @@
     }
 
     function updateStats() {
-      const count = v => allData.filter(r => String(r.status || "").toLowerCase() === v).length;
-      // "scheduled" bucket includes "waiting" and "pending" — any non-terminal active status
+      const completedCount = allData.filter(r => {
+        const s = String(r.status || "").toLowerCase();
+        return s === "completed" || s === "complete";
+      }).length;
       const scheduledCount = allData.filter(r => {
         const s = String(r.status || "").toLowerCase();
         return s === "scheduled" || s === "waiting" || s === "pending" || s === "confirmed";
       }).length;
       document.getElementById("statTotal").textContent = allData.length;
-      document.getElementById("statCompleted").textContent = count("completed");
+      document.getElementById("statCompleted").textContent = completedCount;
       document.getElementById("statScheduled").textContent = scheduledCount;
-      document.getElementById("statCancelled").textContent = count("cancelled");
+      document.getElementById("statCancelled").textContent = allData.filter(r => String(r.status || "").toLowerCase() === "cancelled").length;
     }
 
     function setActiveFilter(filter) {
@@ -220,6 +222,8 @@
         const s = String(row.status || "").toLowerCase();
         if (activeFilter === 'scheduled') {
           if (s !== 'scheduled' && s !== 'waiting' && s !== 'pending' && s !== 'confirmed') return false;
+        } else if (activeFilter === 'completed') {
+          if (s !== 'completed' && s !== 'complete') return false;
         } else if (activeFilter !== 'all') {
           if (s !== activeFilter) return false;
         }
