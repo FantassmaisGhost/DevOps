@@ -1,12 +1,12 @@
 :root {
-  --blue-900: #0a1628;
-  --blue-800: #0f2346;
-  --blue-700: #1a3a6b;
-  --blue-600: #1e4d8c;
-  --blue-500: #2563eb;
-  --blue-400: #3b82f6;
-  --blue-100: #dbeafe;
-  --blue-50:  #eff6ff;
+  --blue-900: #10241f;
+  --blue-800: #15312b;
+  --blue-700: #1f4b43;
+  --blue-600: #00897B;
+  --blue-500: #00A693;
+  --blue-400: #5ccec5;
+  --blue-100: #BFEAE5;
+  --blue-50:  #E7F7F5;
   --grey-900: #111827;
   --grey-800: #1f2937;
   --grey-700: #374151;
@@ -49,7 +49,7 @@ body {
 .topbar {
   background: var(--blue-800);
   height: 4px;
-  background: linear-gradient(90deg, var(--blue-500), var(--blue-400), #60a5fa);
+  background: linear-gradient(90deg, var(--blue-600), var(--blue-400), #9FE5DF);
 }
 
 /* header */
@@ -154,7 +154,7 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 80% 20%, rgba(37,99,235,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,137,123,0.15) 0%, transparent 50%),
     radial-gradient(circle at 10% 80%, rgba(30,77,140,0.2) 0%, transparent 40%);
   pointer-events: none;
 }
@@ -226,7 +226,7 @@ body {
 .search-input:focus {
   background: rgba(255,255,255,0.1);
   border-color: var(--blue-400);
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+  box-shadow: 0 0 0 3px rgba(0,137,123,0.18);
 }
 .search-input option { background: var(--grey-800); color: var(--white); }
 select.search-input { appearance: none; cursor: pointer; }
@@ -261,24 +261,24 @@ select.search-input { appearance: none; cursor: pointer; }
   gap: 14px;
 }
 .clinic-card {
-  background: #e8f2fd;
-  border: 1px solid #bcd6f5;
+  background: #E8F6F3;
+  border: 1px solid #BFEAE5;
   border-radius: var(--radius-lg);
   padding: 0;
   cursor: pointer;
   transition: all 0.18s;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(37,99,235,0.08);
+  box-shadow: 0 2px 6px rgba(0,137,123,0.08);
 }
 .clinic-card:hover {
-  background: #daeaf9;
+  background: #D9F0EC;
   border-color: var(--blue-400);
-  box-shadow: 0 6px 18px rgba(37,99,235,0.15);
+  box-shadow: 0 6px 18px rgba(0,137,123,0.15);
   transform: translateY(-2px);
 }
 .card-header-strip {
   height: 4px;
-  background: #bcd6f5;
+  background: #BFEAE5;
   transition: background 0.18s;
 }
 .clinic-card:hover .card-header-strip { background: var(--blue-500); }
@@ -330,8 +330,8 @@ select.search-input { appearance: none; cursor: pointer; }
 .meta-item svg { flex-shrink: 0; color: var(--grey-400); }
 .card-footer {
   padding: 12px 20px;
-  background: #d0e8f8;
-  border-top: 1px solid #bcd6f5;
+  background: #D5EEE9;
+  border-top: 1px solid #BFEAE5;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -547,9 +547,9 @@ select.search-input { appearance: none; cursor: pointer; }
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  color: #00897B;
+  background: #E7F7F5;
+  border: 1px solid #BFEAE5;
   padding: 3px 8px;
   border-radius: 4px;
   margin-bottom: 14px;
@@ -685,7 +685,7 @@ select.search-input { appearance: none; cursor: pointer; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+  box-shadow: 0 2px 6px rgba(0,137,123,0.30);
 }
 .write-review-btn:hover { background: var(--blue-500); }
 
@@ -761,7 +761,7 @@ select.search-input { appearance: none; cursor: pointer; }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(9,20,38,0.6);
+  background: rgba(16,36,31,0.62);
   z-index: 1000;
   align-items: center;
   justify-content: center;
@@ -827,7 +827,7 @@ select.search-input { appearance: none; cursor: pointer; }
   margin-bottom: 16px;
   background: var(--grey-50);
 }
-.modal-textarea:focus { border-color: var(--blue-400); background: var(--white); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.modal-textarea:focus { border-color: var(--blue-400); background: var(--white); box-shadow: 0 0 0 3px rgba(0,137,123,0.12); }
 .modal-submit {
   width: 100%;
   height: 44px;
@@ -880,7 +880,7 @@ select.search-input { appearance: none; cursor: pointer; }
   transition: all 0.15s;
   width: 100%;
 }
-.form-input:focus { border-color: var(--blue-400); background: var(--white); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-input:focus { border-color: var(--blue-400); background: var(--white); box-shadow: 0 0 0 3px rgba(0,137,123,0.12); }
 .form-actions { display: flex; gap: 8px; margin-top: 16px; }
 .btn-primary {
   height: 36px;
@@ -972,4 +972,105 @@ select.search-input { appearance: none; cursor: pointer; }
   .detail-hero-body { flex-direction: column; gap: 16px; }
   .form-row { grid-template-columns: 1fr; }
   .modal-body { padding: 24px 20px 28px; }
+}
+
+/* ── Green theme polish overrides ── */
+.hero {
+  background:
+    radial-gradient(circle at 85% 15%, rgba(92,206,197,0.16) 0%, transparent 42%),
+    linear-gradient(135deg, #10241f 0%, #15312b 55%, #1f4b43 100%);
+  border-color: rgba(0,137,123,0.28);
+}
+
+.hero-pattern {
+  background-image:
+    radial-gradient(circle at 80% 20%, rgba(92,206,197,0.13) 0%, transparent 50%),
+    radial-gradient(circle at 10% 80%, rgba(0,137,123,0.16) 0%, transparent 42%);
+}
+
+.hero-eyebrow,
+.breadcrumb-btn,
+.info-val a,
+.view-link {
+  color: var(--blue-600);
+}
+
+.hero-eyebrow::before,
+.detail-hero-top,
+.modal-top-bar {
+  background: linear-gradient(90deg, var(--blue-600), var(--blue-400));
+}
+
+.search-input:focus,
+.modal-textarea:focus {
+  border-color: var(--blue-400);
+  box-shadow: 0 0 0 3px rgba(0,137,123,0.14);
+}
+
+.clinic-card {
+  background: #E8F6F3;
+  border-color: #BFEAE5;
+  box-shadow: 0 2px 6px rgba(0,137,123,0.08);
+}
+
+.clinic-card:hover {
+  background: #D9F0EC;
+  border-color: var(--blue-400);
+  box-shadow: 0 6px 18px rgba(0,137,123,0.16);
+}
+
+.clinic-card:hover .card-header-strip {
+  background: var(--blue-600);
+}
+
+.card-header-strip,
+.card-footer {
+  background: #D5EEE9;
+  border-color: #BFEAE5;
+}
+
+.facility-icon,
+.type-chip,
+.detail-facility-icon,
+.chip-blue,
+.icon-blue,
+.booking-icon-wrap,
+.badge-scheduled,
+.hour-row.today,
+.live-tag {
+  background: var(--blue-50);
+  border-color: var(--blue-100);
+}
+
+.type-chip,
+.chip-blue,
+.badge-scheduled,
+.hour-row.today .hour-day,
+.hour-row.today .hour-time,
+.live-tag,
+.rtab.active {
+  color: var(--blue-600);
+}
+
+.filter-pill.active {
+  background: var(--blue-600);
+  border-color: var(--blue-600);
+  color: var(--white);
+}
+
+.write-review-btn {
+  background: var(--blue-600);
+  box-shadow: 0 2px 6px rgba(0,137,123,0.30);
+}
+
+.write-review-btn:hover {
+  background: var(--blue-500);
+}
+
+.live-dot {
+  background: var(--blue-600);
+}
+
+.rtab.active {
+  border-bottom-color: var(--blue-600);
 }

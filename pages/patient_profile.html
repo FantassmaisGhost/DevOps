@@ -5,15 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Patient Portal | SA Health-Flow</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../node_modules/@supabase/supabase-js/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * { font-family: 'Inter', sans-serif; }
     body { background: #f8fafc; }
     .required-label::after { content: " *"; color: #dc2626; }
-    .optional-label::after { content: " (optional)"; color: #6b7280; font-weight: normal; font-size: 0.7rem; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
     .toast-notify {
       position: fixed; top: 20px; right: 20px; z-index: 100; padding: 1rem 1.5rem;
@@ -24,105 +23,6 @@
     fieldset > legend + * { clear: both; }
     .saving-indicator { display: none; }
     .saving-indicator.active { display: flex; }
-/* ── Health-Flow topbar ── */
-.hf-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 58px;
-  padding: 0 22px;
-  background: #18160F;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  gap: 16px;
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  box-sizing: border-box;
-}
-.hf-topbar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(247,244,238,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(247,244,238,0.02) 1px, transparent 1px);
-  background-size: 24px 24px;
-  pointer-events: none;
-}
-.hf-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-.hf-brand-icon {
-  width: 30px; height: 30px;
-  background: #00897B;
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; color: #fff;
-  box-shadow: 0 2px 8px rgba(0,137,123,0.4);
-  flex-shrink: 0;
-  font-style: normal;
-}
-.hf-brand-name {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 17px;
-  font-weight: 700;
-  color: #F7F4EE;
-  letter-spacing: -0.01em;
-  font-style: normal;
-}
-.hf-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-.hf-user-email {
-  font-size: 11px;
-  color: rgba(247,244,238,0.4);
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: normal;
-}
-.hf-role-badge {
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  padding: 3px 9px;
-  border-radius: 3px;
-  text-transform: uppercase;
-  background: rgba(27,79,138,0.15);
-  color: #3b72b8;
-  border: 1px solid rgba(27,79,138,0.25);
-}
-.hf-logout-btn {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 7px 14px;
-  border-radius: 7px;
-  border: 1.5px solid rgba(247,244,238,0.12);
-  cursor: pointer;
-  background: rgba(247,244,238,0.07);
-  color: rgba(247,244,238,0.45);
-  transition: all 0.13s ease;
-  white-space: nowrap;
-  letter-spacing: 0.01em;
-}
-.hf-logout-btn:hover {
-  color: #B94A1E;
-  border-color: rgba(185,74,30,0.4);
-  background: rgba(185,74,30,0.1);
-}
   </style>
 </head>
 <body class="antialiased">
@@ -155,13 +55,18 @@
         <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Patient Admission Portal</h1>
         <p class="text-slate-500">POPIA Compliant Medical Profile Management</p>
       </hgroup>
-      <aside class="bg-white border border-green-100 p-3 rounded-xl flex items-center gap-3 shadow-sm" aria-label="Compliance status">
-        <figure class="bg-green-100 p-2 rounded-full" aria-hidden="true"><i class="fas fa-user-shield text-green-700"></i></figure>
-        <p class="text-xs">
-          <strong class="block font-bold text-slate-800 uppercase">POPIA Verified</strong>
-          Data hosted in RSA
-        </p>
-      </aside>
+      <nav class="flex items-center gap-3" aria-label="Page navigation">
+        <aside class="bg-white border border-green-100 p-3 rounded-xl flex items-center gap-3 shadow-sm" aria-label="Compliance status">
+          <figure class="bg-green-100 p-2 rounded-full m-0" aria-hidden="true"><i class="fas fa-user-shield text-green-700"></i></figure>
+          <p class="text-xs">
+            <strong class="block font-bold text-slate-800 uppercase">POPIA Verified</strong>
+            Data hosted in RSA
+          </p>
+        </aside>
+        <a href="dashboard.html" class="text-sm font-bold px-4 py-2 rounded-lg border border-slate-300 text-slate-500 hover:text-slate-900 hover:border-slate-400 bg-white flex items-center gap-2 transition-all duration-150">
+          ← Dashboard
+        </a>
+      </nav>
     </header>
 
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -171,7 +76,7 @@
 
         <article class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden" aria-label="Patient card">
           <header class="p-8 text-center bg-gradient-to-b from-slate-50 to-white">
-            <figure id="avatar" class="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold shadow-inner" aria-hidden="true">?</figure>
+            <figure id="avatar" class="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center text-white text-3xl font-bold shadow-inner m-0" aria-hidden="true">?</figure>
             <h2 id="summaryName" class="text-xl font-bold text-slate-800">New Patient</h2>
             <p id="summaryID" class="text-sm text-slate-400">ID: —</p>
             <p id="summaryEmail" class="text-xs text-slate-400 mt-1 truncate"></p>
@@ -208,8 +113,7 @@
       </aside>
 
       <!-- Main form -->
-      <section class="lg:col-span-8">
-        <form id="saPatientForm" class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden" novalidate>
+      <form id="saPatientForm" class="lg:col-span-8 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden" novalidate>
 
           <!-- Personal Information -->
           <fieldset class="border-0">
@@ -224,12 +128,12 @@
                   placeholder="e.g. Sipho Nkosi">
               </li>
               <li>
-                <label for="saID" class="block text-xs font-bold text-slate-500 uppercase mb-2 optional-label">South African ID Number</label>
-                <input type="text" id="saID" name="saID" maxlength="13" inputmode="numeric"
+                <label for="saID" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">South African ID Number</label>
+                <input type="text" id="saID" name="saID" required pattern="[0-9]{13}" maxlength="13" inputmode="numeric"
                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
-                  placeholder="13-digit number (optional)">
-                <p id="idError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid 13-digit SA ID number (if provided).</p>
-                <p id="idHint" class="text-slate-400 text-xs mt-1">Optional field — can be skipped or added later</p>
+                  placeholder="13-digit number">
+                <p id="idError" class="text-red-500 text-xs mt-1 hidden">Please enter a valid 13-digit SA ID number.</p>
+                <p id="idHint" class="text-green-600 text-xs mt-1 hidden"></p>
               </li>
               <li>
                 <label for="dob" class="required-label block text-xs font-bold text-slate-500 uppercase mb-2">Date of Birth</label>
@@ -381,10 +285,10 @@
           <!-- Footer -->
           <footer class="p-6 bg-white flex justify-between items-center gap-3 border-t border-slate-100">
             <output class="saving-indicator items-center gap-2 text-sm text-slate-400" id="savingIndicator">
-              <i class="block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" aria-hidden="true"></i>
+              <i class="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" aria-hidden="true"></i>
               Saving…
             </output>
-            <menu class="flex gap-3 ml-auto">
+            <menu class="flex gap-3 ml-auto p-0 m-0">
               <button type="reset" class="px-6 py-3 text-slate-500 font-bold text-sm hover:text-slate-700 transition-colors">
                 Reset Form
               </button>
@@ -395,8 +299,7 @@
             </menu>
           </footer>
 
-        </form>
-      </section>
+      </form>
     </section>
   </main>
 
@@ -420,8 +323,7 @@
     // ── SUMMARY SIDEBAR ──
     function updateSummary(data) {
       document.getElementById('summaryName').innerText = data.full_name || 'New Patient';
-      const idDisplay = data.id_number && data.id_number.trim() !== '' ? data.id_number : '—';
-      document.getElementById('summaryID').innerText = `ID: ${idDisplay}`;
+      document.getElementById('summaryID').innerText = `ID: ${data.id_number || '—'}`;
       document.getElementById('summaryEmail').innerText = data.email || '';
       document.getElementById('summaryMedAid').innerText = data.medical_aid_name || 'PRIVATE';
       document.getElementById('summaryOccupation').innerText = data.occupation || '—';
@@ -532,37 +434,79 @@
       });
     });
 
-    // ── SA ID VALIDATION (optional: only validate if value is provided) ──
-    const saIdInput = document.getElementById('saID');
-    const idError = document.getElementById('idError');
-    
-    saIdInput.addEventListener('input', (e) => {
-      let val = e.target.value.replace(/\D/g, '');
-      if (val.length > 13) val = val.slice(0, 13);
-      e.target.value = val;
-      
-      // Only validate if user has entered something
-      if (val.length > 0 && val.length !== 13) {
-        idError.classList.remove('hidden');
-        idError.textContent = 'SA ID number must be exactly 13 digits (if provided).';
-      } else if (val.length === 13) {
-        idError.classList.add('hidden');
-      } else if (val.length === 0) {
-        idError.classList.add('hidden');
-      } else {
-        idError.classList.remove('hidden');
-        idError.textContent = 'SA ID number must be exactly 13 digits (if provided).';
+    // ── SA ID VALIDATION (LUHN + EXTRACT DOB/GENDER) ──
+    function luhnCheck(id) {
+      if (id.length !== 13 || !/^[0-9]{13}$/.test(id)) return false;
+      let sum = 0;
+      for (let i = 0; i < 12; i++) {
+        let digit = parseInt(id[i]);
+        if (i % 2 === 1) {
+          digit *= 2;
+          if (digit > 9) digit -= 9;
+        }
+        sum += digit;
       }
+      const checkDigit = (10 - (sum % 10)) % 10;
+      return checkDigit === parseInt(id[12]);
+    }
+
+    function extractIDInfo(id) {
+      if (id.length !== 13) return null;
+      const year  = id.substring(0, 2);
+      const month = id.substring(2, 4);
+      const day   = id.substring(4, 6);
+      const fullYear = parseInt(year) <= new Date().getFullYear() % 100
+        ? '20' + year : '19' + year;
+      const dob = `${fullYear}-${month}-${day}`;
+      const genderDigit = parseInt(id.substring(6, 10));
+      const gender = genderDigit >= 5000 ? 'Male' : 'Female';
+      const citizenship = id[10] === '0' ? 'SA Citizen' : 'Permanent Resident';
+      return { dob, gender, citizenship };
+    }
+
+    function validateSAID(val) {
+      const err = document.getElementById('idError');
+      const hint = document.getElementById('idHint');
+      if (!val) { err.classList.add('hidden'); hint.classList.add('hidden'); return; }
+      if (val.length !== 13) {
+        err.innerText = 'SA ID number must be exactly 13 digits.';
+        err.classList.remove('hidden');
+        hint.classList.add('hidden');
+        return;
+      }
+      if (!luhnCheck(val)) {
+        err.innerText = 'This ID number is invalid (checksum failed). Please double-check.';
+        err.classList.remove('hidden');
+        hint.classList.add('hidden');
+        return;
+      }
+      // Valid — extract and show info
+      err.classList.add('hidden');
+      const info = extractIDInfo(val);
+      if (info) {
+        hint.innerText = `✓ Valid SA ID · DOB: ${info.dob} · ${info.gender} · ${info.citizenship}`;
+        hint.classList.remove('hidden');
+        // Auto-fill DOB and gender if empty
+        const dobField = document.getElementById('dob');
+        const genderField = document.getElementById('gender');
+        if (dobField && !dobField.value) dobField.value = info.dob;
+        if (genderField && !genderField.value) genderField.value = info.gender;
+      }
+    }
+
+    document.getElementById('saID').addEventListener('input', (e) => {
+      const val = e.target.value.replace(/\D/g, '');
+      e.target.value = val;
+      validateSAID(val);
     });
 
-    // ── SUBMIT (ID validation only if value is provided) ──
+    // ── SUBMIT ──
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const saId = saIdInput.value.trim();
-      // Only validate if ID is not empty
-      if (saId !== '' && saId.length !== 13) {
-        showToast('⚠️ SA ID number must be exactly 13 digits (or leave empty).', 'bg-amber-600');
+      const saId = document.getElementById('saID').value;
+      if (saId && !luhnCheck(saId)) {
+        showToast('⚠️ SA ID number is invalid. Please check and try again.', 'bg-amber-600');
         return;
       }
 
@@ -586,7 +530,7 @@
         const payload = {
           user_id:                  user.id,
           full_name:                document.getElementById('fullName').value,
-          id_number:                saId === '' ? null : saId,
+          id_number:                document.getElementById('saID').value || null,
           date_of_birth:            document.getElementById('dob').value || null,
           gender:                   document.getElementById('gender').value || null,
           occupation:               document.getElementById('occupation').value || null,
@@ -631,18 +575,6 @@
 
     // ── INIT ──
     loadProfile();
-
-    // ── TOPBAR AUTH ──
-    (async function() {
-      const { data: { user } } = await sb.auth.getUser();
-      if (user) document.getElementById('hfUserEmail').textContent = user.email;
-      document.getElementById('hfLogoutBtn').addEventListener('click', async () => {
-        await sb.auth.signOut();
-        localStorage.removeItem('userRole');
-        window.location.href = 'index.html';
-      });
-    })();
   </script>
-  <script type="module" src="../backend/nav.js"></script>
 </body>
 </html>

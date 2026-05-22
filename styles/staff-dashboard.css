@@ -293,3 +293,143 @@
     color: #9aa4bf;
     font-size: 14px;
 }
+
+/* ============================================================
+   STAFF DASHBOARD POLISH — top action buttons + welcome banner
+   Paste-safe: this section intentionally uses stronger selectors
+   so it overrides the inline <style> rules in staff-dashboard.html.
+============================================================ */
+
+/* Match welcome banner to the black Health-Flow topbar */
+body .welcome-banner {
+    background: #18160F !important;
+    background-image:
+        linear-gradient(rgba(247,244,238,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(247,244,238,0.025) 1px, transparent 1px) !important;
+    background-size: 24px 24px !important;
+    border: 1px solid rgba(247,244,238,0.08) !important;
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 30px rgba(24, 22, 15, 0.16);
+}
+
+body .welcome-banner h2 {
+    color: #F7F4EE !important;
+}
+
+body .welcome-banner p {
+    color: rgba(247,244,238,0.50) !important;
+}
+
+body .welcome-banner strong {
+    color: #9E9888 !important;
+}
+
+/* Make the action card feel connected to the theme */
+body .action-bar {
+    background:
+        radial-gradient(circle at top right, rgba(0, 137, 123, 0.10), transparent 38%),
+        var(--surface) !important;
+    box-shadow: 0 10px 26px rgba(31, 29, 20, 0.06);
+}
+
+body .action-buttons-group {
+    align-items: center;
+}
+
+/* Pretty Manage Availability + Refresh buttons */
+#manageAvailabilityBtn,
+#refreshBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-height: 38px;
+    padding: 9px 16px;
+
+    border: 1.5px solid transparent;
+    border-radius: 999px;
+
+    font-family: var(--font-body, inherit);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+
+    cursor: pointer;
+    white-space: nowrap;
+
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+/* Main green action */
+#manageAvailabilityBtn {
+    background: linear-gradient(135deg, #00897B, #00A693) !important;
+    color: #F7F4EE !important;
+    border-color: rgba(0, 137, 123, 0.35) !important;
+    box-shadow: 0 8px 18px rgba(0, 137, 123, 0.24);
+}
+
+#manageAvailabilityBtn::before {
+    content: "📅";
+    font-size: 13px;
+}
+
+#manageAvailabilityBtn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #00A693, #5ccec5) !important;
+    box-shadow: 0 12px 26px rgba(0, 137, 123, 0.32);
+}
+
+#manageAvailabilityBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 14px rgba(0, 137, 123, 0.22);
+}
+
+/* Secondary clean refresh button */
+#refreshBtn {
+    background: #FEFCF8 !important;
+    color: #00897B !important;
+    border-color: rgba(0, 137, 123, 0.28) !important;
+    box-shadow: 0 5px 14px rgba(31, 29, 20, 0.08);
+}
+
+#refreshBtn:hover {
+    transform: translateY(-2px);
+    background: #E0F2F1 !important;
+    border-color: rgba(0, 137, 123, 0.45) !important;
+    color: #006F64 !important;
+    box-shadow: 0 10px 22px rgba(0, 137, 123, 0.16);
+}
+
+#refreshBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(31, 29, 20, 0.08);
+}
+
+/* Keyboard accessibility */
+#manageAvailabilityBtn:focus-visible,
+#refreshBtn:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 3px rgba(247, 244, 238, 1),
+        0 0 0 6px rgba(0, 137, 123, 0.35);
+}
+
+/* Mobile layout */
+@media (max-width: 640px) {
+    body .action-buttons-group,
+    #manageAvailabilityBtn,
+    #refreshBtn {
+        width: 100%;
+    }
+
+    #manageAvailabilityBtn,
+    #refreshBtn {
+        justify-content: center;
+    }
+}
