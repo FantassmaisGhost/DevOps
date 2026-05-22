@@ -729,6 +729,53 @@ Please refer to the **`supabase-secret-keys.txt`** file in the documentation fol
 - The `supabase-secret-keys.txt` file is **not committed to GitHub** for security reasons
 - Contact the project maintainer if you need access to the keys file
 - Never share these keys publicly or commit them to version control
+  
+
+## cron-job.org Setup
+
+The `send-reminders` edge function needs to run automatically every 15 minutes to send hour-before reminders.
+
+### Steps to set up the cron job:
+
+1. Create a free account at [cron-job.org](https://cron-job.org)
+
+2. Click **Create Cronjob**
+
+3. Fill in the following details:
+
+| Field | Value |
+|-------|-------|
+| **Title** | `HealthFlow Reminders` |
+| **URL** | `https://ixikhufrylaugpdxokwu.supabase.co/functions/v1/send-reminders` |
+| **Method** | `POST` |
+| **Headers** | Add a header with Key: `Authorization`, Value: `Bearer CRON-SECRET` |
+| **Schedule** | Select "Custom" and enter `*/15 * * * *` |
+| **Timezone** | `Africa/Johannesburg` |
+
+4. Click **Save**
+
+### Headers Configuration
+
+In the Headers section, add:
+
+| Key | Value |
+|-----|-------|
+| `Authorization` | `Bearer CRON-SECRET` |
+
+*Note: The `CRON_SECRET` value must match exactly what you saved in Supabase Edge Function secrets.*
+
+### Testing the cron job
+
+After saving, you can click **Run now** to test if the edge function executes successfully. Check:
+- The response status should be `200`
+- The execution log should show `success: true`
+
+### Required Secrets Reference
+
+| Secret | Where to set it | Value source |
+|--------|-----------------|--------------|
+| `CRON_SECRET` | Supabase Edge Function secrets (for `send-reminders`) | value of `Cron_SECRET` |
+| `Authorization` header | cron-job.org Headers section | `Bearer CRON-SECRET` (must match the secret above) |
 
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/1e13ab1a-dce8-4751-8212-8e20fad03d42" />
