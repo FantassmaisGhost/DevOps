@@ -387,7 +387,7 @@ tbody tr:hover { background: var(--surface2); }
   text-transform: capitalize;
   white-space: nowrap;
 }
-.pill-completed { background: var(--forest-light);   color: var(--forest); }
+.pill-completed { background: var(--teal-light);     color: var(--teal); }
 .pill-scheduled { background: var(--cerulean-light); color: var(--cerulean); }
 .pill-cancelled { background: var(--rust-light);     color: var(--rust); }
 .pill-waiting   { background: var(--ochre-light);    color: var(--ochre); }
