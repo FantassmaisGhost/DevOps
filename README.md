@@ -702,6 +702,33 @@ This is the path so you know where to put this edge function:
 
 > i just named them as sendEmailBrevo.ts and sendReminders.ts for GitHub distinguishing purposes 🙏🏽
 
+## Edge Function Secrets
+
+The required API keys and secrets have been documented separately for security purposes.
+
+### Where to find the keys
+
+Please refer to the **`supabase-secret-keys.txt`** file in the documentation folder for the following credentials:
+
+| Secret Name | Used By |
+|-------------|---------|
+| `BREVO_API_KEY` | `send-email-brevo` and `send-reminders` edge functions |
+| `CRON_SECRET` | `send-reminders` edge function (authentication for cron-job.org) |
+
+### How to add the secrets
+
+1. Go to **Supabase Dashboard** → **Edge Functions**
+2. Select the function (`send-email-brevo` or `send-reminders`)
+3. Click the **Secrets** tab
+4. Click **Add Secret**
+5. Enter the name and value (copy from `supabase-secret-keys.txt`)
+6. Click **Save**
+
+### ⚠️ Important
+
+- The `supabase-secret-keys.txt` file is **not committed to GitHub** for security reasons
+- Contact the project maintainer if you need access to the keys file
+- Never share these keys publicly or commit them to version control
 
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/1e13ab1a-dce8-4751-8212-8e20fad03d42" />
