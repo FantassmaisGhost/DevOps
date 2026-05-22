@@ -1,295 +1,99 @@
-.status-badge {
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    display: inline-block;
-}
-
-.status-waiting {
-    background: #f5a623;
-    color: #0b0e14;
-}
-
-.status-completed {
-    background: #00e5a0;
-    color: #0b0e14;
-}
-
-.status-cancelled {
-    background: #ff6b6b;
-    color: white;
-}
-
 /* =========================
-   ACTION BUTTONS
+   STAFF DASHBOARD TOP ACTION BUTTONS
 ========================= */
 
-.complete-btn,
-.cancel-btn,
-.reschedule-btn {
-    display: inline-block;
-    min-width: 100px;
+#manageAvailabilityBtn,
+#refreshBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-height: 38px;
     padding: 9px 16px;
-    border: none;
-    border-radius: 10px;
+
+    border: 1.5px solid transparent;
+    border-radius: 999px;
+
+    font-family: var(--font-body, inherit);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+
     cursor: pointer;
+    white-space: nowrap;
+
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+#manageAvailabilityBtn {
+    background: linear-gradient(135deg, #00897B, #00A693);
+    color: #F7F4EE;
+    border-color: rgba(0, 137, 123, 0.35);
+    box-shadow: 0 8px 18px rgba(0, 137, 123, 0.24);
+}
+
+#manageAvailabilityBtn::before {
+    content: "📅";
     font-size: 13px;
-    font-weight: 600;
-    text-align: center;
-    white-space: nowrap;
-    transition: all 0.2s ease;
 }
 
-/* COMPLETE BUTTON */
-
-.complete-btn {
-    background: linear-gradient(135deg, #00e5a0, #00c988);
-    color: #0b0e14;
-    margin-right: 8px;
-}
-
-.complete-btn:hover {
+#manageAvailabilityBtn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(0, 229, 160, 0.32);
-    background: linear-gradient(135deg, #19efaf, #00c988);
+    background: linear-gradient(135deg, #00A693, #5ccec5);
+    box-shadow: 0 12px 26px rgba(0, 137, 123, 0.32);
 }
 
-.complete-btn:active {
+#manageAvailabilityBtn:active {
     transform: translateY(0);
 }
 
-/* CANCEL BUTTON */
-
-.cancel-btn {
-    background: linear-gradient(135deg, #ff6b6b, #e05252);
-    color: white;
+#refreshBtn {
+    background: #FEFCF8;
+    color: #00897B;
+    border-color: rgba(0, 137, 123, 0.28);
+    box-shadow: 0 5px 14px rgba(31, 29, 20, 0.08);
 }
 
-.cancel-btn:hover {
+#refreshBtn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(255, 107, 107, 0.32);
-    background: linear-gradient(135deg, #ff8080, #e05252);
+    background: #E0F2F1;
+    border-color: rgba(0, 137, 123, 0.45);
+    color: #006F64;
+    box-shadow: 0 10px 22px rgba(0, 137, 123, 0.16);
 }
 
-.cancel-btn:active {
+#refreshBtn:active {
     transform: translateY(0);
 }
 
-/* RESCHEDULE BUTTON */
-
-.reschedule-btn {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    color: white;
-}
-
-.reschedule-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
-    background: linear-gradient(135deg, #4f8cff, #2563eb);
-}
-
-.reschedule-btn:active {
-    transform: translateY(0);
-}
-
-/* =========================
-   TABLE STYLING
-========================= */
-
-.appointments-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.appointments-table th {
-    text-align: left;
-    padding: 10px 8px;
-    border-bottom: 1px solid #252b3d;
-    color: #a0a8c0;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.appointments-table td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #252b3d;
-    font-size: 14px;
-}
-
-.appointments-table tr:hover {
-    background: rgba(255,255,255,0.02);
-}
-
-.appointments-table td:last-child {
-    white-space: nowrap;
-}
-
-/* =========================
-   QUICK ACTION CARD
-========================= */
-
-.quick-action-card p {
-    margin-top: 10px;
-    color: #9aa4bf;
-    font-size: 14px;
-}
-
-.quick-action-card .btn-primary {
-    margin-top: 16px;
-}
-
-/* =========================
-   CENTER TOAST
-========================= */
-
-.toast {
-    position: fixed;
-
-    top: 50%;
-    left: 50%;
-
-    transform: translate(-50%, -50%) scale(0.95);
-
-    background: #151929;
-    color: #e0e4f0;
-
-    border: 1px solid #252b3d;
-    border-radius: 14px;
-
-    padding: 16px 24px;
-
-    font-size: 14px;
-    font-weight: 600;
-
-    opacity: 0;
-    pointer-events: none;
-
-    transition: all 0.25s ease;
-
-    z-index: 10000;
-
-    backdrop-filter: blur(10px);
-
-    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
-}
-
-/* visible state */
-
-.toast.show {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-/* error */
-
-.toast.error {
-    border-color: #ff6b6b;
-    color: #ff9a9a;
-}
-
-/* success */
-
-.toast.success {
-    border-color: #00e5a0;
-    color: #7ff5cb;
-}
-
-.field-error {
-    margin-top: 5px;
-    min-height: 16px;
-    color: #ff9a9a;
-    font-size: 12px;
-    font-weight: 600;
-    opacity: 0;
-    transform: translateY(-2px);
-    transition: all 0.2s ease;
-}
-
-.field-error.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.form-group input.input-error {
-    border-color: #ff6b6b;
-    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15);
-}
-
-
-/* =========================
-   NOTE BUTTON
-========================= */
-
-.note-btn {
-    background: transparent;
-    border: 1px solid #3b82f6;
-    color: #8bb8ff;
-
-    padding: 7px 12px;
-    border-radius: 9px;
-
-    cursor: pointer;
-
-    font-size: 12px;
-    font-weight: 600;
-
-    transition: all 0.2s ease;
-
-    white-space: nowrap;
-}
-
-.note-btn:hover {
-    background: rgba(59, 130, 246, 0.12);
-    color: #ffffff;
-
-    transform: translateY(-1px);
-
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
-}
-
-/* =========================
-   NOTE TEXTAREA
-========================= */
-
-.note-textarea {
-    width: 100%;
-
-    min-height: 130px;
-
-    resize: vertical;
-
-    background: #0b0e14;
-    border: 1px solid #252b3d;
-
-    color: #e0e4f0;
-
-    border-radius: 10px;
-
-    padding: 12px;
-
-    font-family: inherit;
-    font-size: 14px;
-    line-height: 1.5;
-
-    transition: all 0.2s ease;
-}
-
-.note-textarea:focus {
+#manageAvailabilityBtn:focus-visible,
+#refreshBtn:focus-visible {
     outline: none;
-
-    border-color: #00e5a0;
-
-    box-shadow: 0 0 0 3px rgba(0, 229, 160, 0.15);
+    box-shadow:
+        0 0 0 3px rgba(247, 244, 238, 1),
+        0 0 0 6px rgba(0, 137, 123, 0.35);
 }
-/* =========================
-   EMPTY STATE
-========================= */
 
-.empty-message {
-    text-align: center;
-    padding: 24px;
-    color: #9aa4bf;
-    font-size: 14px;
+.action-bar {
+    background:
+        radial-gradient(circle at top right, rgba(0, 137, 123, 0.10), transparent 38%),
+        var(--surface);
+}
+
+.action-buttons-group {
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .action-buttons-group,
+    #manageAvailabilityBtn,
+    #refreshBtn {
+        width: 100%;
+    }
 }
